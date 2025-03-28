@@ -10,8 +10,8 @@ GUILD_ID = 1339490588386525266
 
 class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
     uid = discord.ui.TextInput(label="UID", required=False, placeholder="9-digit UID")
-    mirror_id = discord.ui.TextInput(label="Mirror ID", required=False, placeholder="Mirror ID from Russian")
-    points = discord.ui.TextInput(label="Points", required=False, placeholder="0")
+    mirror_id = discord.ui.TextInput(label="Mirror ID", required=False, placeholder="Mirror ID")
+    points = discord.ui.TextInput(label="Total Cost", required=False, placeholder="Mirror Points")
 
     async def on_submit(self, interaction: Interaction):
         elo_data = load_elo_data()
@@ -30,7 +30,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         try:
             points = int(points_input) if points_input else 0
         except ValueError:
-            await interaction.response.send_message("❌ Points must be a valid number.", ephemeral=True)
+            await interaction.response.send_message("❌ Total cost must be a valid number.", ephemeral=True)
             return
 
         # Case 1: Existing player
@@ -158,7 +158,7 @@ class MatchmakingCommands(commands.Cog):
             name="Details",
             value=f"UID: {uid}\n"
                 f"Mirror ID: {mirror_id}\n"
-                f"Points: {points}\n"
+                f"Total Cost: {points}\n"
                 f"Rank: {rank}",
             inline=False
         )
