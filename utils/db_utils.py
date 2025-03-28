@@ -84,20 +84,21 @@ def load_match_history():
         cursor = conn.cursor()
         cursor.execute("SELECT raw_data FROM matches ORDER BY match_id DESC")
         rows = cursor.fetchall()
-        return [row['raw_data'] for row in rows if isinstance(row['raw_data'], dict)]
+        return [json.loads(row['raw_data']) if isinstance(row['raw_data'], str) else row['raw_data'] for row in rows]
 
 
-def save_match_history(history):
+
+def save_match_history(match_data):
     with get_connection() as conn:
         cursor = conn.cursor()
-        for match in history:
-            cursor.execute('''
-                INSERT INTO matches (timestamp, elo_gains)
-                VALUES (%s, %s)
-            ''', (
-                datetime.utcnow().isoformat(),
-                json.dumps(match)
-            ))
+        cursor.execute('''
+            INSERT INTO matches (timestamp, elo_gains, raw_data)
+            VALUES (%s, %s, %s)
+        ''', (
+            datetime.now().isoformat(),
+            json.dumps(match_data.get("elo_gains", {})),  # store as JSON
+            json.dumps(match_data)  # full match_data as raw_data
+        ))
         conn.commit()
 
 
