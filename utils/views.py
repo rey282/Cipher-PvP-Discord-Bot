@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import logging
 from discord import ui
 from discord import Interaction
 from discord import Embed
@@ -12,7 +13,7 @@ from utils.db_utils import (
     distribute_team_elo_change,
     calculate_team_elo_change 
 )
-
+logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
     def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty):
         super().__init__(timeout=None)
@@ -300,10 +301,10 @@ class ConfirmRollbackView(discord.ui.View):
                 ephemeral=True
             )
         except discord.errors.NotFound as e:
-            # Handle the scenario where the interaction is no longer valid (expired)
-            print(f"Error: {e}")
+            # Log if the interaction failed due to 'Not Found'
+            logging.error(f"Error in sending follow-up: {e}")
             return
-        
+            
         # Wait for confirmation
         try:
             confirm_interaction = await interaction.client.wait_for(
@@ -317,11 +318,20 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            if confirm_interaction.response.is_done():
-                await confirm_interaction.followup.send(  # Corrected here: use followup.send instead of response.send_message
-                    f"✅ {message}" if success else f"❌ {message}",
-                    ephemeral=False
-                )
+            try:
+                # Ensure follow-up message is sent after the interaction response
+                if confirm_interaction.response.is_done():
+                    await confirm_interaction.followup.send(
+                        f"✅ {message}" if success else f"❌ {message}",
+                        ephemeral=False
+                    )
+                else:
+                    await confirm_interaction.response.send_message(
+                        f"✅ {message}" if success else f"❌ {message}",
+                        ephemeral=False
+                    )
+            except Exception as e:
+                logging.error(f"Failed to send follow-up in confirmation: {e}")
                 
             # Disable original button
             for item in self.children:
