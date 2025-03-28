@@ -236,7 +236,7 @@ class AdminCommands(commands.Cog):
             await interaction.response.defer()
             elo_data = load_elo_data()
             modal = ResetConfirmModal(interaction, elo_data)
-            await interaction.followup.send_modal(modal)
+            await interaction.send_modal(modal)
            
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
