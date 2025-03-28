@@ -20,13 +20,14 @@ class HistoryCommands(commands.Cog):
         # Find matches where target_user participated
         user_matches = []
         for match in history:
-            # Check blue team
+            if not match or not isinstance(match, dict):
+                continue  # skip None or invalid format
+
             for player_data in match.get('blue_team', []):
                 if str(target_user.id) == player_data.get('id'):
                     user_matches.append(match)
                     break
-                    
-            # Check red team (if not already found in blue team)
+
             if match not in user_matches:
                 for player_data in match.get('red_team', []):
                     if str(target_user.id) == player_data.get('id'):
