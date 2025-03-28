@@ -18,6 +18,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
     points = discord.ui.TextInput(label="Total Cost", required=False, placeholder="Mirror Points")
 
     async def on_submit(self, interaction: Interaction):
+        await interaction.response.defer()
         elo_data = load_elo_data()
         player_id = str(interaction.user.id)
 
@@ -76,7 +77,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         if action == "registered":
             response += f"\n▸ Starting ELO: `200`"
 
-        await interaction.followup.send(response, ephemeral=True)
+        await interaction.response.send_message(response, ephemeral=True)
 
 
 class MatchmakingCommands(commands.Cog):
