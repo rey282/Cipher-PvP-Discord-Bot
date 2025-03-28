@@ -176,7 +176,7 @@ class AdminCommands(commands.Cog):
         player: discord.Member,
         new_rating: int
     ):
-    await interaction.response.defer()
+        await interaction.response.defer()
 
         """Allows admins to manually adjust a player's ELO rating"""
         try:
