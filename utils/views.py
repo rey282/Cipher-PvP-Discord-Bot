@@ -304,7 +304,12 @@ class ConfirmRollbackView(discord.ui.View):
         confirm_view = ConfirmUndoView(parent_view=self)
 
         try:
-            # IMMEDIATE response is crucial
+            # Manually disable all buttons in this view before opening confirmation
+            for item in self.children:
+                item.disabled = True
+            await interaction.message.edit(view=self)
+
+            # Immediate response is crucial
             await interaction.response.send_message(
                 "⚠️ This will permanently revert the last match!",
                 view=confirm_view,
@@ -315,7 +320,6 @@ class ConfirmRollbackView(discord.ui.View):
             self.confirmation_active = False
             logging.error(f"Initial response failed: {e}")
             raise
-
 
 class ConfirmUndoView(discord.ui.View):
     def __init__(self, parent_view: discord.ui.View):
