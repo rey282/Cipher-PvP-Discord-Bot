@@ -282,8 +282,6 @@ class ConfirmRollbackView(discord.ui.View):
                 ephemeral=True
             )
             return
-
-        await interaction.response.defer()
             
         # Create a simple confirmation message instead of modal
         confirm_view = discord.ui.View(timeout=60)
@@ -293,7 +291,7 @@ class ConfirmRollbackView(discord.ui.View):
             custom_id="confirm_undo"
         ))
         
-        await interaction.followup.send(
+        await interaction.response.send_message(
             "⚠️ This will permanently revert the last match! Click to confirm:",
             view=confirm_view,
             ephemeral=True
@@ -312,10 +310,16 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            await confirm_interaction.response.send_message(
-                f"✅ {message}" if success else f"❌ {message}",
-                ephemeral=False
-            )
+            if confirm_interaction.response.is_done():
+                await confirm_interaction.followup.send(
+                    f"✅ {message}" if success else f"❌ {message}",
+                    ephemeral=False
+                )
+            else:
+                await confirm_interaction.response.send_message(
+                    f"✅ {message}" if success else f"❌ {message}",
+                    ephemeral=False
+                )
             
             # Disable original button
             for item in self.children:

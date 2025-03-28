@@ -108,15 +108,47 @@ class MatchHistoryView(ui.View):
 
     @ui.button(emoji="⬅️", style=discord.ButtonStyle.gray)
     async def previous_match(self, interaction, button):
-        self.current_index = max(0, self.current_index - 1)
-        embed = self.create_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            # Proceed to the previous match
+            self.current_index = max(0, self.current_index - 1)
+            embed = self.create_embed()
+
+            # Check if the interaction is still valid
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, view=self)
+            else:
+                await interaction.response.edit_message(embed=embed, view=self)
+
+        except discord.errors.InteractionResponded:
+            # Interaction already responded to, use followup instead
+            await interaction.followup.send(embed=embed, view=self)
+
+        except discord.errors.NotFound:
+            # If interaction has expired or not found, handle the case
+            await interaction.followup.send("⚠️ The interaction has expired, unable to edit the message.", ephemeral=True)
+
 
     @ui.button(emoji="➡️", style=discord.ButtonStyle.gray)
     async def next_match(self, interaction, button):
-        self.current_index = min(len(self.matches) - 1, self.current_index + 1)
-        embed = self.create_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            # Proceed to the next match
+            self.current_index = min(len(self.matches) - 1, self.current_index + 1)
+            embed = self.create_embed()
+
+            # Check if the interaction is still valid
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, view=self)
+            else:
+                await interaction.response.edit_message(embed=embed, view=self)
+
+        except discord.errors.InteractionResponded:
+            # Interaction already responded to, use followup instead
+            await interaction.followup.send(embed=embed, view=self)
+
+        except discord.errors.NotFound:
+            # If interaction has expired or not found, handle the case
+            await interaction.followup.send("⚠️ The interaction has expired, unable to edit the message.", ephemeral=True)
+
 
     async def on_timeout(self):
         for item in self.children:
