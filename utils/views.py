@@ -276,7 +276,6 @@ class ConfirmRollbackView(discord.ui.View):
         
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message(
                 "❌ Only administrators can undo matches!",
@@ -292,11 +291,18 @@ class ConfirmRollbackView(discord.ui.View):
             custom_id="confirm_undo"
         ))
         
-        await interaction.response.send_message(
-            "⚠️ This will permanently revert the last match! Click to confirm:",
-            view=confirm_view,
-            ephemeral=True
-        )
+        if interaction.response.is_done():
+            await interaction.followup.send(
+                "⚠️ This will permanently revert the last match! Click to confirm:",
+                view=confirm_view,
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "⚠️ This will permanently revert the last match! Click to confirm:",
+                view=confirm_view,
+                ephemeral=True
+            )
         
         # Wait for confirmation
         try:
@@ -311,10 +317,16 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            await confirm_interaction.followup.send(
-                f"✅ {message}" if success else f"❌ {message}",
-                ephemeral=True
-            )
+            if confirm_interaction.response.is_done():
+                await confirm_interaction.followup.send(
+                    f"✅ {message}" if success else f"❌ {message}",
+                    ephemeral=False
+                )
+            else:
+                await confirm_interaction.response.send_message(
+                    f"✅ {message}" if success else f"❌ {message}",
+                    ephemeral=False
+                )
             
             # Disable original button
             for item in self.children:
