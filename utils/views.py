@@ -284,15 +284,24 @@ class ConfirmRollbackView(discord.ui.View):
             )
             return
 
-        confirm_view = ConfirmUndoView(original_view=self)
-            
-        await interaction.response.send_message(
-            "⚠️ This will permanently revert the last match! Click to confirm:",
-            view=confirm_view,
-            ephemeral=True
-        )
-        # Store message reference
-        confirm_view.message = await interaction.original_response()
+        if self.confirmation_active:
+            await interaction.response.send_message("⚠️ A confirmation is already pending!", ephemeral=True)
+            return
+
+        self.confirmation_active = True
+        confirm_view = ConfirmUndoView(self)
+        
+        try:
+            # IMMEDIATE response is crucial
+            await interaction.response.send_message(
+                "⚠️ This will permanently revert the last match!",
+                view=confirm_view,
+                ephemeral=True
+            )
+            confirm_view.message = await interaction.original_response()
+        except Exception as e:
+            self.confirmation_active = False
+            logging.error(f"Initial response failed: {e}")
 class ConfirmUndoView(discord.ui.View):
     def __init__(self, original_view):
         super().__init__(timeout=60)
