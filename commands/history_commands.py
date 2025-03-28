@@ -1,4 +1,5 @@
 import discord
+import os
 from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime

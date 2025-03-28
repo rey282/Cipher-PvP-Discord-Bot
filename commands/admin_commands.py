@@ -1,4 +1,5 @@
 import discord
+import os
 import json
 import asyncio
 from discord import app_commands, ui
