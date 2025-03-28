@@ -293,11 +293,16 @@ class ConfirmRollbackView(discord.ui.View):
 
         await interaction.response.defer()
         
-        await interaction.followup.send(
-            "⚠️ This will permanently revert the last match! Click to confirm:",
-            view=confirm_view,
-            ephemeral=True
-        )
+        try:
+            await interaction.followup.send(
+                "⚠️ This will permanently revert the last match! Click to confirm:",
+                view=confirm_view,
+                ephemeral=True
+            )
+        except discord.errors.NotFound as e:
+            # Handle the scenario where the interaction is no longer valid (expired)
+            print(f"Error: {e}")
+            return
         
         # Wait for confirmation
         try:
