@@ -13,7 +13,7 @@ class EloCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="update-elo", description="Update ELO")
+    @app_commands.command(name="submit-match", description="Update ELO")
     @app_commands.guilds(GUILD_ID)  # Associate the command with a specific guild
     @app_commands.describe(
         blue_player_1="First player",
