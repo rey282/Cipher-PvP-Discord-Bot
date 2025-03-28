@@ -325,20 +325,20 @@ class ConfirmUndoView(discord.ui.View):
         
     @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
     async def confirm_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            # Try to defer immediately - if this fails, the interaction is invalid
-            if not interaction.response.is_done():
-                await interaction.response.defer(ephemeral=True)
-        except discord.NotFound:
-            logging.warning("ConfirmUndoView: Interaction already expired")
-            return
+        if not interaction.response.is_done():
+            try:
+                await interaction.response.defer()
+            except discord.NotFound:
+                print("Interaction expired or already acknowledged.")
+                return
         
         try:
             # Perform the actual rollback
             success, message = rollback_last_match()
             
             # Disable all buttons
-            self.disable_all_items()
+            for item in self.children:
+                item.disabled = True
             self.parent_view.disable_all_items()
             
             # Update messages
