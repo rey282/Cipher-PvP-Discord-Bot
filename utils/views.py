@@ -291,18 +291,11 @@ class ConfirmRollbackView(discord.ui.View):
             custom_id="confirm_undo"
         ))
         
-        if interaction.response.is_done():
-            await interaction.followup.send(
-                "⚠️ This will permanently revert the last match! Click to confirm:",
-                view=confirm_view,
-                ephemeral=True
-            )
-        else:
-            await interaction.response.send_message(
-                "⚠️ This will permanently revert the last match! Click to confirm:",
-                view=confirm_view,
-                ephemeral=True
-            )
+        await interaction.response.send_message(
+            "⚠️ This will permanently revert the last match! Click to confirm:",
+            view=confirm_view,
+            ephemeral=True
+        )
         
         # Wait for confirmation
         try:
