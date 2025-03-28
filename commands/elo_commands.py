@@ -4,7 +4,7 @@ from discord import ui
 from discord import app_commands
 from discord import Interaction
 from discord import Object
-from utils.elo_utils import load_elo_data, save_elo_data
+from utils.db_utils import load_elo_data, save_elo_data
 from utils.views import UpdateEloView, TiebreakerView
 
 GUILD_ID = 1339490588386525266

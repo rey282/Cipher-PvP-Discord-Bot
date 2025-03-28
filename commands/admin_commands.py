@@ -4,7 +4,7 @@ import asyncio
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
-from utils.elo_utils import load_elo_data, save_elo_data
+from utils.db_utils import load_elo_data, save_elo_data
 
 GUILD_ID = 1339490588386525266
 

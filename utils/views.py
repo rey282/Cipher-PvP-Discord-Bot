@@ -4,7 +4,7 @@ from discord import ui
 from discord import Interaction
 from discord import Embed
 from datetime import datetime
-from utils.elo_utils import ( 
+from utils.db_utils import ( 
     save_elo_data, 
     load_elo_data, 
     save_match_history,

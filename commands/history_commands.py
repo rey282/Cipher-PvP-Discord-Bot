@@ -2,7 +2,7 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime
-from utils.elo_utils import load_match_history
+from utils.db_utils import load_match_history
 
 GUILD_ID = 1339490588386525266
 
