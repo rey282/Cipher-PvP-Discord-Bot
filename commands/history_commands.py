@@ -75,7 +75,7 @@ class MatchHistoryView(ui.View):
             for p in match['blue_team']
         )
         embed.add_field(
-            name=f"Blue Team ({match['blue_score']} Points)",
+            name=f"Blue Team ({match['blue_score']} Cycles)",
             value=(
             f"{blue_players}\n"
             f"▸ Cycle Penalty: +{match['blue_penalty']}"
@@ -89,7 +89,7 @@ class MatchHistoryView(ui.View):
             for p in match['red_team']
         )
         embed.add_field(
-            name=f"Red Team ({match['red_score']} Points)",
+            name=f"Red Team ({match['red_score']} Cycles)",
             value=(
             f"{red_players}\n"
             f"▸ Cycle Penalty: +{match['red_penalty']}"
