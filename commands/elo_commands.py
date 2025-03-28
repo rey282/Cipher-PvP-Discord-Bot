@@ -34,6 +34,7 @@ class EloCommands(commands.Cog):
 
     async def update_elo(self, interaction: Interaction, blue_player_1: discord.Member, blue_player_2: discord.Member, red_player_1: discord.Member, red_player_2: discord.Member, blue_player_1_cycle: int, blue_player_2_cycle: int, red_player_1_cycle: int, red_player_2_cycle: int, blue_cycle_penalty: int, red_cycle_penalty: int):
         try:
+            await interaction.response.defer()
             # Validate no duplicate players
             players = [blue_player_1, blue_player_2, red_player_1, red_player_2]
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):

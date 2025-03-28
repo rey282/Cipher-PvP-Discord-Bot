@@ -92,6 +92,7 @@ class MatchmakingCommands(commands.Cog):
         player4="Fourth player"
     )
     async def matchmaking(self, interaction: Interaction, player1: discord.Member, player2: discord.Member, player3: discord.Member, player4: discord.Member):
+        await interaction.response.defer()
         # Validate unique players
         players = [player1, player2, player3, player4]
         if len(set(players)) != 4:
@@ -185,6 +186,7 @@ class MatchmakingCommands(commands.Cog):
         team1_player2: discord.Member = None,
         team2_player2: discord.Member = None
     ):
+        await interaction.response.defer() 
         try:
             # Load ELO data at the start of the command
             elo_data = load_elo_data()

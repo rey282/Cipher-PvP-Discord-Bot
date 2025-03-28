@@ -204,7 +204,3 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
         changes[player_id] = round(individual_change if gain else -individual_change, 2)
 
     return changes
-
-
-# Initialize DB
-initialize_db()

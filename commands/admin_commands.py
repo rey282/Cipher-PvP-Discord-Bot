@@ -176,6 +176,8 @@ class AdminCommands(commands.Cog):
         player: discord.Member,
         new_rating: int
     ):
+    await interaction.response.defer()
+
         """Allows admins to manually adjust a player's ELO rating"""
         try:
             # Validate rating
@@ -231,6 +233,7 @@ class AdminCommands(commands.Cog):
     async def reset_elo(self, interaction: Interaction):
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:
+            await interaction.response.defer()
             elo_data = load_elo_data()
             modal = ResetConfirmModal(interaction, elo_data)
             await interaction.response.send_modal(modal)

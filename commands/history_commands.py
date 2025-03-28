@@ -18,6 +18,7 @@ class HistoryCommands(commands.Cog):
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(player="Player to view history for (leave empty for your own)")
     async def match_history(self, interaction: discord.Interaction, player: discord.Member = None):
+        await interaction.response.defer()
         target_user = player or interaction.user
         history = load_match_history()
         
