@@ -76,7 +76,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         if action == "registered":
             response += f"\n▸ Starting ELO: `200`"
 
-        await interaction.followup.send_message(response, ephemeral=True)
+        await interaction.followup.send(response, ephemeral=True)
 
 
 class MatchmakingCommands(commands.Cog):
