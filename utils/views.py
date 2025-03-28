@@ -274,6 +274,8 @@ class TiebreakerView(ui.View):
 class ConfirmRollbackView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=300)  # 5 minute timeout
+        self.confirmation_active = False
+        self.message = None
         
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -298,47 +300,54 @@ class ConfirmRollbackView(discord.ui.View):
                 view=confirm_view,
                 ephemeral=True
             )
-            confirm_view.message = await interaction.original_response()
+            self.message = await interaction.original_response()
         except Exception as e:
             self.confirmation_active = False
             logging.error(f"Initial response failed: {e}")
+            raise
+
+
 class ConfirmUndoView(discord.ui.View):
     def __init__(self, original_view):
         super().__init__(timeout=60)
         self.original_view = original_view
+        self.message = None
         
     @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
     async def confirm_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Defer first to prevent token expiry
         await interaction.response.defer(ephemeral=True)
         
-        # Perform rollback
-        success, message = rollback_last_match()
-        
-        # Disable all buttons
-        self.disable_all_items()
-        self.original_view.disable_all_items()
-        
         try:
-            # Edit confirmation message
-            await interaction.edit_original_response(
-                content=f"✅ {message}" if success else f"❌ {message}",
-                view=self
-            )
+            # Perform the actual rollback
+            success, message = rollback_last_match()
             
-            # Edit original message if available
-            if hasattr(self.original_view, 'message'):
-                await self.original_view.message.edit(view=self.original_view)
+            # Disable all buttons
+            self.disable_all_items()
+            self.parent_view.disable_all_items()
+            
+            # Update messages
+            try:
+                await interaction.edit_original_response(
+                    content=f"✅ {message}" if success else f"❌ {message}",
+                    view=self
+                )
+                if self.parent_view.message:
+                    await self.parent_view.message.edit(view=self.parent_view)
+            except discord.NotFound:
+                pass  # Message was deleted
                 
-        except discord.NotFound:
-            # Message was deleted, nothing we can do
-            pass
         except Exception as e:
-            logging.error(f"Failed to update messages: {e}")
+            logging.error(f"Rollback failed: {e}")
+            await interaction.followup.send("❌ An error occurred during rollback!", ephemeral=True)
+        finally:
+            self.parent_view.confirmation_active = False
 
     async def on_timeout(self):
         self.disable_all_items()
         try:
-            await self.message.edit(view=self)
-        except:
+            if self.message:
+                await self.message.edit(view=self)
+        except discord.NotFound:
             pass
+        self.parent_view.confirmation_active = False
