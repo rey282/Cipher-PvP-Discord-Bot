@@ -63,7 +63,7 @@ class MatchHistoryView(ui.View):
 
     async def send_initial_message(self, interaction):
         embed = self.create_embed()
-        await interaction.response.send_message(embed=embed, view=self)
+        await interaction.response.followup.send(embed=embed, view=self)
         self.message = await interaction.original_response()
 
     def create_embed(self):

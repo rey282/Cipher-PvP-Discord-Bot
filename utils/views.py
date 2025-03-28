@@ -164,13 +164,16 @@ class TiebreakerView(ui.View):
 
     @ui.button(label="Blue Team Won", style=discord.ButtonStyle.blurple)
     async def red_side_pick(self, interaction: Interaction, button: ui.Button):
+        await interaction.response.defer()
         await self.handle_tiebreaker(interaction, winner_team=self.blue_team, loser_team=self.red_team)   
 
     @ui.button(label="Red Team Won", style=discord.ButtonStyle.red)
     async def blue_side_pick(self, interaction: Interaction, button: ui.Button):
+        await interaction.response.defer()
         await self.handle_tiebreaker(interaction, winner_team=self.red_team, loser_team=self.blue_team)
 
     async def handle_tiebreaker(self, interaction: Interaction, winner_team, loser_team):
+        await interaction.response.defer()
         processed_ids = set()
         self.elo_gains = {}
 
@@ -278,6 +281,8 @@ class ConfirmRollbackView(discord.ui.View):
                 ephemeral=True
             )
             return
+
+        await interaction.response.defer()
             
         # Create a simple confirmation message instead of modal
         confirm_view = discord.ui.View(timeout=60)
@@ -287,7 +292,7 @@ class ConfirmRollbackView(discord.ui.View):
             custom_id="confirm_undo"
         ))
         
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "⚠️ This will permanently revert the last match! Click to confirm:",
             view=confirm_view,
             ephemeral=True
