@@ -233,7 +233,6 @@ class AdminCommands(commands.Cog):
     async def reset_elo(self, interaction: Interaction):
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:
-            await interaction.response.defer()
             elo_data = load_elo_data()
             modal = ResetConfirmModal(interaction, elo_data)
             await interaction.send_modal(modal)

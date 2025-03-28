@@ -276,6 +276,7 @@ class ConfirmRollbackView(discord.ui.View):
         
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message(
                 "❌ Only administrators can undo matches!",
