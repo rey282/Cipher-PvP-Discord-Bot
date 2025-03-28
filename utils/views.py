@@ -165,12 +165,22 @@ class TiebreakerView(ui.View):
 
     @ui.button(label="Blue Team Won", style=discord.ButtonStyle.blurple)
     async def red_side_pick(self, interaction: Interaction, button: ui.Button):
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            # Interaction expired, maybe log or ignore
+            print("Interaction expired.")
+            return
         await self.handle_tiebreaker(interaction, winner_team=self.blue_team, loser_team=self.red_team)   
 
     @ui.button(label="Red Team Won", style=discord.ButtonStyle.red)
     async def blue_side_pick(self, interaction: Interaction, button: ui.Button):
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            # Interaction expired, maybe log or ignore
+            print("Interaction expired.")
+            return
         await self.handle_tiebreaker(interaction, winner_team=self.red_team, loser_team=self.blue_team)
 
     async def handle_tiebreaker(self, interaction: Interaction, winner_team, loser_team):
@@ -308,9 +318,9 @@ class ConfirmRollbackView(discord.ui.View):
 
 
 class ConfirmUndoView(discord.ui.View):
-    def __init__(self, original_view):
-        super().__init__(timeout=60)
-        self.original_view = original_view
+    def __init__(self, parent_view: discord.ui.View):
+        super().__init__(timeout=300)
+        self.parent_view = parent_view
         self.message = None
         
     @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
