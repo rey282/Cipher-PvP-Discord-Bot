@@ -38,19 +38,19 @@ class EloCommands(commands.Cog):
             # Validate no duplicate players
             players = [blue_player_1, blue_player_2, red_player_1, red_player_2]
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):
-                await interaction.response.send_message("What are we? Naruto from Wish?", ephemeral=False)
+                await interaction.followup.send("What are we? Naruto from Wish?", ephemeral=False)
                 return
             
             # Validate scores (0-15)
             blue_scores = [blue_player_1_cycle, blue_player_2_cycle]
             red_scores = [red_player_1_cycle, red_player_2_cycle]
             if any(score < 0 or score > 15 for score in blue_scores + red_scores):
-                await interaction.response.send_message("Cmon, you are not that stupid", ephemeral=False)
+                await interaction.followup.send("Cmon, you are not that stupid", ephemeral=False)
                 return
 
             # Validate cycle penalties (non-negative)
             if blue_cycle_penalty < 0 or red_cycle_penalty < 0:
-                await interaction.response.send_message("Why would you put a negative cycle penalty", ephemeral=False)
+                await interaction.followup.send("Why would you put a negative cycle penalty", ephemeral=False)
                 return
 
             # Calculate total scores for each team (excluding penalties)
@@ -116,11 +116,11 @@ class EloCommands(commands.Cog):
             message_content = f"{user_mentions}\nDoes this look correct?"
 
             # Send the embed with buttons
-            await interaction.response.send_message(content=message_content, embed=embed, view=view)
+            await interaction.followup.send(content=message_content, embed=embed, view=view)
 
         except Exception as e:
             print(f"Error in update-elo command: {e}")
-            await interaction.response.send_message("An error occurred while processing the command.", ephemeral=True)
+            await interaction.followup.send("An error occurred while processing the command.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(EloCommands(bot))

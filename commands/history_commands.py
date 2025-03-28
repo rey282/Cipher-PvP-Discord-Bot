@@ -40,7 +40,7 @@ class HistoryCommands(commands.Cog):
                         break
         
         if not user_matches:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"❌ No match history found for {target_user.display_name}!",
                 ephemeral=False
             )

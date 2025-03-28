@@ -97,7 +97,7 @@ class MatchmakingCommands(commands.Cog):
         # Validate unique players
         players = [player1, player2, player3, player4]
         if len(set(players)) != 4:
-            await interaction.response.send_message("❌ All players must be unique!", ephemeral=True)
+            await interaction.followup.send("❌ All players must be unique!", ephemeral=True)
             return
 
         # Shuffle and split teams
@@ -107,7 +107,7 @@ class MatchmakingCommands(commands.Cog):
         embed = discord.Embed(title="Randomized Teams", color=discord.Color.blue())
         embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
         embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="register", description="Register or update your player data")
     @app_commands.guilds(GUILD_ID)
@@ -242,7 +242,7 @@ class MatchmakingCommands(commands.Cog):
                     value="It's a tie! No pre-bans for either team."+ f"\n\n*Total point difference: {point_diff:.0f}*",
                     inline=False
                 )
-                await interaction.response.send_message(embed=embed)
+                await interaction.followup.send(embed=embed)
                 return  
             
             # Calculate bans
@@ -292,7 +292,7 @@ class MatchmakingCommands(commands.Cog):
                 inline=False
             )
             
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
 
         except Exception as e:
             await interaction.response.send_message(

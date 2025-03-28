@@ -219,7 +219,7 @@ class AdminCommands(commands.Cog):
             embed.add_field(name="New Rating", value=str(new_rating), inline=True)
             embed.set_footer(text=f"Set by {interaction.user.display_name}")
 
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
 
         except Exception as e:
             await interaction.response.send_message(
@@ -239,7 +239,7 @@ class AdminCommands(commands.Cog):
             await interaction.response.send_modal(modal)
            
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(AdminCommands(bot))
