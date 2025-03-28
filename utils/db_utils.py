@@ -2,6 +2,7 @@ import os
 import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
 from datetime import datetime
 
 DATABASE_URL = os.getenv("DATABASE_URL")
