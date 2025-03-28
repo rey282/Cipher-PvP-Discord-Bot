@@ -173,7 +173,8 @@ class TiebreakerView(ui.View):
         await self.handle_tiebreaker(interaction, winner_team=self.red_team, loser_team=self.blue_team)
 
     async def handle_tiebreaker(self, interaction: Interaction, winner_team, loser_team):
-        await interaction.response.defer()
+        if not interaction.response.is_done():
+            await interaction.response.defer()
         processed_ids = set()
         self.elo_gains = {}
 
