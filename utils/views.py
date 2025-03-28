@@ -290,8 +290,10 @@ class ConfirmRollbackView(discord.ui.View):
             label="CONFIRM UNDO",
             custom_id="confirm_undo"
         ))
+
+        await interaction.response.defer()
         
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "⚠️ This will permanently revert the last match! Click to confirm:",
             view=confirm_view,
             ephemeral=True
@@ -310,19 +312,11 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            if not confirm_interaction.response.is_done():
-                # Send the response if not done yet
-                await confirm_interaction.response.send_message(
-                    f"✅ {message}" if success else f"❌ {message}",
-                    ephemeral=False
-                )
-            else:
-                # Use followup if the response has already been done
-                await confirm_interaction.followup.send(
-                    f"✅ {message}" if success else f"❌ {message}",
-                    ephemeral=False
-                )
-            
+            await confirm_interaction.response.send_message(
+                f"✅ {message}" if success else f"❌ {message}",
+                ephemeral=False
+            )
+                
             # Disable original button
             for item in self.children:
                 item.disabled = True
