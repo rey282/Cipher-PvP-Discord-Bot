@@ -66,6 +66,8 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
 
         save_elo_data(elo_data)
 
+        await interaction.response.defer()
+
         # Response message
         response = f"✅ Successfully {action} your profile!\n"
         if uid_input:
