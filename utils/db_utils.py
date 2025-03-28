@@ -82,9 +82,9 @@ def save_elo_data(data):
 def load_match_history():
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT elo_gains FROM matches ORDER BY match_id DESC")
+        cursor.execute("SELECT raw_data FROM matches ORDER BY match_id DESC")
         rows = cursor.fetchall()
-        return [row['elo_gains'] for row in rows]
+        return [row['raw_data'] for row in rows if isinstance(row['raw_data'], dict)]
 
 
 def save_match_history(history):
