@@ -310,13 +310,15 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            if confirm_interaction.response.is_done():
-                await confirm_interaction.followup.send(
+            if not confirm_interaction.response.is_done():
+                # Send the response if not done yet
+                await confirm_interaction.response.send_message(
                     f"✅ {message}" if success else f"❌ {message}",
                     ephemeral=False
                 )
             else:
-                await confirm_interaction.response.send_message(
+                # Use followup if the response has already been done
+                await confirm_interaction.followup.send(
                     f"✅ {message}" if success else f"❌ {message}",
                     ephemeral=False
                 )
