@@ -283,63 +283,53 @@ class ConfirmRollbackView(discord.ui.View):
                 ephemeral=True
             )
             return
-            
-        # Create a simple confirmation message instead of modal
-        confirm_view = discord.ui.View(timeout=60)
-        confirm_view.add_item(discord.ui.Button(
-            style=discord.ButtonStyle.danger,
-            label="CONFIRM UNDO",
-            custom_id="confirm_undo"
-        ))
 
-        await interaction.response.defer()
+        confirm_view = ConfirmUndoView(original_view=self)
+            
+        await interaction.response.send_message(
+            "⚠️ This will permanently revert the last match! Click to confirm:",
+            view=confirm_view,
+            ephemeral=True
+        )
+        # Store message reference
+        confirm_view.message = await interaction.original_response()
+class ConfirmUndoView(discord.ui.View):
+    def __init__(self, original_view):
+        super().__init__(timeout=60)
+        self.original_view = original_view
+        
+    @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
+    async def confirm_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Defer first to prevent token expiry
+        await interaction.response.defer(ephemeral=True)
+        
+        # Perform rollback
+        success, message = rollback_last_match()
+        
+        # Disable all buttons
+        self.disable_all_items()
+        self.original_view.disable_all_items()
         
         try:
-            await interaction.followup.send(
-                "⚠️ This will permanently revert the last match! Click to confirm:",
-                view=confirm_view,
-                ephemeral=True
-            )
-        except discord.errors.NotFound as e:
-            # Log if the interaction failed due to 'Not Found'
-            logging.error(f"Error in sending follow-up: {e}")
-            return
-            
-        # Wait for confirmation
-        try:
-            confirm_interaction = await interaction.client.wait_for(
-                "interaction",
-                check=lambda i: (
-                    i.data.get('custom_id') == "confirm_undo" and 
-                    i.user.id == interaction.user.id
-                ),
-                timeout=60
+            # Edit confirmation message
+            await interaction.edit_original_response(
+                content=f"✅ {message}" if success else f"❌ {message}",
+                view=self
             )
             
-            # Perform rollback
-            success, message = rollback_last_match()
-            try:
-                # Ensure follow-up message is sent after the interaction response
-                if confirm_interaction.response.is_done():
-                    await confirm_interaction.followup.send(
-                        f"✅ {message}" if success else f"❌ {message}",
-                        ephemeral=False
-                    )
-                else:
-                    await confirm_interaction.response.send_message(
-                        f"✅ {message}" if success else f"❌ {message}",
-                        ephemeral=False
-                    )
-            except Exception as e:
-                logging.error(f"Failed to send follow-up in confirmation: {e}")
+            # Edit original message if available
+            if hasattr(self.original_view, 'message'):
+                await self.original_view.message.edit(view=self.original_view)
                 
-            # Disable original button
-            for item in self.children:
-                item.disabled = True
-            await interaction.message.edit(view=self)
-            
-        except asyncio.TimeoutError:
-            await interaction.followup.send(
-                "Undo confirmation timed out.",
-                ephemeral=True
-            )
+        except discord.NotFound:
+            # Message was deleted, nothing we can do
+            pass
+        except Exception as e:
+            logging.error(f"Failed to update messages: {e}")
+
+    async def on_timeout(self):
+        self.disable_all_items()
+        try:
+            await self.message.edit(view=self)
+        except:
+            pass
