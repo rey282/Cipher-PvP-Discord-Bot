@@ -312,7 +312,7 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            await confirm_interaction.response.send_message(
+            await confirm_interaction.followup.send(
                 f"✅ {message}" if success else f"❌ {message}",
                 ephemeral=False
             )
