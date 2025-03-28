@@ -1,0 +1,182 @@
+{
+    "371513247641370625": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "805178244",
+        "points": 2107,
+        "mirror_id": "5000"
+    },
+    "663145925807702029": {
+        "elo": 222.0,
+        "win_rate": 1.0,
+        "games_played": 1,
+        "uid": "804246777",
+        "mirror_id": "6798e5c3-bab0-45e2-b952-08ef1b66c918",
+        "points": 1857
+    },
+    "964614643496648874": {
+        "elo": 183.0,
+        "win_rate": 0.0,
+        "games_played": 1,
+        "uid": "602750758",
+        "mirror_id": "ba277168-ba37-4fdf-a49e-d06bb6db0051",
+        "points": 2515
+    },
+    "693052597812330536": {
+        "elo": 220.0,
+        "win_rate": 1.0,
+        "games_played": 1,
+        "uid": "702448702",
+        "mirror_id": "8797de9c-db17-47e3-867d-e29e92ccfd49",
+        "points": 2169
+    },
+    "630987324213166080": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "802035186",
+        "mirror_id": null,
+        "points": 0
+    },
+    "313955497604677633": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "825957150",
+        "mirror_id": null,
+        "points": 0
+    },
+    "761071973899173928": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "804927790",
+        "mirror_id": null,
+        "points": 0
+    },
+    "848107643981660190": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "801747671",
+        "mirror_id": null,
+        "points": 0
+    },
+    "1353656004252008471": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "Not Registered",
+        "mirror_id": null,
+        "points": 0
+    },
+    "562125941028028429": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "824824017",
+        "mirror_id": "0ff5e62c-861d-4494-8f86-448c5f0cad59",
+        "points": 1456
+    },
+    "694649972494434325": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "700340883",
+        "mirror_id": "b41465e0-26c8-4bf5-8575-024072ae5568",
+        "points": 0
+    },
+    "491319225923665921": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "704004008",
+        "mirror_id": null,
+        "points": 0
+    },
+    "249042315736252417": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "803785281",
+        "mirror_id": null,
+        "points": 1360
+    },
+    "381948397591986220": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "824814277",
+        "mirror_id": null,
+        "points": 0
+    },
+    "119686847826886657": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "617417018",
+        "mirror_id": "4cfd09fd-b47f-4cae-a588-91e41fba69af",
+        "points": 1678
+    },
+    "841509164673269792": {
+        "elo": 181.42,
+        "win_rate": 0.0,
+        "games_played": 1,
+        "uid": "600554560",
+        "mirror_id": "4a7a5be2-395a-4cdb-a421-9c5dfc041ad3",
+        "points": 2466
+    },
+    "255575003372716033": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "Not Registered",
+        "mirror_id": null,
+        "points": 0
+    },
+    "403204498744672256": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "804848387",
+        "mirror_id": "10248259-cff9-4e6b-972c-4588c64ab3fd",
+        "points": 0
+    },
+    "211531474002903040": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "600056313",
+        "mirror_id": "",
+        "points": 0
+    },
+    "471200447722553366": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "800012375",
+        "mirror_id": "354a3ee6-4ec4-423c-81db-0653a99cec15",
+        "points": 1135
+    },
+    "115890480813703175": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "Not Registered"
+    },
+    "235148962103951360": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "Not Registered"
+    },
+    "355080460340297749": {
+        "elo": 200,
+        "win_rate": 0.0,
+        "games_played": 0,
+        "uid": "Not Registered",
+        "mirror_id": "Not Set",
+        "points": 0
+    }
+}
