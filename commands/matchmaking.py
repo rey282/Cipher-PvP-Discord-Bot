@@ -5,8 +5,11 @@ from discord import app_commands
 from discord import Interaction
 from utils.db_utils import load_elo_data, save_elo_data
 from utils.rank_utils import get_rank
+from dotenv import load_dotenv
 
-GUILD_ID = 1339490588386525266
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
     uid = discord.ui.TextInput(label="UID", required=False, placeholder="9-digit UID")

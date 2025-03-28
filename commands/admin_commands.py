@@ -5,8 +5,11 @@ from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
 from utils.db_utils import load_elo_data, save_elo_data
+from dotenv import load_dotenv
 
-GUILD_ID = 1339490588386525266
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class ResetConfirmModal(discord.ui.Modal, title="Confirm ELO Reset"):
     confirmation = discord.ui.TextInput(

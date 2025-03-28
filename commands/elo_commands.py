@@ -6,8 +6,11 @@ from discord import Interaction
 from discord import Object
 from utils.db_utils import load_elo_data, save_elo_data
 from utils.views import UpdateEloView, TiebreakerView
+from dotenv import load_dotenv
 
-GUILD_ID = 1339490588386525266
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class EloCommands(commands.Cog):
     def __init__(self, bot):

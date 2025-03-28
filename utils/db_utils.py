@@ -5,6 +5,8 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from datetime import datetime
 
+load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 

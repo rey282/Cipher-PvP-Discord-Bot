@@ -3,8 +3,11 @@ from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime
 from utils.db_utils import load_match_history
+from dotenv import load_dotenv
 
-GUILD_ID = 1339490588386525266
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class HistoryCommands(commands.Cog):
     def __init__(self, bot):
