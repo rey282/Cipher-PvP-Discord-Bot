@@ -28,14 +28,14 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
 
         # Validate UID format if provided
         if uid_input and (not uid_input.isdigit() or len(uid_input) != 9):
-            await interaction.response.send_message("❌ UID must be 9 numeric characters!", ephemeral=True)
+            await interaction.followup.send("❌ UID must be 9 numeric characters!", ephemeral=True)
             return
 
         # Convert points
         try:
             points = int(points_input) if points_input else 0
         except ValueError:
-            await interaction.response.send_message("❌ Total cost must be a valid number.", ephemeral=True)
+            await interaction.followup.send("❌ Total cost must be a valid number.", ephemeral=True)
             return
 
         # Case 1: Existing player
@@ -51,7 +51,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         # Case 2: New registration
         else:
             if not uid_input:
-                await interaction.response.send_message("❌ UID is required for first-time registration!", ephemeral=True)
+                await interaction.followup.send("❌ UID is required for first-time registration!", ephemeral=True)
                 return
 
             elo_data[player_id] = {
@@ -77,7 +77,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         if action == "registered":
             response += f"\n▸ Starting ELO: `200`"
 
-        await interaction.response.send_message(response, ephemeral=True)
+        await interaction.followup.send(response, ephemeral=True)
 
 
 class MatchmakingCommands(commands.Cog):
