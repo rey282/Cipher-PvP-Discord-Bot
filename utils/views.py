@@ -291,8 +291,8 @@ class ConfirmRollbackView(discord.ui.View):
             return
 
         self.confirmation_active = True
-        confirm_view = ConfirmUndoView(self)
-        
+        confirm_view = ConfirmUndoView(parent_view=self)
+
         try:
             # IMMEDIATE response is crucial
             await interaction.response.send_message(
@@ -300,7 +300,7 @@ class ConfirmRollbackView(discord.ui.View):
                 view=confirm_view,
                 ephemeral=True
             )
-            self.message = await interaction.original_response()
+            confirm_view.message = await interaction.original_response()
         except Exception as e:
             self.confirmation_active = False
             logging.error(f"Initial response failed: {e}")
@@ -315,8 +315,13 @@ class ConfirmUndoView(discord.ui.View):
         
     @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
     async def confirm_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Defer first to prevent token expiry
-        await interaction.response.defer(ephemeral=True)
+        try:
+            # Try to defer immediately - if this fails, the interaction is invalid
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+        except discord.NotFound:
+            logging.warning("ConfirmUndoView: Interaction already expired")
+            return
         
         try:
             # Perform the actual rollback
