@@ -312,10 +312,11 @@ class ConfirmRollbackView(discord.ui.View):
             
             # Perform rollback
             success, message = rollback_last_match()
-            await confirm_interaction.followup.send(
-                f"✅ {message}" if success else f"❌ {message}",
-                ephemeral=False
-            )
+            if confirm_interaction.response.is_done():
+                await confirm_interaction.followup.send(  # Corrected here: use followup.send instead of response.send_message
+                    f"✅ {message}" if success else f"❌ {message}",
+                    ephemeral=False
+                )
                 
             # Disable original button
             for item in self.children:
