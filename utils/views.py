@@ -340,10 +340,13 @@ class ConfirmUndoView(discord.ui.View):
             # Perform the actual rollback
             success, message = rollback_last_match()
             
-            # Disable all buttons
+            # Disable all buttons in this view
             for item in self.children:
                 item.disabled = True
-            self.parent_view.disable_all_items()
+
+            # Disable all buttons in parent_view manually
+            for item in self.parent_view.children:
+                item.disabled = True
             
             # Update messages
             try:
@@ -363,7 +366,8 @@ class ConfirmUndoView(discord.ui.View):
             self.parent_view.confirmation_active = False
 
     async def on_timeout(self):
-        self.disable_all_items()
+        for item in self.children:
+            item.disabled = True
         try:
             if self.message:
                 await self.message.edit(view=self)
