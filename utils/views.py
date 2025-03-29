@@ -356,8 +356,18 @@ class ConfirmUndoView(discord.ui.View):
                 )
                 if self.parent_view.message:
                     await self.parent_view.message.edit(view=self.parent_view)
+
+                await interaction.channel.send(
+                    f"✅ {interaction.user.mention} rolled back the last match."
+                    if success else f"❌ {interaction.user.mention} attempted a rollback, but it failed: `{message}`"
+                )
+
+                try:
+                    await interaction.delete_original_response()
+                except discord.NotFound:
+                    pass
             except discord.NotFound:
-                pass  # Message was deleted
+                pass 
                 
         except Exception as e:
             logging.error(f"Rollback failed: {e}")
