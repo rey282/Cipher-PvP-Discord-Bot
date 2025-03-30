@@ -92,5 +92,5 @@ async def update_rank_role(
             )
         else
             print(f"📭 Rank changed but no announcement made for {member.display_name}")
-        except Exception as e:
-            print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
+    except Exception as e:
+        print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
