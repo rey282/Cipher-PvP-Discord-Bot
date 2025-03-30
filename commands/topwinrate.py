@@ -52,7 +52,7 @@ class TopWinRate(commands.Cog):
                 except Exception:
                     name = f"<@{discord_id}>"
                 embed.add_field(
-                    name=f"{i}. {name}>",
+                    name=f"{i}. {name}",
                     value=f"Win Rate: `{win_pct}%` over `{games_played}` trials",
                     inline=False
                 )
