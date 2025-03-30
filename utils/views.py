@@ -11,7 +11,8 @@ from utils.db_utils import (
     save_match_history,
     rollback_last_match,
     distribute_team_elo_change,
-    calculate_team_elo_change 
+    calculate_team_elo_change,
+    update_rank_role
 )
 logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
@@ -128,6 +129,12 @@ class UpdateEloView(ui.View):
         }
 
         save_match_history(match_data)
+
+        for player_id, change in self.elo_gains.items():
+            member = interaction.guild.get_member(int(player_id))
+            if member:
+                new_elo = self.elo_data[str(player_id)]["elo"]
+                await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
 
         embed = discord.Embed(
             title="Threads of Victory",
@@ -272,6 +279,12 @@ class TiebreakerView(ui.View):
 
         save_match_history(match_data)
 
+        for player_id, change in self.elo_gains.items():
+            member = interaction.guild.get_member(int(player_id))
+            if member:
+                new_elo = self.elo_data[str(player_id)]["elo"]
+                await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
+
         embed = Embed(
             title="Tiebreaker Results: Fate Has Decided",
             color=discord.Color.blue() if winner_team == self.blue_team else discord.Color.red()
@@ -379,6 +392,12 @@ class ConfirmUndoView(discord.ui.View):
         try:
             # Perform the actual rollback
             success, message = rollback_last_match()
+
+            for player_id, change in self.elo_gains.items():
+                member = interaction.guild.get_member(int(player_id))
+                if member:
+                    new_elo = self.elo_data[str(player_id)]["elo"]
+                    await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
             
             # Disable all buttons in this view
             for item in self.children:
