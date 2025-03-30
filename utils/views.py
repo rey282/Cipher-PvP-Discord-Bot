@@ -5,14 +5,14 @@ from discord import ui
 from discord import Interaction
 from discord import Embed
 from datetime import datetime
+from utils.rank_utils import update_rank_role
 from utils.db_utils import ( 
     save_elo_data, 
     load_elo_data, 
     save_match_history,
     rollback_last_match,
     distribute_team_elo_change,
-    calculate_team_elo_change,
-    update_rank_role
+    calculate_team_elo_change 
 )
 logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
