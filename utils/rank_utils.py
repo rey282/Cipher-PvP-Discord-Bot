@@ -20,8 +20,13 @@ def get_rank(elo_score, player_id=None, elo_data=None):
     else:
         return "Aeon"
 
-async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict, channel: discord.TextChannel = None, announce_demotions : bool = False):
-    guild = member.guild
+async def update_rank_role(
+    member: discord.Member,
+    new_elo: int,
+    elo_data: dict,
+    channel: discord.TextChannel = None,
+    announce_demotions: bool = False
+):
     old_rank = get_rank(elo_data.get(str(member.id), {}).get("elo", 200), player_id=member.id, elo_data=elo_data)
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
@@ -39,28 +44,36 @@ async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict,
         old_index = rank_order.index(old_rank)
         new_index = rank_order.index(new_rank)
     except ValueError:
-        print(f"⚠️ Could not determine rank order for {member.display_name}")
+        print(f"⚠️ Could not determine rank order for {member.display_name}: {old_rank} -> {new_rank}")
         return
 
     rank_role = get(guild.roles, name=new_rank)
     if not rank_role:
-        print(f"⚠️ Role '{new_rank}' not found.")
+        print(f"⚠️ Role '{new_rank}' not found in guild {guild.name}")
+        return
+
+    has_rank_role = any(role.name == new_rank for role in member.roles)
+    if old_rank == new_rank and has_rank_role:
+        return  # No change needed
+
+    # Check bot permissions
+    bot_member = guild.me
+    if not bot_member.guild_permissions.manage_roles or rank_role.position >= bot_member.top_role.position:
+        print(f"❌ Missing permission to assign role '{new_rank}' to {member.display_name}")
         return
 
     roles_to_remove = [role for role in member.roles if role.name in rank_order]
     await member.remove_roles(*roles_to_remove)
     await member.add_roles(rank_role)
 
-    #Send promotion message
+    # 🎉 Send rank change announcement
     if channel:
         if new_index > old_index:
-            # Promotion
             await channel.send(
                 f"{member.mention} has awakened as an **{new_rank}**!\n"
                 f"The threads of fate weave ever forward..."
             )
         elif announce_demotions and new_index < old_index:
-            # Demotion (only if enabled)
             await channel.send(
                 f"{member.mention} has returned to the path of **{new_rank}**.\n"
                 f"The threads shift softly... but they never break."
