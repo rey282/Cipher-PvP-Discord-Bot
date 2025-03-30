@@ -47,7 +47,7 @@ async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict,
         print(f"⚠️ Role '{new_rank}' not found.")
         return
 
-    roles_to_remove = [role for role in member.roles if role.name in rank_names]
+    roles_to_remove = [role for role in member.roles if role.name in rank_order]
     await member.remove_roles(*roles_to_remove)
     await member.add_roles(rank_role)
 
