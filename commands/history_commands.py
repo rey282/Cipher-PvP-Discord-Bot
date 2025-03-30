@@ -14,7 +14,7 @@ class HistoryCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="match-history", description="View match history for a player")
+    @app_commands.command(name="match-history", description="Let me gently reveal the echoes of a player's past battles.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(player="Player to view history for (leave empty for your own)")
     async def match_history(self, interaction: discord.Interaction, player: discord.Member = None):
@@ -41,7 +41,7 @@ class HistoryCommands(commands.Cog):
         
         if not user_matches:
             await interaction.followup.send(
-                f"❌ No match history found for {target_user.display_name}!",
+                f"Ah… I looked, but I couldn't find any match history for {target_user.display_name}.\nMaybe their thread has yet to be woven?",
                 ephemeral=False
             )
             return
@@ -69,8 +69,8 @@ class MatchHistoryView(ui.View):
     def create_embed(self):
         match = self.matches[self.current_index]
         embed = discord.Embed(
-            title=f"Match History for {self.user.display_name}",
-            description=f"Match played on: {match['date']}",
+            title=f"Threads of Battle for {self.user.display_name}",
+            description=f"This memory was woven on: {match['date']}",
             color=discord.Color.blue()
         )
         
@@ -103,7 +103,7 @@ class MatchHistoryView(ui.View):
         )
         
         # Footer with match counter
-        embed.set_footer(text=f"Match {self.current_index + 1}/{len(self.matches)}")
+        embed.set_footer(text=f"Memory {self.current_index + 1} of {len(self.matches)} — preserved with care")
         return embed
 
     @ui.button(emoji="⬅️", style=discord.ButtonStyle.gray)
@@ -125,7 +125,7 @@ class MatchHistoryView(ui.View):
 
         except discord.errors.NotFound:
             # If interaction has expired or not found, handle the case
-            await interaction.followup.send("⚠️ The interaction has expired, unable to edit the message.", ephemeral=True)
+            await interaction.followup.send("The moment has slipped through time’s fingers... I can no longer alter that message.\nShall we begin anew?", ephemeral=True)
 
 
     @ui.button(emoji="➡️", style=discord.ButtonStyle.gray)
@@ -147,7 +147,7 @@ class MatchHistoryView(ui.View):
 
         except discord.errors.NotFound:
             # If interaction has expired or not found, handle the case
-            await interaction.followup.send("⚠️ The interaction has expired, unable to edit the message.", ephemeral=True)
+            await interaction.followup.send("The moment has slipped through time’s fingers... I can no longer alter that message.\nShall we begin anew?", ephemeral=True)
 
 
     async def on_timeout(self):

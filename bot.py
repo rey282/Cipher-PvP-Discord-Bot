@@ -4,6 +4,7 @@ from discord import app_commands
 from dotenv import load_dotenv
 from commands.admin_commands import AdminCommands
 import os
+from utils.db_utils import initialize_db
 
 # Load environment variables
 load_dotenv()
@@ -13,7 +14,7 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 # Bot setup
 intents = discord.Intents.default()
 intents.message_content = True
-client = commands.Bot(command_prefix="!", intents=intents)
+client = commands.Bot(command_prefix="c!", intents=intents)
 
 @client.event
 async def on_ready():

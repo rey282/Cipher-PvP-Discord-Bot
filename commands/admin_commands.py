@@ -12,9 +12,9 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
-class ResetConfirmModal(discord.ui.Modal, title="Confirm ELO Reset"):
+class ResetConfirmModal(discord.ui.Modal, title="Are you certain you wish to reset all ELO? If so… I shall carry out your will, with care."):
     confirmation = discord.ui.TextInput(
-        label="Type 'CONFIRM' to reset ELO",
+        label="To begin anew… please type ‘CONFIRM’. I shall reset the ELO, and carry the burden quietly.",
         placeholder="Type here...",
         required=True
     )
@@ -26,7 +26,7 @@ class ResetConfirmModal(discord.ui.Modal, title="Confirm ELO Reset"):
 
     async def on_submit(self, interaction: Interaction):
         if self.confirmation.value.strip().upper() != "CONFIRM":
-            await interaction.response.send_message("❌ Reset cancelled. Incorrect confirmation.", ephemeral=True)
+            await interaction.response.send_message("Oh… I’m sorry, but the confirmation wasn’t quite right. The reset has been gently cancelled… for now.", ephemeral=True)
             return
         
         try:
@@ -39,9 +39,9 @@ class ResetConfirmModal(discord.ui.Modal, title="Confirm ELO Reset"):
             # Save changes
             save_elo_data(self.elo_data)
 
-            await interaction.response.send_message("✅ All player stats have been reset for the new season.")
+            await interaction.response.send_message("It’s done… All player stats have been reset. A new season begins — may your journey be filled with grace.")
         except Exception as e:
-            await interaction.response.send_message(f"❌ Failed to reset ratings: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"The thread frayed… I couldn’t reset the ratings: {str(e)}. Forgive me. We can try again… when fate allows.", ephemeral=True)
 
 
 
@@ -111,9 +111,9 @@ class AdminCommands(commands.Cog):
         )[:10]
 
         embed = discord.Embed(
-            title="🏆 Leaderboard",
-            color=discord.Color.gold(),
-            description="Top 10 players by ELO rating"
+            title="💮 Threads of the Strongest",
+            color=discord.Color.purple(),
+            description="The top 10 players... whose threads shine brightest in this season’s weave."
         )
 
         for rank, (player_id, data) in enumerate(top_players, 1):
@@ -121,18 +121,20 @@ class AdminCommands(commands.Cog):
                 player = await self.bot.fetch_user(int(player_id))
                 name = player.display_name
             except:
-                name = f"Unknown Player ({player_id})"
+                name = f"Unknown Soul ({player_id})"
 
             embed.add_field(
                 name=f"{rank}. {name}",
                 value=(
-                    f"▸ ELO: {int(data.get('elo', 200))}\n"
-                    f"▸ Win Rate: {data.get('win_rate', 0.0) * 100:.1f}%\n"
-                    f"▸ Matches: {data.get('games_played', 0)}\n"
-                    f"▸ Points: {data.get('points', 0)}"
+                    f"✦ ELO Woven: {int(data.get('elo', 200))}\n"
+                    f"✦ Grace Shown: {data.get('win_rate', 0.0) * 100:.1f}%\n"
+                    f"✦ Trials Faced: {data.get('games_played', 0)}\n"
+                    f"✦ Mirror Points: {data.get('points', 0)}"
                 ),
                 inline=False
             )
+        embed.set_footer(text="The loom watches in silence... Your journey is far from over.")
+            
 
         return embed
 
@@ -182,7 +184,7 @@ class AdminCommands(commands.Cog):
         try:
             # Validate rating
             if new_rating < 0:
-                await interaction.response.send_message("❌ Rating cannot be negative", ephemeral=True)
+                await interaction.response.send_message("A gentle warning… a rating cannot slip beneath the surface. Let us lift it back above, where hope still shines.", ephemeral=False)
                 return
 
             elo_data = load_elo_data()
@@ -208,22 +210,23 @@ class AdminCommands(commands.Cog):
 
             # Create embed response
             embed = discord.Embed(
-                title="Rating Set",
-                color=discord.Color.gold()
+                title="Fate Has Shifted",
+                description=f"{player.mention}'s ELO has been gracefully adjusted.",
+                color=discord.Color.purple()
             )
-            embed.add_field(name="Player", value=player.mention, inline=False)
             
-            if player_id in elo_data:  # Show old rating if player existed
-                embed.add_field(name="Old Rating", value=str(old_elo), inline=True)
+            if player_id in elo_data: 
+                embed.add_field(name="Past Rating", value=str(old_elo), inline=True)
             
             embed.add_field(name="New Rating", value=str(new_rating), inline=True)
-            embed.set_footer(text=f"Set by {interaction.user.display_name}")
+            embed.set_footer(text=f"Gently updated by {interaction.user.display_name}")
+            embed.timestamp = interaction.created_at
 
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
             await interaction.response.send_message(
-                f"❌ Failed to set rating: {str(e)}",
+                f"A faint disturbance has occurred...\n `{str(e)}`\nThe change could not be completed. Please, forgive this failure — and try once more when ready.",
                 ephemeral=True
             )
 

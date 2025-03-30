@@ -17,7 +17,7 @@ class EloCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="submit-match", description="Update ELO")
+    @app_commands.command(name="submit-match", description="Whisper the outcome... and I shall adjust the threads of fate (ELO).")
     @app_commands.guilds(GUILD_ID)  # Associate the command with a specific guild
     @app_commands.describe(
         blue_player_1="First player",
@@ -38,19 +38,19 @@ class EloCommands(commands.Cog):
             # Validate no duplicate players
             players = [blue_player_1, blue_player_2, red_player_1, red_player_2]
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):
-                await interaction.followup.send("What are we? Naruto from Wish?", ephemeral=False)
+                await interaction.followup.send("U-Um… I think you might’ve listed the same soul on both teams... I’m sorry, but each thread must belong to just one side.", ephemeral=False)
                 return
             
             # Validate scores (0-15)
             blue_scores = [blue_player_1_cycle, blue_player_2_cycle]
             red_scores = [red_player_1_cycle, red_player_2_cycle]
             if any(score < 0 or score > 15 for score in blue_scores + red_scores):
-                await interaction.followup.send("Cmon, you are not that stupid", ephemeral=False)
+                await interaction.followup.send("Ah... those cycle scores don’t quite look right. They must be between 0 and 15. Shall we try again…?", ephemeral=False)
                 return
 
             # Validate cycle penalties (non-negative)
             if blue_cycle_penalty < 0 or red_cycle_penalty < 0:
-                await interaction.followup.send("Why would you put a negative cycle penalty", ephemeral=False)
+                await interaction.followup.send("I-I'm sorry, but penalties can’t be negative… that would twist the flow of battle. Let’s adjust that gently.", ephemeral=False)
                 return
 
             # Calculate total scores for each team (excluding penalties)
@@ -59,8 +59,9 @@ class EloCommands(commands.Cog):
 
             # Create an embed to display the results
             embed = discord.Embed(
-                title="Match Results",
-                color=discord.Color.blue() if blue_total_score < red_total_score else discord.Color.red()
+                title="Threads of Fate: Match Summary",
+                color=discord.Color.blue() if blue_total_score < red_total_score else discord.Color.red(),
+                description="The threads have crossed... and a tale unfolds."
             )
 
             # Add Blue Team field
@@ -79,18 +80,20 @@ class EloCommands(commands.Cog):
 
             # Add total scores and cycle penalties
             embed.add_field(
-                name="Total Scores",
+                name="Outcome",
                 value=f"Blue Team: {blue_total_score} Points (+{blue_cycle_penalty} Penalty)\nRed Team: {red_total_score} Points (+{red_cycle_penalty} Penalty)",
                 inline=False
             )
 
             # Add winner (if not a tie)
             if blue_total_score < red_total_score:
-                embed.add_field(name="Winner", value="Blue Team", inline=False)
+                embed.add_field(name="Victor", value="Blue Team — the tide favored them today.", inline=False)
             elif red_total_score < blue_total_score:
-                embed.add_field(name="Winner", value="Red Team", inline=False)
+                embed.add_field(name="Victor", value="Red Team — their resolve carved the path.", inline=False)
             else:
-                embed.add_field(name="Winner", value="It's a tie!", inline=False)
+                embed.add_field(name="Outcome", value="A perfect tie... as if destiny itself hesitated.", inline=False)
+
+            embed.set_footer(text="Threads arranged with care… by Kyasutorisu")
 
             # Create view with buttons
             view = UpdateEloView(
@@ -114,14 +117,14 @@ class EloCommands(commands.Cog):
 
             # Create the mention string
             user_mentions = " ".join(user.mention for user in mentioned_users)
-            message_content = f"{user_mentions}\nDoes this look correct?"
+            message_content = f"{user_mentions}\nHave the threads been woven as intended...? If something feels off, I shall mend it with care."
 
             # Send the embed with buttons
             await interaction.followup.send(content=message_content, embed=embed, view=view)
 
         except Exception as e:
-            print(f"Error in update-elo command: {e}")
-            await interaction.followup.send("An error occurred while processing the command.", ephemeral=True)
+            print(f"A quiet fracture in update-elo command: {e}")
+            await interaction.followup.send("I-I'm so sorry… something went wrong while adjusting the threads.\nPlease try again in a moment — I’ll stay right here.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(EloCommands(bot))

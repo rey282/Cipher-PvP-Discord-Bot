@@ -16,14 +16,14 @@ def rollback_last_match():
         
         # Validate history is a list and not empty
         if not isinstance(history, list) or len(history) == 0:
-            return False, "No matches to rollback or invalid history format"
+            return False, "Oh, it seems there are no matches to revert, or the history format is incorrect."
 
         # Get most recent match (first item in list)
         last_match = history[0]
         
         # Validate match structure
         if not isinstance(last_match, dict) or 'elo_gains' not in last_match:
-            return False, "Invalid match data format"
+            return False, "The match data seems to be malformed. Please ensure it's formatted correctly."
 
         elo_data = load_elo_data()
         changes_made = False
@@ -58,9 +58,9 @@ def rollback_last_match():
             with open(MATCH_HISTORY_FILE, 'w', encoding='utf-8') as f:
                 json.dump(updated_history, f, indent=4, ensure_ascii=False)
             
-            return True, "Match successfully rolled back"
+            return True
             
-        return False, "No ELO changes to revert"
+        return False
         
     except Exception as e:
         logging.error(f"Rollback failed: {str(e)}", exc_info=True)

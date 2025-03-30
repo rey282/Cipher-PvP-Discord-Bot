@@ -29,7 +29,11 @@ class UpdateEloView(ui.View):
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
-            await interaction.response.send_message("You can't interact with this.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ I’m sorry, but you’re not allowed to interact with this…\n"
+                "I must respectfully ask for your understanding.",
+                ephemeral=True
+            )
             return False
         return True
 
@@ -68,7 +72,11 @@ class UpdateEloView(ui.View):
                 elo_gains=self.elo_gains,
                 allowed_user_id=interaction.user.id
             )
-            await interaction.followup.send("Match is tied! Which team wins the tie breaker?", view=tiebreaker_view)
+            await interaction.followup.send(
+                "The threads of fate have tied these teams... Which side shall be favored by destiny?\n"
+                "Please, choose with care, and fate will reveal the victor.",
+                view=tiebreaker_view
+            )
             return
 
         processed_ids = set()
@@ -122,7 +130,7 @@ class UpdateEloView(ui.View):
         save_match_history(match_data)
 
         embed = discord.Embed(
-            title="Match Results",
+            title="Threads of Victory",
             color=discord.Color.blue() if blue_total_score < red_total_score else discord.Color.red()
         )
         embed.add_field(
@@ -145,7 +153,7 @@ class UpdateEloView(ui.View):
 
         embed.add_field(
             name="ELO Changes",
-            value=elo_changes_text or "No changes",
+            value=elo_changes_text or "No changes to the threads...",
             inline=False
         )
 
@@ -174,7 +182,11 @@ class TiebreakerView(ui.View):
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
-            await interaction.response.send_message("You can't interact with this.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ I’m sorry, but you’re not allowed to interact with this…\n"
+                "I must respectfully ask for your understanding.",
+                ephemeral=True
+            )
             return False
         return True
 
@@ -261,7 +273,7 @@ class TiebreakerView(ui.View):
         save_match_history(match_data)
 
         embed = Embed(
-            title="Match Results (Tiebreaker)",
+            title="Tiebreaker Results: Fate Has Decided",
             color=discord.Color.blue() if winner_team == self.blue_team else discord.Color.red()
         )
         embed.add_field(
@@ -295,7 +307,7 @@ class TiebreakerView(ui.View):
 
         embed.add_field(
             name="ELO Changes",
-            value=elo_changes_text or "No changes",
+            value=elo_changes_text or "No changes to the threads...",
             inline=False
         )
 
@@ -314,15 +326,18 @@ class ConfirmRollbackView(discord.ui.View):
         
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not interaction.user.guild_permissions.administrator:
+        required_role = "Mark's Pet"  # Replace with your specific role name
+    
+        # If the user is not an admin and does not have the required role
+        if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
             await interaction.response.send_message(
-                "❌ Only administrators can undo matches!",
+                "Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
                 ephemeral=True
             )
             return
 
         if self.confirmation_active:
-            await interaction.response.send_message("⚠️ A confirmation is already pending!", ephemeral=True)
+            await interaction.response.send_message("Oh, it seems a confirmation is already pending... Please give it a moment, and then you may proceed.", ephemeral=True)
             return
 
         self.confirmation_active = True
@@ -336,7 +351,7 @@ class ConfirmRollbackView(discord.ui.View):
 
             # Immediate response is crucial
             await interaction.response.send_message(
-                "⚠️ This will permanently revert the last match!",
+                "⚠️ This action will permanently revert the last match... Are you sure you wish to proceed? Please confirm.",
                 view=confirm_view,
                 ephemeral=True
             )
@@ -383,8 +398,8 @@ class ConfirmUndoView(discord.ui.View):
                     await self.parent_view.message.edit(view=self.parent_view)
 
                 await interaction.channel.send(
-                    f"✅ {interaction.user.mention} rolled back the last match."
-                    if success else f"❌ {interaction.user.mention} attempted a rollback, but it failed: `{message}`"
+                    f"✅ {interaction.user.mention} has gracefully undone the last match. Fate has been restored."
+                    if success else f"❌ {interaction.user.mention} tried to reverse the match, but unfortunately, it failed: `{message}`\nI’m really sorry, but we’ll give it another go soon!"
                 )
 
                 try:
@@ -396,7 +411,7 @@ class ConfirmUndoView(discord.ui.View):
                 
         except Exception as e:
             logging.error(f"Rollback failed: {e}")
-            await interaction.followup.send("❌ An error occurred during rollback!", ephemeral=True)
+            await interaction.followup.send("❌ Oh, I’m truly sorry… something went wrong while trying to undo the match. Please allow me to try again shortly.", ephemeral=True)
         finally:
             self.parent_view.confirmation_active = False
 

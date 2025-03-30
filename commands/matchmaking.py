@@ -12,7 +12,7 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
-class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
+class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence"):
     uid = discord.ui.TextInput(label="UID", required=False, placeholder="9-digit UID")
     mirror_id = discord.ui.TextInput(label="Mirror ID", required=False, placeholder="Mirror ID")
     points = discord.ui.TextInput(label="Total Cost", required=False, placeholder="Mirror Points")
@@ -28,14 +28,14 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
 
         # Validate UID format if provided
         if uid_input and (not uid_input.isdigit() or len(uid_input) != 9):
-            await interaction.followup.send("❌ UID must be 9 numeric characters!", ephemeral=True)
+            await interaction.followup.send("U-Um… I think the UID should be exactly 9 numbers... Could you double-check it for me?", ephemeral=True)
             return
 
         # Convert points
         try:
             points = int(points_input) if points_input else 0
         except ValueError:
-            await interaction.followup.send("❌ Total cost must be a valid number.", ephemeral=True)
+            await interaction.followup.send("Oh no… I couldn’t understand the Mirror Points. It should be a number—would you mind trying again?", ephemeral=True)
             return
 
         # Case 1: Existing player
@@ -51,7 +51,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         # Case 2: New registration
         else:
             if not uid_input:
-                await interaction.followup.send("❌ UID is required for first-time registration!", ephemeral=True)
+                await interaction.followup.send("O-Oh… I’m sorry, but I need your UID to begin your registration. Without it, I can’t properly weave your thread…", ephemeral=True)
                 return
 
             elo_data[player_id] = {
@@ -68,23 +68,37 @@ class RegisterPlayerModal(discord.ui.Modal, title="Register or Update Profile"):
         save_elo_data(elo_data)
 
         # Response message
-        response = f"✅ Successfully {action} your profile!\n"
-        if uid_input:
-            response += f"▸ UID: `{uid_input}`\n"
-        if mirror_id_input:
-            response += f"▸ Mirror ID: `{mirror_id_input}`\n"
-        response += f"▸ Points: `{elo_data[player_id].get('points', 0)}`"
-        if action == "registered":
-            response += f"\n▸ Starting ELO: `200`"
+        embed = discord.Embed(
+            title=f"Profile {action.capitalize()}",
+            description="Your presence has been gently recorded…",
+            color=discord.Color.purple()
+        )
 
-        await interaction.followup.send(response, ephemeral=True)
+        if uid_input:
+            embed.add_field(name="UID", value=f"`{uid_input}`", inline=False)
+
+        if mirror_id_input:
+            embed.add_field(name="Mirror ID", value=f"`{mirror_id_input}`", inline=False)
+
+        embed.add_field(
+            name="Total cost",
+            value=f"`{elo_data[player_id].get('points', 0)}`",
+            inline=False
+        )
+
+        if action == "registered":
+            embed.add_field(name="Starting ELO", value="`200`", inline=False)
+
+        embed.set_footer(text="Gently handled by Kyasutorisu")
+
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 class MatchmakingCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="matchmaking", description="Randomize a 2v2")
+    @app_commands.command(name="matchmaking", description="Allow me to gently weave a random 2v2 from the threads you've offered...")
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         player1="First player",
@@ -97,25 +111,30 @@ class MatchmakingCommands(commands.Cog):
         # Validate unique players
         players = [player1, player2, player3, player4]
         if len(set(players)) != 4:
-            await interaction.followup.send("❌ All players must be unique!", ephemeral=True)
+            await interaction.followup.send("O-Oh… it seems some players are listed more than once.\nAll souls must be unique for the threads to form properly…", ephemeral=False)
             return
 
         # Shuffle and split teams
         random.shuffle(players)
         team1, team2 = players[:2], players[2:]
 
-        embed = discord.Embed(title="Randomized Teams", color=discord.Color.blue())
+        embed = discord.Embed(
+            title="Threads Aligned",
+            description="The threads have been gently woven… Here is your match.",
+            color=discord.Color.blue()
+        )
         embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
         embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
+        embed.set_footer(text="Woven gently by Kyasutorisu")
         await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="register", description="Register or update your player data")
+    @app_commands.command(name="register", description="Allow me to gently record or update your thread…")
     @app_commands.guilds(GUILD_ID)
     async def register(self, interaction: Interaction):
         await interaction.response.send_modal(RegisterPlayerModal())
 
 
-    @app_commands.command(name="playercard", description="Player's Profile")
+    @app_commands.command(name="playercard", description="Would you like to glimpse a player’s thread…? I can show you their profile.")
     @app_commands.guilds(GUILD_ID)
     async def profile(self, interaction: Interaction, user: discord.Member = None):
         await interaction.response.defer()
@@ -139,14 +158,15 @@ class MatchmakingCommands(commands.Cog):
         
         # Create embed with new layout
         embed = discord.Embed(
-            title=f"{user.display_name}'s Profile",
+            title=f"Thread of {user.display_name}",
+            description="A glimpse into this soul’s gentle journey...",
             color=user.color
         )
         embed.set_thumbnail(url=user.display_avatar.url)
 
         # Main rating field
         embed.add_field(
-            name="Rating",
+            name="ELO Woven",
             value=f"{elo:.0f}",
             inline=False
         )
@@ -154,14 +174,14 @@ class MatchmakingCommands(commands.Cog):
         # Combined Win Rate and Games Played
         embed.add_field(
             name="Stats",
-            value=f"Win Rate: {win_rate * 100:.1f}%\n"
-                f"Games Played: {games_played}",
+            value=f"Grace Shown: {win_rate * 100:.1f}%\n"
+                f"Trials Faced: {games_played}",
             inline=False
         )
 
         # Expanded Details section with UID, Mirror ID, Points and Rank
         embed.add_field(
-            name="Details",
+            name="Reflections",
             value=f"UID: {uid}\n"
                 f"Mirror ID: {mirror_id}\n"
                 f"Total Cost: {points}\n"
@@ -169,9 +189,11 @@ class MatchmakingCommands(commands.Cog):
             inline=False
         )
 
+        embed.set_footer(text="Handled with care by Kyasutorisu")
+
         await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="prebans", description="Calculate pre-bans with explicit team assignments")
+    @app_commands.command(name="prebans", description="Allow me to gently calculate the pre-bans, with teams woven into their fates.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         team1_player1="First player (Team 1)",
@@ -232,16 +254,18 @@ class MatchmakingCommands(commands.Cog):
                     color=discord.Color.blue()
                 )
                 embed.add_field(
-                    name="Teams",
+                    name="Teams Aligned",
                     value=f"{format_team(team1)} (Avg: {points1:.0f} pts)\n"
                         f"{format_team(team2)} (Avg: {points2:.0f} pts)",
                     inline=False
                 )
                 embed.add_field(
                     name="Result",
-                    value="It's a tie! No pre-bans for either team."+ f"\n\n*Total point difference: {point_diff:.0f}*",
+                    value="It seems the threads of fate have tied these teams... No pre-bans required for either side.\n\n"
+                        f"*Total point difference: {point_diff:.0f}*",
                     inline=False
                 )
+                embed.set_footer(text="Handled with care by Kyasutorisu")
                 await interaction.followup.send(embed=embed)
                 return  
             
@@ -265,7 +289,7 @@ class MatchmakingCommands(commands.Cog):
             # Add team info
             
             embed.add_field(
-                name="Teams",
+                name="Teams Alligned",
                 value=f" {format_team(team1)} (Avg: {points1:.0f} pts)\n"
                     f" {format_team(team2)} (Avg: {points2:.0f} pts)",
                 inline=False
@@ -286,12 +310,12 @@ class MatchmakingCommands(commands.Cog):
                 value="\n".join(ban_info) + f"\n\n*Total point difference: {point_diff:.0f}*",
                 inline=False
             )
-            
+            embed.set_footer(text="Handled with care by Kyasutorisu")
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
             await interaction.response.send_message(
-                f"❌ Error calculating pre-bans: {str(e)}",
+                f"I’m truly sorry. Please allow me to try again. Here’s the error: {str(e)}",
                 ephemeral=True
             )
             raise
