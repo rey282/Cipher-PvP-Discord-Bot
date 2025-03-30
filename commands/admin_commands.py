@@ -14,9 +14,9 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
-class ResetConfirmModal(discord.ui.Modal, title="Are you certain you wish to reset all ELO? If so… I shall carry out your will, with care."):
+class ResetConfirmModal(discord.ui.Modal, title="Are you sure you wish to reset all ELO?"):
     confirmation = discord.ui.TextInput(
-        label="To begin anew… please type ‘CONFIRM’. I shall reset the ELO, and carry the burden quietly.",
+        label="Type ‘CONFIRM’ to reset ELO",
         placeholder="Type here...",
         required=True
     )
