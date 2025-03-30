@@ -78,19 +78,20 @@ async def update_rank_role(
 
     # 🎉 Announce
     if channel:
-        if new_index > old_index:
-            print(f"[📢 PROMOTION] {member.display_name} → {new_rank}")
-            await channel.send(
-                f"{member.mention} has awakened as an **{new_rank}**!\n"
-                f"The threads of fate weave ever forward..."
-            )
-        elif announce_demotions and new_index < old_index:
-            print(f"[📢 DEMOTION] {member.display_name} → {new_rank}")
-            await channel.send(
-                f"{member.mention} has returned to the path of **{new_rank}**.\n"
-                f"The threads shift softly... but they never break."
-            )
-        else:
-            print(f"📭 Rank changed but no announcement made for {member.display_name}")
-    except Exception as e:
-        print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
+        try:
+            if new_index > old_index:
+                print(f"[📢 PROMOTION] {member.display_name} → {new_rank}")
+                await channel.send(
+                    f"{member.mention} has awakened as an **{new_rank}**!\n"
+                    f"The threads of fate weave ever forward..."
+                )
+            elif announce_demotions and new_index < old_index:
+                print(f"[📢 DEMOTION] {member.display_name} → {new_rank}")
+                await channel.send(
+                    f"{member.mention} has returned to the path of **{new_rank}**.\n"
+                    f"The threads shift softly... but they never break."
+                )
+            else:
+                print(f"📭 Rank changed but no announcement made for {member.display_name}")
+        except Exception as e:
+            print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
