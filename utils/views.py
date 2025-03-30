@@ -344,7 +344,7 @@ class ConfirmRollbackView(discord.ui.View):
         # If the user is not an admin and does not have the required role
         if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
             await interaction.response.send_message(
-                "<:spajaja:1351033162091986944> Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
+                "Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
                 ephemeral=True
             )
             return
@@ -394,7 +394,7 @@ class ConfirmUndoView(discord.ui.View):
             success, message = rollback_last_match()
 
             for player_id, change in self.elo_gains.items():
-            member = interaction.guild.get_member(int(player_id))
+                member = interaction.guild.get_member(int(player_id))
             if member:
                 new_elo = self.elo_data[str(player_id)]["elo"]
                 await update_rank_role(member, new_elo, elo_data, channel=interaction.channel, announce_demotions=True)
