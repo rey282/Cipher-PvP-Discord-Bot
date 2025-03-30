@@ -172,6 +172,12 @@ class TiebreakerView(ui.View):
         self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
 
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user.id != self.allowed_user_id:
+            await interaction.response.send_message("You can't interact with this.", ephemeral=True)
+            return False
+        return True
+
     @ui.button(label="Blue Team Won", style=discord.ButtonStyle.blurple)
     async def red_side_pick(self, interaction: Interaction, button: ui.Button):
         try:
