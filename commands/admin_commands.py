@@ -5,6 +5,7 @@ import asyncio
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
+from discord.app_commands import AppCommandError, CheckFailure
 from utils.rank_utils import update_rank_role, get_rank
 from utils.db_utils import load_elo_data, save_elo_data
 from dotenv import load_dotenv
@@ -60,8 +61,8 @@ class AdminCommands(commands.Cog):
             # Graceful message for non-admins trying admin commands
             try:
                 await interaction.response.send_message(
-                    "Oh... I’m really sorry, but that command is reserved for administrators.\n"
-                    "I’m not allowed to carry out this thread for you…",
+                    "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+                    "Please speak to someone with the right permissions if you'd like this command woven into being.",
                     ephemeral=True
                 )
             except discord.InteractionResponded:
