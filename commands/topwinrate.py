@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
-POSTGRES_URL = os.getenv("POSTGRES_URL")
+POSTGRES_URL = os.getenv("DATABASE_URL")
 
 class TopWinRate(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -38,7 +38,7 @@ class TopWinRate(commands.Cog):
                 return
 
             embed = discord.Embed(
-                title="✨ Top 10 Win Rates ✨",
+                title="Top 10 Win Rates",
                 description="The most victorious threads I've seen so far:",
                 color=discord.Color.gold()
             )
