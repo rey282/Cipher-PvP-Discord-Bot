@@ -2,11 +2,11 @@ import discord
 import os
 from discord.ext import commands
 from discord import app_commands, Interaction
-from utils.elo_utils import load_elo_data
 from dotenv import load_dotenv
 
 load_dotenv()
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
+POSTGRES_URL = os.getenv("POSTGRES_URL")
 
 class TopWinRate(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -16,49 +16,47 @@ class TopWinRate(commands.Cog):
     @app_commands.guilds(GUILD_ID)
     async def topwinrate(self, interaction: Interaction):
         await interaction.response.defer()
-        elo_data = load_elo_data()
+        try:
+            conn = psycopg2.connect(POSTGRES_URL)
+            cur = conn.cursor()
 
-        # Filter players with at least 5 games
-        qualified_players = [
-            (pid, pdata) for pid, pdata in elo_data.items()
-            if pdata.get("games_played", 0) >= 5
-        ]
+            # Fetch top 10 players with at least 5 games
+            cur.execute("""
+                SELECT discord_id, win_rate, games_played
+                FROM players
+                WHERE games_played >= 5
+                ORDER BY win_rate DESC
+                LIMIT 10;
+            """)
+            top_players = cur.fetchall()
 
-        if not qualified_players:
-            await interaction.followup.send(
-                "O-Oh… it seems no one has played enough matches for me to show the top win rates.",
-                ephemeral=False
-            )
-            return
+            cur.close()
+            conn.close()
 
-        # Sort by win rate
-        sorted_players = sorted(
-            qualified_players,
-            key=lambda item: item[1].get("win_rate", 0.0),
-            reverse=True
-        )
+            if not top_players:
+                await interaction.followup.send("Oh… no one has played enough matches to tie their thread to fate just yet.")
+                return
 
-        top_players = sorted_players[:10]
-
-        embed = discord.Embed(
-            title="Top 10 Win Rates",
-            description="Here are the most victorious threads I’ve seen tied by fate...",
-            color=discord.Color.gold()
-        )
-
-        for i, (pid, pdata) in enumerate(top_players, start=1):
-            win_pct = pdata.get("win_rate", 0.0) * 100
-            games = pdata.get("games_played", 0)
-            discord_name = pdata.get("discord_name", f"<@{pid}>")
-
-            embed.add_field(
-                name=f"{i}. {discord_name}",
-                value=f"Win Rate: `{win_pct:.1f}%` over `{games}` trials",
-                inline=False
+            embed = discord.Embed(
+                title="✨ Top 10 Win Rates ✨",
+                description="The most victorious threads I've seen so far:",
+                color=discord.Color.gold()
             )
 
-        embed.set_footer(text="Handled with care by Kyasutorisu")
-        await interaction.followup.send(embed=embed)
+            for i, (discord_id, win_rate, games_played) in enumerate(top_players, start=1):
+                win_pct = round(win_rate * 100, 2)
+                embed.add_field(
+                    name=f"{i}. <@{discord_id}>",
+                    value=f"Win Rate: `{win_pct}%`\nGames Played: `{games_played}`",
+                    inline=False
+                )
+
+            embed.set_footer(text="Handled with care by Kyasutorisu")
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            print(f"Error fetching win rate leaderboard: {e}")
+            await interaction.followup.send("Something went wrong while I searched the stars for win rates…", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(TopWinRate(bot))
