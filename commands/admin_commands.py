@@ -237,8 +237,8 @@ class AdminCommands(commands.Cog):
                     announce_demotions=True,
                     force_old_rank=old_rank
                 )
-except Exception as e:
-    print(f"⚠️ Failed to update role for {player.display_name}: {e}")
+            except Exception as e:
+                print(f"⚠️ Failed to update role for {player.display_name}: {e}")
 
         except Exception as e:
             await interaction.response.send_message(
