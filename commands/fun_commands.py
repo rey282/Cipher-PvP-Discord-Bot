@@ -30,7 +30,7 @@ class FunCommands(commands.Cog):
             remaining_time = round(error.retry_after / 60, 1)
             await ctx.send(f"Ah—pardon me… I didn’t mean to interrupt, but... it seems you’ll need to wait {remaining_time} minutes before using that again. I hope that’s okay…")
         else:
-            await ctx.send("Oh no… something’s gone awry. I’m terribly sorry. Perhaps… try again later? I’ll be right here when you’re ready.")
+            await ctx.send("<:Poutorice:1349312201973829733> Oh no… something’s gone awry. I’m terribly sorry. Perhaps… try again later? I’ll be right here when you’re ready.")
             
 async def setup(bot):
     await bot.add_cog(FunCommands(bot))

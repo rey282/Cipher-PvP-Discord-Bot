@@ -111,7 +111,7 @@ class AdminCommands(commands.Cog):
         )[:10]
 
         embed = discord.Embed(
-            title="💮 Threads of the Strongest",
+            title="<:Nekorice:1349312200426127420> Threads of the Strongest",
             color=discord.Color.purple(),
             description="The top 10 players... whose threads shine brightest in this season’s weave."
         )
