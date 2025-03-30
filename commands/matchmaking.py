@@ -277,7 +277,7 @@ class MatchmakingCommands(commands.Cog):
                 ban_info.append(f"▸ {regular_bans} regular ban(s) (100pts each)")
             if joker_bans > 0:
                 if point_diff >= 800:
-                    ban_info.append(f"▸ 5 joker bans (100pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
+                    ban_info.append(f"▸ 5 joker bans (120pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
                 else:
                     ban_info.append(f"▸ {joker_bans} joker ban(s) (100pts each)")
 
