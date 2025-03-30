@@ -53,7 +53,7 @@ class TopWinRate(commands.Cog):
                     name = f"<@{discord_id}>"
                 embed.add_field(
                     name=f"{i}. {name}>",
-                    value=f"Win Rate: `{win_pct}%` over `{games}` trials",
+                    value=f"Win Rate: `{win_pct}%` over `{games_played}` trials",
                     inline=False
                 )
 
