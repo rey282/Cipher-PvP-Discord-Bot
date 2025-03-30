@@ -54,6 +54,22 @@ class AdminCommands(commands.Cog):
         self.last_elo_data = {}
         self.message_id_file = 'leaderboard_message_id.json'
 
+    @commands.Cog.listener()
+    async def on_app_command_error(self, interaction: discord.Interaction, error: AppCommandError):
+        if isinstance(error, CheckFailure):
+            # Graceful message for non-admins trying admin commands
+            try:
+                await interaction.response.send_message(
+                    "Oh... I’m really sorry, but that command is reserved for administrators.\n"
+                    "I’m not allowed to carry out this thread for you…",
+                    ephemeral=True
+                )
+            except discord.InteractionResponded:
+                await interaction.followup.send(
+                    "Oh... I’m really sorry, but that command is reserved for administrators.",
+                    ephemeral=True
+                )
+
     async def cog_load(self):
         """Ensure leaderboard loop starts when bot loads."""
         await self.before_update_leaderboard()
@@ -257,7 +273,13 @@ class AdminCommands(commands.Cog):
             await interaction.response.send_modal(modal)
            
         except Exception as e:
-            await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+            try:
+                if interaction.response.is_done():
+                    await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+                else:
+                    await interaction.response.send_message(f"❌ Error: {str(e)}", ephemeral=True)
+            except Exception as inner:
+                print(f"❌ Could not send error message: {inner}")
 
 async def setup(bot):
     await bot.add_cog(AdminCommands(bot))
