@@ -71,6 +71,7 @@ async def update_rank_role(
     try:
         await member.remove_roles(*roles_to_remove)
         await member.add_roles(rank_role)
+        print(f"✅ Updated roles for {member.display_name}: Now {new_rank}")
     except discord.Forbidden:
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
@@ -78,12 +79,18 @@ async def update_rank_role(
     # 🎉 Announce
     if channel:
         if new_index > old_index:
+            print(f"[📢 PROMOTION] {member.display_name} → {new_rank}")
             await channel.send(
                 f"{member.mention} has awakened as an **{new_rank}**!\n"
                 f"The threads of fate weave ever forward..."
             )
         elif announce_demotions and new_index < old_index:
+            print(f"[📢 DEMOTION] {member.display_name} → {new_rank}")
             await channel.send(
                 f"{member.mention} has returned to the path of **{new_rank}**.\n"
                 f"The threads shift softly... but they never break."
             )
+        else
+            print(f"📭 Rank changed but no announcement made for {member.display_name}")
+        except Exception as e:
+            print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
