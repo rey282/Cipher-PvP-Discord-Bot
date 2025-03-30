@@ -28,45 +28,61 @@ async def update_rank_role(
     announce_demotions: bool = False,
     force_old_rank: str = None
 ):
-    old_rank = force_old_rank if force_old_rank else get_rank(elo_data.get(str(member.id), {}).get("elo", 200), player_id=member.id, elo_data=elo_data)
+    guild = member.guild
+    old_rank = force_old_rank if force_old_rank else get_rank(
+        elo_data.get(str(member.id), {}).get("elo", 200),
+        player_id=member.id,
+        elo_data=elo_data
+    )
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
-    has_rank_role = any(role.name == new_rank for role in member.roles)
-
-    if old_rank == new_rank and has_rank_role:
-        return
-
-    # Update roles
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
         "Arbitor General", "Emanator", "Aeon", "Akivili"
     ]
+
     try:
         old_index = rank_order.index(old_rank)
         new_index = rank_order.index(new_rank)
     except ValueError:
-        print(f"⚠️ Could not determine rank order for {member.display_name}")
+        print(f"⚠️ Invalid rank order for {member.display_name}: {old_rank} → {new_rank}")
         return
 
     rank_role = get(guild.roles, name=new_rank)
     if not rank_role:
-        print(f"⚠️ Role '{new_rank}' not found.")
+        print(f"⚠️ Role '{new_rank}' not found in guild {guild.name}")
+        return
+
+    # Already has correct role?
+    has_rank_role = any(role.name == new_rank for role in member.roles)
+    if old_rank == new_rank and has_rank_role:
+        return
+
+    # Check bot permissions
+    bot_member = guild.me
+    if not bot_member.guild_permissions.manage_roles:
+        print(f"❌ Bot lacks 'Manage Roles' permission")
+        return
+    if rank_role.position >= bot_member.top_role.position:
+        print(f"❌ Bot role is lower than '{new_rank}', cannot assign")
         return
 
     roles_to_remove = [role for role in member.roles if role.name in rank_order]
-    await member.remove_roles(*roles_to_remove)
-    await member.add_roles(rank_role)
+    try:
+        await member.remove_roles(*roles_to_remove)
+        await member.add_roles(rank_role)
+    except discord.Forbidden:
+        print(f"❌ Missing permission to update {member.display_name}'s roles")
+        return
 
-    #Send promotion message
+    # 🎉 Announce
     if channel:
         if new_index > old_index:
-            # Promotion
             await channel.send(
                 f"{member.mention} has awakened as an **{new_rank}**!\n"
                 f"The threads of fate weave ever forward..."
             )
         elif announce_demotions and new_index < old_index:
-            # Demotion (only if enabled)
             await channel.send(
                 f"{member.mention} has returned to the path of **{new_rank}**.\n"
                 f"The threads shift softly... but they never break."
