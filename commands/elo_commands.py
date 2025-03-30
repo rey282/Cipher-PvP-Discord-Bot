@@ -81,7 +81,7 @@ class EloCommands(commands.Cog):
             # Add total scores and cycle penalties
             embed.add_field(
                 name="Outcome",
-                value=f"Blue Team: {blue_total_score} Points (+{blue_cycle_penalty} Penalty)\nRed Team: {red_total_score} Points (+{red_cycle_penalty} Penalty)",
+                value=f"Blue Team: {blue_total_score} Cycles (+{blue_cycle_penalty} Penalty)\nRed Team: {red_total_score} Cycles (+{red_cycle_penalty} Penalty)",
                 inline=False
             )
 
