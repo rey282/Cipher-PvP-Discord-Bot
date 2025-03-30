@@ -189,7 +189,7 @@ class MatchmakingCommands(commands.Cog):
             inline=False
         )
 
-        embed.set_footer(text="Handled with care by Kyasutorisu <:Nekorice:1349312200426127420>")
+        embed.set_footer(text="Handled with care by Kyasutorisu")
 
         await interaction.followup.send(embed=embed)
 
