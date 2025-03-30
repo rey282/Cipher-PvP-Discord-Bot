@@ -174,7 +174,7 @@ class MatchmakingCommands(commands.Cog):
         # Combined Win Rate and Games Played
         embed.add_field(
             name="Stats",
-            value=f"Grace Shown: {win_rate * 100:.1f}%\n"
+            value=f"Win Rate: {win_rate * 100:.1f}%\n"
                 f"Trials Faced: {games_played}",
             inline=False
         )
