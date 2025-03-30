@@ -20,7 +20,7 @@ def get_rank(elo_score, player_id=None, elo_data=None):
     else:
         return "Aeon"
 
-async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict, channel: discord.TextChannel = None):
+async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict, channel: discord.TextChannel = None, announce_demotions : bool = False):
     guild = member.guild
     old_rank = get_rank(elo_data.get(str(member.id), {}).get("elo", 200), player_id=member.id, elo_data=elo_data)
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
