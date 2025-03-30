@@ -26,7 +26,8 @@ async def on_ready():
         "commands.elo_commands",
         "commands.matchmaking",
         "commands.admin_commands",
-        "commands.history_commands"
+        "commands.history_commands",
+        "commands.topwinrate"
     ]
     
     for ext in extensions:
