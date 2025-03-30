@@ -15,7 +15,7 @@ from utils.db_utils import (
 )
 logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
-    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty):
+    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, allowed_user_id):
         super().__init__(timeout=None)
         self.blue_team = blue_team
         self.red_team = red_team
@@ -23,8 +23,15 @@ class UpdateEloView(ui.View):
         self.red_scores = red_scores
         self.blue_cycle_penalty = blue_cycle_penalty
         self.red_cycle_penalty = red_cycle_penalty
+        self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
         self.elo_gains={}
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user.id != self.allowed_user_id:
+            await interaction.response.send_message("You can't interact with this.", ephemeral=True)
+            return False
+        return True
 
     @ui.button(label="Submit", style=discord.ButtonStyle.green)
     async def submit(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -58,7 +65,8 @@ class UpdateEloView(ui.View):
                 red_cycle_penalty=self.red_cycle_penalty,
                 blue_total_score=blue_total_score,
                 red_total_score=red_total_score,
-                elo_gains=self.elo_gains
+                elo_gains=self.elo_gains,
+                allowed_user_id=interaction.user.id
             )
             await interaction.followup.send("Match is tied! Which team wins the tie breaker?", view=tiebreaker_view)
             return
@@ -150,7 +158,7 @@ class UpdateEloView(ui.View):
         self.stop()
 
 class TiebreakerView(ui.View):
-    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, elo_gains):
+    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, allowed_user_id):
         super().__init__(timeout=300)
         self.blue_team = blue_team
         self.red_team = red_team
@@ -161,7 +169,14 @@ class TiebreakerView(ui.View):
         self.blue_total_score = blue_total_score  
         self.red_total_score = red_total_score
         self.elo_gains = elo_gains
+        self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
+
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user.id != self.allowed_user_id:
+            await interaction.response.send_message("This tiebreaker isn't for you!", ephemeral=True)
+            return False
+        return True
 
     @ui.button(label="Blue Team Won", style=discord.ButtonStyle.blurple)
     async def red_side_pick(self, interaction: Interaction, button: ui.Button):

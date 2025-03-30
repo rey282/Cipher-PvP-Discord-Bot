@@ -246,18 +246,13 @@ class MatchmakingCommands(commands.Cog):
                 return  
             
             # Calculate bans
-            if point_diff >= 800:
-                # First 800 points: 3 regular + 5 joker bans
-                # Beyond 800: additional joker bans (1 per 200pts)
+            if point_diff >= 900:
                 regular_bans = 3
-                joker_bans = 5 + (point_diff - 800) // 200
+                joker_bans = 5 + (point_diff - 900) // 200
             elif point_diff >= 300:
-                # First 300 points: 3 regular bans
-                # Next 500 points: joker bans (1 per 100pts, max 5)
                 regular_bans = 3
-                joker_bans = min(5, (point_diff - 300) // 100)
+                joker_bans = min(5, (point_diff - 300) // 120)
             else:
-                # Below 300: regular bans only (1 per 100pts, max 3)
                 regular_bans = min(3, point_diff // 100)
                 joker_bans = 0
 
