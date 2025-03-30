@@ -165,7 +165,7 @@ class AdminCommands(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="change-rating", description="Changing Player ELO")
+    @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
@@ -230,7 +230,7 @@ class AdminCommands(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="reset", description="Seasonal Reset of All Player Ratings")
+    @app_commands.command(name="reset", description="The threads of fate are reset for all players... A new season begins.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_elo(self, interaction: Interaction):
