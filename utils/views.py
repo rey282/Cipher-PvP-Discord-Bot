@@ -134,8 +134,23 @@ class UpdateEloView(ui.View):
         for player_id, change in self.elo_gains.items():
             member = interaction.guild.get_member(int(player_id))
             if member:
+                # ⬇️ Use previous ELO to get OLD rank
+                previous_elo = self.elo_data[str(player_id)]["elo"] - change
+                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
+
+                # ⬇️ Then update ELO (already happened at this point)
                 new_elo = self.elo_data[str(player_id)]["elo"]
-                await update_rank_role(member, new_elo, self.elo_data, channel=interaction.channel, announce_demotions=True)
+                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
+
+                # ⬇️ Now force the role update with explicit old_rank
+                await update_rank_role(
+                    member,
+                    new_elo,
+                    self.elo_data,
+                    channel=interaction.channel,
+                    announce_demotions=True,
+                    force_old_rank=old_rank  # we'll support this
+                )
 
         embed = discord.Embed(
             title="Threads of Victory",
@@ -284,8 +299,23 @@ class TiebreakerView(ui.View):
         for player_id, change in self.elo_gains.items():
             member = interaction.guild.get_member(int(player_id))
             if member:
+                # ⬇️ Use previous ELO to get OLD rank
+                previous_elo = self.elo_data[str(player_id)]["elo"] - change
+                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
+
+                # ⬇️ Then update ELO (already happened at this point)
                 new_elo = self.elo_data[str(player_id)]["elo"]
-                await update_rank_role(member, new_elo, self.elo_data, channel=interaction.channel, announce_demotions=True)
+                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
+
+                # ⬇️ Now force the role update with explicit old_rank
+                await update_rank_role(
+                    member,
+                    new_elo,
+                    self.elo_data,
+                    channel=interaction.channel,
+                    announce_demotions=True,
+                    force_old_rank=old_rank  # we'll support this
+                )
 
         embed = Embed(
             title="Tiebreaker Results: Fate Has Decided",
