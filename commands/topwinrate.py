@@ -48,7 +48,7 @@ class TopWinRate(commands.Cog):
                 color=discord.Color.purple()
             )
 
-            for i, (discord_id, win_rate, games_played) in enumerate(top_players, start=1):
+            for i, (discord_id, win_rate, games_played, weighted_score) in enumerate(top_players, start=1):
                 win_pct = round(win_rate * 100, 2)
                 try:
                     user = await self.bot.fetch_user(discord_id)
