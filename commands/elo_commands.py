@@ -93,7 +93,7 @@ class EloCommands(commands.Cog):
             else:
                 embed.add_field(name="Outcome", value="A perfect tie... as if destiny itself hesitated.", inline=False)
 
-            embed.set_footer(text="Threads arranged with care… by Kyasutorisu <:Nekorice:1349312200426127420>")
+            embed.set_footer(text="Threads arranged with care… by Kyasutorisu")
 
             # Create view with buttons
             view = UpdateEloView(
