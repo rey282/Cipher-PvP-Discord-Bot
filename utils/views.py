@@ -134,7 +134,7 @@ class UpdateEloView(ui.View):
             member = interaction.guild.get_member(int(player_id))
             if member:
                 new_elo = self.elo_data[str(player_id)]["elo"]
-                await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
+                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel, announce_demotions=True)
 
         embed = discord.Embed(
             title="Threads of Victory",
@@ -283,7 +283,7 @@ class TiebreakerView(ui.View):
             member = interaction.guild.get_member(int(player_id))
             if member:
                 new_elo = self.elo_data[str(player_id)]["elo"]
-                await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
+                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel, announce_demotions=True)
 
         embed = Embed(
             title="Tiebreaker Results: Fate Has Decided",
@@ -394,10 +394,10 @@ class ConfirmUndoView(discord.ui.View):
             success, message = rollback_last_match()
 
             for player_id, change in self.elo_gains.items():
-                member = interaction.guild.get_member(int(player_id))
-                if member:
-                    new_elo = self.elo_data[str(player_id)]["elo"]
-                    await update_rank_role(member, new_elo, self.elo_data, interaction.channel)
+            member = interaction.guild.get_member(int(player_id))
+            if member:
+                new_elo = self.elo_data[str(player_id)]["elo"]
+                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel, announce_demotions=True)
             
             # Disable all buttons in this view
             for item in self.children:

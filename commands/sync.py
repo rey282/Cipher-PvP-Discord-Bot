@@ -34,7 +34,7 @@ class AdminSync(commands.Cog):
 
             new_elo = elo_data[player_id].get("elo", 200)
             try:
-                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel)
+                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel, announce_demotions=True)
                 updated += 1
             except Exception as e:
                 print(f"❌ Failed to update {member.display_name}: {e}")
