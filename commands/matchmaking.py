@@ -91,7 +91,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
 
         embed.set_footer(text="Gently handled by Kyasutorisu")
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=False)
 
 
 class MatchmakingCommands(commands.Cog):
@@ -251,7 +251,7 @@ class MatchmakingCommands(commands.Cog):
             if point_diff < 100:
                 embed = discord.Embed(
                     title=f"Pre-Bans Calculation for {match_type}",
-                    color=discord.Color.blue()
+                    color=discord.Color.purple()
                 )
                 embed.add_field(
                     name="Teams Aligned",
@@ -283,7 +283,7 @@ class MatchmakingCommands(commands.Cog):
             # Create embed
             embed = discord.Embed(
                 title=f"Pre-Bans Calculation for {match_type}",
-                color=discord.Color.blue()
+                color=discord.Color.purple()
             )
             
             # Add team info
