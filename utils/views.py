@@ -131,27 +131,6 @@ class UpdateEloView(ui.View):
         save_match_history(match_data)
         self.elo_data = load_elo_data()
 
-        for player_id, change in self.elo_gains.items():
-            member = interaction.guild.get_member(int(player_id))
-            if member:
-                # ⬇️ Use previous ELO to get OLD rank
-                previous_elo = self.elo_data[str(player_id)]["elo"] - change
-                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
-
-                # ⬇️ Then update ELO (already happened at this point)
-                new_elo = self.elo_data[str(player_id)]["elo"]
-                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
-
-                # ⬇️ Now force the role update with explicit old_rank
-                await update_rank_role(
-                    member,
-                    new_elo,
-                    self.elo_data,
-                    channel=interaction.channel,
-                    announce_demotions=True,
-                    force_old_rank=old_rank  # we'll support this
-                )
-
         embed = discord.Embed(
             title="Threads of Victory",
             color=discord.Color.blue() if blue_total_score < red_total_score else discord.Color.red()
@@ -182,6 +161,27 @@ class UpdateEloView(ui.View):
 
         confirm_view = ConfirmRollbackView()
         await interaction.followup.send(embed=embed, view=confirm_view)
+
+        await asyncio.sleep(1)
+
+        for player_id, change in self.elo_gains.items():
+            member = interaction.guild.get_member(int(player_id))
+            if member:
+                previous_elo = self.elo_data[str(player_id)]["elo"] - change
+                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
+
+                new_elo = self.elo_data[str(player_id)]["elo"]
+                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
+
+                await update_rank_role(
+                    member,
+                    new_elo,
+                    self.elo_data,
+                    channel=interaction.channel,
+                    announce_demotions=True,
+                    force_old_rank=old_rank 
+                )
+
 
     @ui.button(label="Cancel", style=discord.ButtonStyle.red)
     async def cancel(self, interaction: Interaction, button: ui.Button):
@@ -296,27 +296,6 @@ class TiebreakerView(ui.View):
         save_match_history(match_data)
         self.elo_data = load_elo_data()
 
-        for player_id, change in self.elo_gains.items():
-            member = interaction.guild.get_member(int(player_id))
-            if member:
-                # ⬇️ Use previous ELO to get OLD rank
-                previous_elo = self.elo_data[str(player_id)]["elo"] - change
-                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
-
-                # ⬇️ Then update ELO (already happened at this point)
-                new_elo = self.elo_data[str(player_id)]["elo"]
-                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
-
-                # ⬇️ Now force the role update with explicit old_rank
-                await update_rank_role(
-                    member,
-                    new_elo,
-                    self.elo_data,
-                    channel=interaction.channel,
-                    announce_demotions=True,
-                    force_old_rank=old_rank  # we'll support this
-                )
-
         embed = Embed(
             title="Tiebreaker Results: Fate Has Decided",
             color=discord.Color.blue() if winner_team == self.blue_team else discord.Color.red()
@@ -361,6 +340,27 @@ class TiebreakerView(ui.View):
             await interaction.followup.send(embed=embed, view=confirm_view)
         else:
             await interaction.response.send_message(embed=embed, view=confirm_view)
+
+        await asyncio.sleep(1)
+
+        for player_id, change in self.elo_gains.items():
+            member = interaction.guild.get_member(int(player_id))
+            if member:
+                previous_elo = self.elo_data[str(player_id)]["elo"] - change
+                old_rank = get_rank(previous_elo, player_id=member.id, elo_data=self.elo_data)
+
+                new_elo = self.elo_data[str(player_id)]["elo"]
+                new_rank = get_rank(new_elo, player_id=member.id, elo_data=self.elo_data)
+
+                await update_rank_role(
+                    member,
+                    new_elo,
+                    self.elo_data,
+                    channel=interaction.channel,
+                    announce_demotions=True,
+                    force_old_rank=old_rank 
+                )
+        
         self.stop()
 
 class ConfirmRollbackView(discord.ui.View):
@@ -445,8 +445,7 @@ class ConfirmUndoView(discord.ui.View):
                 await interaction.channel.send(
                     f"✅ {interaction.user.mention} has gracefully undone the last match. Fate has been restored."
                     if success else f"❌ {interaction.user.mention} tried to reverse the match, but unfortunately, it failed: `{message}`\nI’m really sorry, but we’ll give it another go soon!"
-                )
-
+                )               
                 try:
                     await interaction.delete_original_response()
                 except discord.NotFound:

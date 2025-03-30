@@ -209,14 +209,6 @@ class AdminCommands(commands.Cog):
             # Save changes
             save_elo_data(elo_data)
 
-            await update_rank_role(
-                player,
-                new_rating,
-                elo_data,
-                channel=interaction.channel,
-                announce_demotions=True
-            )
-
             # Create embed response
             embed = discord.Embed(
                 title="Fate Has Shifted",
@@ -232,6 +224,21 @@ class AdminCommands(commands.Cog):
             embed.timestamp = interaction.created_at
 
             await interaction.followup.send(embed=embed)
+
+            try:
+                previous_elo = old_elo if player_id in elo_data else 200
+                old_rank = get_rank(previous_elo, player_id=player.id, elo_data=elo_data)
+
+                await update_rank_role(
+                    player,
+                    new_rating,
+                    elo_data,
+                    channel=interaction.channel,
+                    announce_demotions=True,
+                    force_old_rank=old_rank
+                )
+except Exception as e:
+    print(f"⚠️ Failed to update role for {player.display_name}: {e}")
 
         except Exception as e:
             await interaction.response.send_message(
