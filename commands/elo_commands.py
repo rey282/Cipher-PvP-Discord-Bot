@@ -38,19 +38,19 @@ class EloCommands(commands.Cog):
             # Validate no duplicate players
             players = [blue_player_1, blue_player_2, red_player_1, red_player_2]
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):
-                await interaction.followup.send("U-Um… I think you might’ve listed the same soul on both teams... I’m sorry, but each thread must belong to just one side.", ephemeral=False)
+                await interaction.followup.send("<:Unamurice:1349309283669377064> U-Um… I think you might’ve listed the same soul on both teams... I’m sorry, but each thread must belong to just one side.", ephemeral=False)
                 return
             
             # Validate scores (0-15)
             blue_scores = [blue_player_1_cycle, blue_player_2_cycle]
             red_scores = [red_player_1_cycle, red_player_2_cycle]
             if any(score < 0 or score > 15 for score in blue_scores + red_scores):
-                await interaction.followup.send("Ah... those cycle scores don’t quite look right. They must be between 0 and 15. Shall we try again…?", ephemeral=False)
+                await interaction.followup.send("<:Unamurice:1349309283669377064> Ah... those cycle scores don’t quite look right. They must be between 0 and 15. Shall we try again…?", ephemeral=False)
                 return
 
             # Validate cycle penalties (non-negative)
             if blue_cycle_penalty < 0 or red_cycle_penalty < 0:
-                await interaction.followup.send("I-I'm sorry, but penalties can’t be negative… that would twist the flow of battle. Let’s adjust that gently.", ephemeral=False)
+                await interaction.followup.send("<:Unamurice:1349309283669377064> I-I'm sorry, but penalties can’t be negative… that would twist the flow of battle. Let’s adjust that gently.", ephemeral=False)
                 return
 
             # Calculate total scores for each team (excluding penalties)
@@ -93,7 +93,7 @@ class EloCommands(commands.Cog):
             else:
                 embed.add_field(name="Outcome", value="A perfect tie... as if destiny itself hesitated.", inline=False)
 
-            embed.set_footer(text="Threads arranged with care… by Kyasutorisu")
+            embed.set_footer(text="Threads arranged with care… by Kyasutorisu <:Nekorice:1349312200426127420>")
 
             # Create view with buttons
             view = UpdateEloView(

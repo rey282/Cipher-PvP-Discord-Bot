@@ -30,7 +30,7 @@ class UpdateEloView(ui.View):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
             await interaction.response.send_message(
-                "❌ I’m sorry, but you’re not allowed to interact with this…\n"
+                "<:Unamurice:1349309283669377064> I’m sorry, but you’re not allowed to interact with this…\n"
                 "I must respectfully ask for your understanding.",
                 ephemeral=True
             )
@@ -183,7 +183,7 @@ class TiebreakerView(ui.View):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
             await interaction.response.send_message(
-                "❌ I’m sorry, but you’re not allowed to interact with this…\n"
+                "<:Unamurice:1349309283669377064> I’m sorry, but you’re not allowed to interact with this…\n"
                 "I must respectfully ask for your understanding.",
                 ephemeral=True
             )
@@ -331,7 +331,7 @@ class ConfirmRollbackView(discord.ui.View):
         # If the user is not an admin and does not have the required role
         if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
             await interaction.response.send_message(
-                "Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
+                "<:spajaja:1351033162091986944> Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
                 ephemeral=True
             )
             return

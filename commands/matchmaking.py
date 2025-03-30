@@ -28,14 +28,14 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
 
         # Validate UID format if provided
         if uid_input and (not uid_input.isdigit() or len(uid_input) != 9):
-            await interaction.followup.send("U-Um… I think the UID should be exactly 9 numbers... Could you double-check it for me?", ephemeral=True)
+            await interaction.followup.send("<:Unamurice:1349309283669377064> U-Um… I think the UID should be exactly 9 numbers... Could you double-check it for me?", ephemeral=True)
             return
 
         # Convert points
         try:
             points = int(points_input) if points_input else 0
         except ValueError:
-            await interaction.followup.send("Oh no… I couldn’t understand the Mirror Points. It should be a number—would you mind trying again?", ephemeral=True)
+            await interaction.followup.send("<:Unamurice:1349309283669377064> Oh no… I couldn’t understand the Mirror Points. It should be a number—would you mind trying again?", ephemeral=True)
             return
 
         # Case 1: Existing player
@@ -51,7 +51,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
         # Case 2: New registration
         else:
             if not uid_input:
-                await interaction.followup.send("O-Oh… I’m sorry, but I need your UID to begin your registration. Without it, I can’t properly weave your thread…", ephemeral=True)
+                await interaction.followup.send("<:Unamurice:1349309283669377064> O-Oh… I’m sorry, but I need your UID to begin your registration. Without it, I can’t properly weave your thread…", ephemeral=True)
                 return
 
             elo_data[player_id] = {
@@ -89,7 +89,7 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
         if action == "registered":
             embed.add_field(name="Starting ELO", value="`200`", inline=False)
 
-        embed.set_footer(text="Gently handled by Kyasutorisu")
+        embed.set_footer(text="Gently handled by Kyasutorisu <:Nekorice:1349312200426127420>")
 
         await interaction.followup.send(embed=embed, ephemeral=False)
 
@@ -125,7 +125,7 @@ class MatchmakingCommands(commands.Cog):
         )
         embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
         embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
-        embed.set_footer(text="Woven gently by Kyasutorisu")
+        embed.set_footer(text="Woven gently by Kyasutorisu <:Nekorice:1349312200426127420>")
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="register", description="Allow me to gently record or update your thread…")
@@ -189,7 +189,7 @@ class MatchmakingCommands(commands.Cog):
             inline=False
         )
 
-        embed.set_footer(text="Handled with care by Kyasutorisu")
+        embed.set_footer(text="Handled with care by Kyasutorisu <:Nekorice:1349312200426127420>")
 
         await interaction.followup.send(embed=embed)
 
@@ -265,7 +265,7 @@ class MatchmakingCommands(commands.Cog):
                         f"*Total point difference: {point_diff:.0f}*",
                     inline=False
                 )
-                embed.set_footer(text="Handled with care by Kyasutorisu")
+                embed.set_footer(text="Handled with care by Kyasutorisu <:Nekorice:1349312200426127420>")
                 await interaction.followup.send(embed=embed)
                 return  
             
@@ -310,12 +310,12 @@ class MatchmakingCommands(commands.Cog):
                 value="\n".join(ban_info) + f"\n\n*Total point difference: {point_diff:.0f}*",
                 inline=False
             )
-            embed.set_footer(text="Handled with care by Kyasutorisu")
+            embed.set_footer(text="Handled with care by Kyasutorisu <:Nekorice:1349312200426127420>")
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
             await interaction.response.send_message(
-                f"I’m truly sorry. Please allow me to try again. Here’s the error: {str(e)}",
+                f"<:Poutorice:1349312201973829733> I’m truly sorry. Please allow me to try again. Here’s the error: {str(e)}",
                 ephemeral=True
             )
             raise
