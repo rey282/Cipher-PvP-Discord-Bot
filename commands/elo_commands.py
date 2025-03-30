@@ -33,9 +33,6 @@ class EloCommands(commands.Cog):
     )
 
     async def update_elo(self, interaction: Interaction, blue_player_1: discord.Member, blue_player_2: discord.Member, red_player_1: discord.Member, red_player_2: discord.Member, blue_player_1_cycle: int, blue_player_2_cycle: int, red_player_1_cycle: int, red_player_2_cycle: int, blue_cycle_penalty: int, red_cycle_penalty: int):
-        if interaction.user.id != AUTHORIZED_USER_ID:
-            await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
-            return
         try:
             await interaction.response.defer()
             # Validate no duplicate players
