@@ -5,6 +5,7 @@ import asyncio
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
+from utils.rank_utils import update_rank_role 
 from utils.db_utils import load_elo_data, save_elo_data
 from dotenv import load_dotenv
 
@@ -207,6 +208,14 @@ class AdminCommands(commands.Cog):
 
             # Save changes
             save_elo_data(elo_data)
+
+            await update_rank_role(
+                player,
+                new_rating,
+                elo_data,
+                channel=interaction.channel,
+                announce_demotions=True
+            )
 
             # Create embed response
             embed = discord.Embed(

@@ -3,12 +3,17 @@ from discord.ext import commands
 from discord import app_commands, Interaction
 from utils.db_utils import load_elo_data
 from utils.rank_utils import update_rank_role
+from dotenv import load_dotenv
 
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 class AdminSync(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="sync_ranks", description="Force sync everyone’s rank roles based on current ELO.")
+    @app_commands.command(name="sync_ranks", description="Gently realign everyone’s role with their thread of fate (based on ELO).")
+    @app_commands.guilds(GUILD_ID)
     @app_commands.checks.has_permissions(administrator=True)
     async def sync_ranks(self, interaction: Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -28,15 +33,16 @@ class AdminSync(commands.Cog):
 
             new_elo = elo_data[player_id].get("elo", 200)
             try:
-                await update_rank_role(member, new_elo, elo_data, channel=None)
+                await update_rank_role(member, new_elo, elo_data, channel=interaction.channel)
                 updated += 1
             except Exception as e:
                 print(f"❌ Failed to update {member.display_name}: {e}")
 
         await interaction.followup.send(
-            f"✅ Rank roles synced.\n"
-            f"Updated: `{updated}` members.\n"
-            f"Skipped (not registered): `{skipped}`."
+            f"Kyasutorisu has gently restored the threads of fate.\n"
+            f"Updated: `{updated}` members\n"
+            f"Skipped (not registered): `{skipped}`",
+            ephemeral=True
         )
 
 async def setup(bot: commands.Bot):
