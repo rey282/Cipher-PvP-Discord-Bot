@@ -177,20 +177,30 @@ class TiebreakerView(ui.View):
         try:
             await interaction.response.defer()
         except discord.NotFound:
-            # Interaction expired, maybe log or ignore
             print("Interaction expired.")
             return
-        await self.handle_tiebreaker(interaction, winner_team=self.blue_team, loser_team=self.red_team)   
+        
+        for item in self.children:
+            item.disabled = True
+        await interaction.message.edit(view=self)
+
+        await self.handle_tiebreaker(interaction, winner_team=self.blue_team, loser_team=self.red_team) 
+        self.stop()  
 
     @ui.button(label="Red Team Won", style=discord.ButtonStyle.red)
     async def blue_side_pick(self, interaction: Interaction, button: ui.Button):
         try:
             await interaction.response.defer()
         except discord.NotFound:
-            # Interaction expired, maybe log or ignore
             print("Interaction expired.")
             return
+
+        for item in self.children:
+            item.disabled = True
+        await interaction.message.edit(view=self)
+
         await self.handle_tiebreaker(interaction, winner_team=self.red_team, loser_team=self.blue_team)
+        self.stop()
 
     async def handle_tiebreaker(self, interaction: Interaction, winner_team, loser_team):
         if not interaction.response.is_done():
