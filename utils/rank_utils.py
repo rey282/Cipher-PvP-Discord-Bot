@@ -90,7 +90,7 @@ async def update_rank_role(
                 f"{member.mention} has returned to the path of **{new_rank}**.\n"
                 f"The threads shift softly... but they never break."
             )
-        else
+        else:
             print(f"📭 Rank changed but no announcement made for {member.display_name}")
     except Exception as e:
         print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
