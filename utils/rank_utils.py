@@ -25,8 +25,10 @@ async def update_rank_role(member: discord.Member, new_elo: int, elo_data: dict,
     old_rank = get_rank(elo_data.get(str(member.id), {}).get("elo", 200), player_id=member.id, elo_data=elo_data)
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
-    if old_rank == new_rank:
-        return  # No rank change
+    has_rank_role = any(role.name == new_rank for role in member.roles)
+
+    if old_rank == new_rank and has_rank_role:
+        return
 
     # Update roles
     rank_order = [
