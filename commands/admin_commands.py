@@ -5,7 +5,7 @@ import asyncio
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
-from utils.rank_utils import update_rank_role 
+from utils.rank_utils import update_rank_role, get_rank
 from utils.db_utils import load_elo_data, save_elo_data
 from dotenv import load_dotenv
 
