@@ -23,10 +23,14 @@ class TopWinRate(commands.Cog):
 
             # Fetch top 10 players with at least 5 games
             cur.execute("""
-                SELECT discord_id, win_rate, games_played
+                SELECT
+                    discord_id,
+                    win_rate,
+                    games_played,
+                    (win_rate * (1 - EXP(-games_played / 10.0))) AS weighted_score
                 FROM players
                 WHERE games_played >= 5
-                ORDER BY win_rate DESC
+                ORDER BY weighted_score DESC
                 LIMIT 10;
             """)
             top_players = cur.fetchall()
@@ -40,8 +44,8 @@ class TopWinRate(commands.Cog):
 
             embed = discord.Embed(
                 title="Top 10 Win Rates",
-                description="The most victorious threads I've seen so far:",
-                color=discord.Color.gold()
+                description="More games? More fate. Here's the fairest ranking by threads of victory:",
+                color=discord.Color.purple()
             )
 
             for i, (discord_id, win_rate, games_played) in enumerate(top_players, start=1):
@@ -53,7 +57,10 @@ class TopWinRate(commands.Cog):
                     name = f"<@{discord_id}>"
                 embed.add_field(
                     name=f"{i}. {name}",
-                    value=f"Win Rate: `{win_pct}%` over `{games_played}` trials",
+                    value=(
+                        f"Win Rate: `{win_pct}%` over `{games_played}` trials\n"
+                        f"Thread Strength: `{weighted_score:.3f}`"
+                    ),
                     inline=False
                 )
 
