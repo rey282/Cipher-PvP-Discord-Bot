@@ -46,9 +46,14 @@ class TopWinRate(commands.Cog):
 
             for i, (discord_id, win_rate, games_played) in enumerate(top_players, start=1):
                 win_pct = round(win_rate * 100, 2)
+                try:
+                    user = await self.bot.fetch_user(discord_id)
+                    name = user.display_name if hasattr(user, "display_name") else user.name
+                except Exception:
+                    name = f"<@{discord_id}>"
                 embed.add_field(
-                    name=f"{i}. <@{discord_id}>",
-                    value=f"Win Rate: `{win_pct}%`\nGames Played: `{games_played}`",
+                    name=f"{i}. {name}>",
+                    value=f"Win Rate: `{win_pct}%` over `{games}` trials",
                     inline=False
                 )
 
