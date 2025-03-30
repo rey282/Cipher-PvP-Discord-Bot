@@ -5,7 +5,7 @@ from discord import ui
 from discord import Interaction
 from discord import Embed
 from datetime import datetime
-from utils.rank_utils import update_rank_role
+from utils.rank_utils import update_rank_role, get_rank
 from utils.db_utils import ( 
     save_elo_data, 
     load_elo_data, 
