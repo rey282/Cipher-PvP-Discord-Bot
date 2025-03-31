@@ -201,7 +201,7 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
         if len(team) == 2:
             teammate = team[1 - i]
             teammate_id = str(teammate.id)
-            teammate_elo = original_elos.get(teammate_id, {"elo": 200})["elo"]
+            teammate_elo = original_elos.get(teammate_id, 200)
 
             # Handle rounding imprecision
             if abs(teammate_elo - player_elo) < 0.01:
