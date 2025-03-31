@@ -118,7 +118,7 @@ async def update_rank_role(
                     f"The threads of fate weave ever forward..."
                 )
             elif announce_demotions and new_index < old_index:
-                if old_rank == "Akivili":
+                if old_rank == "Akivili" and new_rank != "Akivili":
                     await channel.send(
                         f"{member.mention} has stepped down from **Akivili**.\n"
                         f"Even the fates must bow to the ever-changing threads…"
