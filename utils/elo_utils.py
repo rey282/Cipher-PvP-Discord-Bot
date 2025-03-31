@@ -180,6 +180,11 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
     seen_ids = set()
     changes = {}
 
+    original_elos = {
+        str(player.id): elo_data.get(str(player.id), {"elo": 200})["elo"]
+        for player in team
+    }
+
     for i, player in enumerate(team):
         player_id = str(player.id)
         if player_id in seen_ids:
@@ -196,7 +201,7 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
         if len(team) == 2:
             teammate = team[1 - i]
             teammate_id = str(teammate.id)
-            teammate_elo = elo_data.get(teammate_id, {"elo": 200})["elo"]
+            teammate_elo = original_elos.get(teammate_id, {"elo": 200})["elo"]
 
             # Handle rounding imprecision
             if abs(teammate_elo - player_elo) < 0.01:
@@ -205,6 +210,12 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
                 ratio = teammate_elo / player_elo if gain else player_elo / teammate_elo
 
             individual_change = per_player_change * ratio
+
+            print(f"[DEBUG] Player: {player.display_name} | Player ELO: {player_elo} | Teammate: {teammate.display_name} | Teammate ELO: {teammate_elo} | Ratio: {ratio:.4f} | Change: {individual_change:.4f}")
+        else:
+            individual_change = per_player_change
+
+            
         # Apply ELO adjustment
         new_elo = player_elo + individual_change if gain else player_elo - individual_change
         player_data["elo"] = max(100, round(new_elo, 2))
