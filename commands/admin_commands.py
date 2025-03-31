@@ -145,12 +145,12 @@ class AdminCommands(commands.Cog):
     @app_commands.guilds(GUILD_ID)
     async def start_leaderboard(self, interaction: discord.Interaction):
         if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message(
-            "<:Unamurice:1349309283669377064> U-Um… Only Haya may unveil the tapestry of top weavers…\n"
-            "*I don’t mean to be rude! It’s just… a little above my station…*",,
-            ephemeral=True
-        )
-        return
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> U-Um… Only Haya may unveil the tapestry of top weavers…\n"
+                "*I don’t mean to be rude! It’s just… a little above my station…*",,
+                ephemeral=True
+            )
+            return
         
         await interaction.response.defer()
         try:
@@ -276,7 +276,7 @@ class AdminCommands(commands.Cog):
             ephemeral=True
         )
         return
-        
+
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:
             elo_data = load_elo_data()
