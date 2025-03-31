@@ -147,7 +147,7 @@ class AdminCommands(commands.Cog):
         if interaction.user.id != OWNER_ID:
             await interaction.response.send_message(
                 "<:Unamurice:1349309283669377064> U-Um… Only Haya may unveil the tapestry of top weavers…\n"
-                "*I don’t mean to be rude! It’s just… a little above my station…*",,
+                "*I don’t mean to be rude! It’s just… a little above my station…*",
                 ephemeral=True
             )
             return
