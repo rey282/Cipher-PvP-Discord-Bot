@@ -5,13 +5,14 @@ import asyncio
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
-from discord.app_commands import AppCommandError, CheckFailure
+from discord.app_commands import AppCommandError
 from utils.rank_utils import update_rank_role, get_rank
 from utils.db_utils import load_elo_data, save_elo_data
 from dotenv import load_dotenv
 
 load_dotenv()
 
+OWNER_ID = int(os.getenv("OWNER_ID"))
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class ResetConfirmModal(discord.ui.Modal, title="Are you sure you wish to reset all ELO?"):
@@ -54,22 +55,6 @@ class AdminCommands(commands.Cog):
         # Track last known ELO data for change detection
         self.last_elo_data = {}
         self.message_id_file = 'leaderboard_message_id.json'
-
-    @commands.Cog.listener()
-    async def on_app_command_error(self, interaction: discord.Interaction, error: AppCommandError):
-        if isinstance(error, CheckFailure):
-            # Graceful message for non-admins trying admin commands
-            try:
-                await interaction.response.send_message(
-                    "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
-                    "Please speak to someone with the right permissions if you'd like this command woven into being.",
-                    ephemeral=True
-                )
-            except discord.InteractionResponded:
-                await interaction.followup.send(
-                    "Oh... I’m really sorry, but that command is reserved for administrators.",
-                    ephemeral=True
-                )
 
     async def cog_load(self):
         """Ensure leaderboard loop starts when bot loads."""
@@ -159,6 +144,13 @@ class AdminCommands(commands.Cog):
     @app_commands.command(name="start-leaderboard", description="Live Leaderboard")
     @app_commands.guilds(GUILD_ID)
     @app_commands.checks.has_permissions(administrator=True)
+    if interaction.user.id != OWNER_ID:
+        await interaction.response.send_message(
+            "<:Unamurice:1349309283669377064> O-oh… I’m sorry, but only Haya may realign the threads of fate like this...\n"
+            "*You’re not Haya, are you…?*",
+            ephemeral=True
+        )
+        return
     async def start_leaderboard(self, interaction: discord.Interaction):
         await interaction.response.defer()
         try:
@@ -185,11 +177,20 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
         player="Player to adjust rating",
         new_rating="Exact ELO rating to set"
     )
+    required_role = "Stonehearts" 
+    
+    # If the user is not an admin and does not have the required role
+    if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
+        await interaction.response.send_message(
+            "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+            "Please speak to someone with the right permissions if you'd like this command woven into being.",
+            ephemeral=True
+        )
+        return
     async def change_rating(
         self,
         interaction: Interaction,
@@ -266,6 +267,13 @@ class AdminCommands(commands.Cog):
     @app_commands.command(name="reset", description="The threads of fate are reset for all players... A new season begins.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.checks.has_permissions(administrator=True)
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+            "Please speak to someone with the right permissions if you'd like this command woven into being.",
+            ephemeral=True
+        )
+        return
     async def reset_elo(self, interaction: Interaction):
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:

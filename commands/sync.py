@@ -15,8 +15,15 @@ class AdminSync(commands.Cog):
 
     @app_commands.command(name="sync_ranks", description="Gently realign everyone’s role with their thread of fate (based on ELO).")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.checks.has_permissions(administrator=True)
     async def sync_ranks(self, interaction: Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                ephemeral=True
+            )
+            return
+
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         elo_data = load_elo_data()

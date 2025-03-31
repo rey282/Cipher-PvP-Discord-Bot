@@ -371,7 +371,7 @@ class ConfirmRollbackView(discord.ui.View):
         
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        required_role = "Stonehearts"  # Replace with your specific role name
+        required_role = "Stonehearts" 
     
         # If the user is not an admin and does not have the required role
         if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
