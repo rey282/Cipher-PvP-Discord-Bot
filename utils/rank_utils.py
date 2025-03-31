@@ -3,10 +3,17 @@ from discord.utils import get
 
 def get_rank(elo_score, player_id=None, elo_data=None):
     if player_id and elo_data:
-        top_player = max(elo_data.items(), key=lambda x: x[1].get("elo", 200), default=None)
-        top_elo = float(top_player[1].get("elo", 0))
-        if str(player_id) == str(top_player[0]) and top_elo >= 1300:
-            return "Akivili"
+        # Sort players by ELO descending
+        top_players = sorted(
+            elo_data.items(),
+            key=lambda x: x[1].get("elo", 200),
+            reverse=True
+        )
+
+        # Check if the player is within the top 3 and has at least 1400 ELO
+        for pid, pdata in top_players[:3]:
+            if str(player_id) == str(pid) and pdata.get("elo", 0) >= 1400:
+                return "Akivili"
     if elo_score < 300:
         return "Trailblazer"
     elif 300 <= elo_score < 600:
@@ -75,10 +82,15 @@ async def update_rank_role(
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
 
-    # 🎉 Announce
+   
     if channel:
         try:
-            if new_index > old_index:
+            if new_rank == "Akivili" and new_index > old_index:
+                await channel.send(
+                    f"{member.mention} has ascended as the **Akivili**, Weaver of Fates!\n"
+                    f"The loom bows to their threads — all destinies now orbit their will."
+                )
+            elif new_index > old_index:
                 await channel.send(
                     f"{member.mention} has awakened as an **{new_rank}**!\n"
                     f"The threads of fate weave ever forward..."
@@ -89,6 +101,6 @@ async def update_rank_role(
                     f"The threads shift softly... but they never break."
                 )
             else:
-                print(f"📭 Rank changed but no announcement made for {member.display_name}")
+                print(f"Rank changed but no announcement made for {member.display_name}")
         except Exception as e:
             print(f"❌ Failed to send rank change message for {member.display_name}: {e}")
