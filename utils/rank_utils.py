@@ -104,7 +104,8 @@ async def update_rank_role(
                                 )
                         except Exception as e:
                             print(f"❌ Failed to remove Akivili role from {user.display_name}: {e}")
-   
+    print(f"[DEBUG] {member.display_name} {old_rank} → {new_rank} | ELO: {new_elo}")
+
     if channel:
         try:
             if new_rank == "Akivili" and old_rank != "Akivili":
