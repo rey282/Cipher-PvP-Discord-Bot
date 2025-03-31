@@ -39,6 +39,8 @@ async def update_rank_role(
     )
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
+    was_akivili = "Akivili" in [r.name for r in member.roles]
+
     if new_rank == "Aeon" and is_akivili_now(str(member.id), elo_data):
         new_rank = "Akivili"
 
@@ -104,7 +106,6 @@ async def update_rank_role(
                                 )
                         except Exception as e:
                             print(f"❌ Failed to remove Akivili role from {user.display_name}: {e}")
-    print(f"[DEBUG] {member.display_name} {old_rank} → {new_rank} | ELO: {new_elo}")
 
     if channel:
         try:
@@ -118,7 +119,10 @@ async def update_rank_role(
                     f"{member.mention} has awakened as an **{new_rank}**!\n"
                     f"The threads of fate weave ever forward..."
                 )
-            elif announce_demotions and new_index < old_index:
+            elif announce_demotions and (
+                new_index < old_index or
+                (was_akivili and new_rank != "Akivili")
+            ):
                 if old_rank == "Akivili" and new_rank != "Akivili":
                     await channel.send(
                         f"{member.mention} has stepped down from **Akivili**.\n"
