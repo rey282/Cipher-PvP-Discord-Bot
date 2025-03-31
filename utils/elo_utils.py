@@ -184,6 +184,9 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
         str(player.id): elo_data.get(str(player.id), {"elo": 200})["elo"]
         for player in team
     }
+    print("[DEBUG] === ORIGINAL ELO SNAPSHOT ===")
+    for pid, elo in original_elos.items():
+        print(f"[DEBUG] Player ID: {pid} | Original ELO: {elo}")
 
     for i, player in enumerate(team):
         player_id = str(player.id)
@@ -211,7 +214,13 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
 
             individual_change = per_player_change * ratio
 
-            print(f"[DEBUG] Player: {player.display_name} | Player ELO: {player_elo} | Teammate: {teammate.display_name} | Teammate ELO: {teammate_elo} | Ratio: {ratio:.4f} | Change: {individual_change:.4f}")
+            print(f"[DEBUG] Processing {player.display_name} ({player_id})")
+            print(f"         Original ELO: {player_elo}")
+            print(f"         Teammate: {teammate.display_name} ({teammate_id})")
+            print(f"         Teammate ELO: {teammate_elo}")
+            print(f"         Calculated Ratio: {ratio:.4f}")
+            print(f"         Per-Player Base Change: {per_player_change}")
+            print(f"         Final Individual Change: {individual_change:.4f}")
         else:
             individual_change = per_player_change
 
