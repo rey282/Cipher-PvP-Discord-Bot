@@ -1,19 +1,15 @@
 import discord
 from discord.utils import get
 
-def get_rank(elo_score, player_id=None, elo_data=None):
-    if player_id and elo_data:
-        # Sort players by ELO descending
-        top_players = sorted(
-            elo_data.items(),
-            key=lambda x: x[1].get("elo", 200),
-            reverse=True
-        )
+def is_akivili_now(player_id: str, elo_data: dict) -> bool:
+    top_players = sorted(
+        elo_data.items(),
+        key=lambda x: x[1].get("elo", 200),
+        reverse=True
+    )[:3]
+    return any(pid == player_id and pdata.get("elo", 0) >= 1400 for pid, pdata in top_players)
 
-        # Check if the player is within the top 3 and has at least 1400 ELO
-        for pid, pdata in top_players[:3]:
-            if str(player_id) == str(pid) and pdata.get("elo", 0) >= 1400:
-                return "Akivili"
+def get_rank(elo_score, player_id=None, elo_data=None):
     if elo_score < 300:
         return "Trailblazer"
     elif 300 <= elo_score < 600:
@@ -42,6 +38,9 @@ async def update_rank_role(
         elo_data=elo_data
     )
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
+
+    if new_rank == "Aeon" and is_akivili_now(str(member.id), elo_data):
+    new_rank = "Akivili"
 
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
@@ -82,6 +81,29 @@ async def update_rank_role(
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
 
+    if new_rank == "Akivili":
+        top_akivilis = sorted(
+            [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1400],
+            key=lambda x: x[1].get("elo", 200),
+            reverse=True
+        )[:3]
+
+        top_akivili_ids = [pid for pid, _ in top_akivilis]
+        for pid, _ in elo_data.items():
+            if pid not in top_akivili_ids:
+                user = guild.get_member(int(pid))
+                if user and any(role.name == "Akivili" for role in user.roles):
+                    akivili_role = get(guild.roles, name="Akivili")
+                    if akivili_role:
+                        try:
+                            await user.remove_roles(akivili_role)
+                            if channel and announce_demotions:
+                                await channel.send(
+                                    f"{user.mention} has stepped down from **Akivili**.\n"
+                                    f"Even the fates must bow to the ever-changing threads…"
+                                )
+                        except Exception as e:
+                            print(f"❌ Failed to remove Akivili role from {user.display_name}: {e}")
    
     if channel:
         try:
@@ -96,10 +118,16 @@ async def update_rank_role(
                     f"The threads of fate weave ever forward..."
                 )
             elif announce_demotions and new_index < old_index:
-                await channel.send(
-                    f"{member.mention} has returned to the path of **{new_rank}**.\n"
-                    f"The threads shift softly... but they never break."
-                )
+                if old_rank == "Akivili":
+                    await channel.send(
+                        f"{member.mention} has stepped down from **Akivili**.\n"
+                        f"Even the fates must bow to the ever-changing threads…"
+                    )
+                else:
+                    await channel.send(
+                        f"{member.mention} has returned to the path of **{new_rank}**.\n"
+                        f"The threads shift softly... but they never break."
+                    )
             else:
                 print(f"Rank changed but no announcement made for {member.display_name}")
         except Exception as e:
