@@ -195,7 +195,7 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
             elo_data[player_id] = initialize_player_data(player_id)
 
         player_data = elo_data[player_id]
-        player_elo = player_data["elo"]
+        player_elo = original_elos[player_id]
 
         # Determine teammate's ELO (for 2v2 logic)
         if len(team) == 2:
