@@ -85,7 +85,7 @@ async def update_rank_role(
    
     if channel:
         try:
-            if new_rank == "Akivili" and new_index > old_index:
+            if new_rank == "Akivili" and old_rank != "Akivili":
                 await channel.send(
                     f"{member.mention} has ascended as the **Akivili**, Weaver of Fates!\n"
                     f"The loom bows to their threads — all destinies now orbit their will."
