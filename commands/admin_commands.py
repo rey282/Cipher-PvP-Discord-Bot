@@ -270,12 +270,12 @@ class AdminCommands(commands.Cog):
     async def reset_elo(self, interaction: Interaction):
 
         if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message(
-            "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
-            "Please speak to someone with the right permissions if you'd like this command woven into being.",
-            ephemeral=True
-        )
-        return
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                ephemeral=True
+            )
+            return
 
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:
