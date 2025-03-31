@@ -40,7 +40,7 @@ async def update_rank_role(
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
     if new_rank == "Aeon" and is_akivili_now(str(member.id), elo_data):
-    new_rank = "Akivili"
+        new_rank = "Akivili"
 
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
