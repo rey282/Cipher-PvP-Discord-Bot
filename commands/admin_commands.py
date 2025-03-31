@@ -143,14 +143,15 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(name="start-leaderboard", description="Live Leaderboard")
     @app_commands.guilds(GUILD_ID)
-    if interaction.user.id != OWNER_ID:
+    async def start_leaderboard(self, interaction: discord.Interaction):
+        if interaction.user.id != OWNER_ID:
         await interaction.response.send_message(
             "<:Unamurice:1349309283669377064> U-Um… Only Haya may unveil the tapestry of top weavers…\n"
             "*I don’t mean to be rude! It’s just… a little above my station…*",,
             ephemeral=True
         )
         return
-    async def start_leaderboard(self, interaction: discord.Interaction):
+        
         await interaction.response.defer()
         try:
             embed = await self._create_leaderboard_embed()
@@ -180,22 +181,23 @@ class AdminCommands(commands.Cog):
         player="Player to adjust rating",
         new_rating="Exact ELO rating to set"
     )
-    required_role = "Stonehearts" 
-    
-    # If the user is not an admin and does not have the required role
-    if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
-        await interaction.response.send_message(
-            "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
-            "Please speak to someone with the right permissions if you'd like this command woven into being.",
-            ephemeral=True
-        )
-        return
     async def change_rating(
         self,
         interaction: Interaction,
         player: discord.Member,
         new_rating: int
     ):
+        required_role = "Stonehearts" 
+    
+        # If the user is not an admin and does not have the required role
+        if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                ephemeral=True
+            )
+            return
+
         await interaction.response.defer()
 
         """Allows admins to manually adjust a player's ELO rating"""
@@ -265,14 +267,16 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(name="reset", description="The threads of fate are reset for all players... A new season begins.")
     @app_commands.guilds(GUILD_ID)
-    if not interaction.user.guild_permissions.administrator:
+    async def reset_elo(self, interaction: Interaction):
+
+        if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
             "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
             "Please speak to someone with the right permissions if you'd like this command woven into being.",
             ephemeral=True
         )
         return
-    async def reset_elo(self, interaction: Interaction):
+        
         """Reset ELO, win rate, and games played for all players, keeping UID."""
         try:
             elo_data = load_elo_data()
