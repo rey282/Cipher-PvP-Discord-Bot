@@ -143,11 +143,10 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(name="start-leaderboard", description="Live Leaderboard")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.checks.has_permissions(administrator=True)
     if interaction.user.id != OWNER_ID:
         await interaction.response.send_message(
-            "<:Unamurice:1349309283669377064> O-oh… I’m sorry, but only Haya may realign the threads of fate like this...\n"
-            "*You’re not Haya, are you…?*",
+            "<:Unamurice:1349309283669377064> U-Um… Only Haya may unveil the tapestry of top weavers…\n"
+            "*I don’t mean to be rude! It’s just… a little above my station…*",,
             ephemeral=True
         )
         return
@@ -266,7 +265,6 @@ class AdminCommands(commands.Cog):
 
     @app_commands.command(name="reset", description="The threads of fate are reset for all players... A new season begins.")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.checks.has_permissions(administrator=True)
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message(
             "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"

@@ -7,7 +7,7 @@ from utils.rank_utils import update_rank_role
 from dotenv import load_dotenv
 
 load_dotenv()
-
+OWNER_ID = int(os.getenv("OWNER_ID"))
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 class AdminSync(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -16,13 +16,13 @@ class AdminSync(commands.Cog):
     @app_commands.command(name="sync_ranks", description="Gently realign everyone’s role with their thread of fate (based on ELO).")
     @app_commands.guilds(GUILD_ID)
     async def sync_ranks(self, interaction: Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if interaction.user.id != OWNER_ID:
             await interaction.response.send_message(
-                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
-                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                "<:Unamurice:1349309283669377064> O-oh… I’m sorry, but only Haya may realign the threads of fate like this...\n"
+                "*You’re not Haya, are you…?*",
                 ephemeral=True
             )
-            return
+        return
 
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
