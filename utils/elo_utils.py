@@ -177,6 +177,7 @@ def calculate_team_elo_change(
 
 
 def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
+    print("[DEBUG] >>> ENTERED distribute_team_elo_change FUNCTION <<<")
     seen_ids = set()
     changes = {}
 
