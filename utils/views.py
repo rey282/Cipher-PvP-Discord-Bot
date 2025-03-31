@@ -365,7 +365,7 @@ class TiebreakerView(ui.View):
 
 class ConfirmRollbackView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=300)  # 5 minute timeout
+        super().__init__(timeout=None)  # 5 minute timeout
         self.confirmation_active = False
         self.message = None
         

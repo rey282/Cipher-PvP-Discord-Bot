@@ -198,15 +198,13 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
             teammate_id = str(teammate.id)
             teammate_elo = elo_data.get(teammate_id, {"elo": 200})["elo"]
 
-            # Calculate ratio differently for gain vs loss
-            if gain:
-                ratio = teammate_elo / player_elo
+            # Handle rounding imprecision
+            if abs(teammate_elo - player_elo) < 0.01:
+                ratio = 1.0
             else:
-                ratio = player_elo / teammate_elo
-            individual_change = per_player_change * ratio
-        else:
-            individual_change = per_player_change
+                ratio = teammate_elo / player_elo if gain else player_elo / teammate_elo
 
+            individual_change = per_player_change * ratio
         # Apply ELO adjustment
         new_elo = player_elo + individual_change if gain else player_elo - individual_change
         player_data["elo"] = max(100, round(new_elo, 2))
