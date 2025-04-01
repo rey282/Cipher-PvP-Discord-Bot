@@ -1,6 +1,7 @@
 import discord
 import random
 import os
+import re
 from discord.ext import commands
 from discord import app_commands
 from discord import Interaction
@@ -9,16 +10,39 @@ from utils.rank_utils import get_rank
 from dotenv import load_dotenv
 
 load_dotenv()
-
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
+
+ALLOWED_COLORS = {
+    "red": 0xFF4C4C,
+    "orange": 0xFFA500,
+    "yellow": 0xFFFF66,
+    "green": 0x66FF66,
+    "blue": 0x66CCFF,
+    "purple": 0xB19CD9,
+    "pink": 0xFFB6C1,
+    "white": 0xF8F8FF,
+    "gray": 0xB0B0B0,
+    "black": 0x1E1E1E,
+    "brown": 0xA0522D,
+    "cyan": 0x00FFFF,
+    "magenta": 0xFF00FF,
+}
 
 class DescriptionModal(ui.Modal, title="Rewrite Your Soul’s Thread"):
     description = ui.TextInput(
-        label="If I may… how would you like to be remembered?",
-        placeholder="A soft shimmer in the river of fate…",
+        label="If you'd like… what gentle words describe your soul?",
+        placeholder="You may leave this blank if you prefer silence…",
         max_length=43,
         style=discord.TextStyle.short,
-        required=True
+        required=False
+    )
+
+    profile_color = ui.TextInput(
+        label="If I may, what color resonates with your soul?)",
+        placeholder="Try pink, blue, or #FF69B4…",
+        required=False,
+        max_length=16,
+        style=discord.TextStyle.short
     )
 
     def __init__(self, user_id):
@@ -27,14 +51,41 @@ class DescriptionModal(ui.Modal, title="Rewrite Your Soul’s Thread"):
 
     async def on_submit(self, interaction: discord.Interaction):
         desc = str(self.description).strip()
+        color_input = str(self.profile_color).strip().lower()
+        color_code = None
+        update_desc = True
 
         # Basic link/URL validation (reject discord links, http, etc.)
-        if re.search(r"(https?:\/\/|discord\.gg|discordapp\.com|@|\.com|\.net|\.org)", desc, re.IGNORECASE):
+        if desc and re.search(r"(https?:\/\/|discord\.gg|discordapp\.com|@|\.com|\.net|\.org)", desc, re.IGNORECASE):
             await interaction.response.send_message(
                 "Oh… I must apologize… descriptions with links aren’t permitted. It’s for your safety…",
                 ephemeral=True
             )
             return
+        # Reset to default if user types 'none' or 'default'
+        if desc.lower() == "none":
+            desc = ""
+        elif desc.lower() == "default":
+            desc = "A glimpse into this soul’s gentle journey…"
+        elif desc == "":
+            update_desc = False
+
+        # Validate color
+        if color_input:
+            if color_input in ("none", "default"):
+                color_code = 0xB197FC  # Castorice default
+            elif color_input in ALLOWED_COLORS:
+                color_code = ALLOWED_COLORS[color_input]
+            elif re.fullmatch(r"#?[0-9a-f]{6}", color_input, re.IGNORECASE):
+                color_code = int(color_input.replace("#", ""), 16)
+            else:
+                await interaction.response.send_message(
+                    f"Ah… I didn’t quite understand that color. Please whisper one of these:\n"
+                    f"> *{', '.join(ALLOWED_COLORS.keys())}*\n"
+                    f"Or a hex code like `#FAB4C0`, or type `default` to reset.",
+                    ephemeral=True
+                )
+                return
 
         elo_data = load_elo_data()
 
@@ -42,11 +93,14 @@ class DescriptionModal(ui.Modal, title="Rewrite Your Soul’s Thread"):
             from utils.elo_utils import initialize_player_data  # or wherever it's defined
             elo_data[self.user_id] = initialize_player_data()
 
-        elo_data[self.user_id]["description"] = str(self.description)
+        elo_data[self.user_id]["description"] = desc
+        if color_code is not None:
+            elo_data[self.user_id]["color"] = color_code
+
         save_elo_data(elo_data)
 
         await interaction.response.send_message(
-            "Your soul’s description has been updated.", ephemeral=False
+            "Your soul’s thread has been gently updated.\n> *{desc or '…silent, but still meaningful…'", ephemeral=False
         )
 
 class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence"):
@@ -170,7 +224,7 @@ class MatchmakingCommands(commands.Cog):
     async def register(self, interaction: Interaction):
         await interaction.response.send_modal(RegisterPlayerModal())
 
-    @bot.tree.command(name="setdescription", description="Update your playercard description.")
+    @bot.tree.command(name="setplayercard", description="Gently adjust your soul’s card — a new whisper, a new color…")
     @app_commands.describe(text="The new description to appear on your card")
     async def setdescription(interaction: discord.Interaction, text: str):
         modal = DescriptionModal(interaction.user.id)
@@ -199,11 +253,12 @@ class MatchmakingCommands(commands.Cog):
         rank = get_rank(elo_score=elo, player_id=player_id, elo_data=elo_data)
         
         # Create embed with new layout
+        color = elo_data.get(player_id, {}).get("color", 0xB197FC)
+        description = elo_data.get(player_id, {}).get("description", "A glimpse into this soul’s gentle journey…")
         embed = discord.Embed(
             title=f"Thread of {user.display_name}",
-            description = elo_data.get(user_id, {}).get("description", "A glimpse into this soul’s gentle journey…")
-            embed.description = description
-            color=user.color
+            description = description,
+            color=color
         )
         embed.set_thumbnail(url=user.display_avatar.url)
 
