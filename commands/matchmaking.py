@@ -401,7 +401,7 @@ class MatchmakingCommands(commands.Cog):
                 if point_diff >= 800:
                     ban_info.append(f"▸ 5 joker bans (120pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
                 else:
-                    ban_info.append(f"▸ {joker_bans} joker ban(s) (100pts each)")
+                    ban_info.append(f"▸ {joker_bans} joker ban(s) (120pts each)")
 
             embed.add_field(
                 name=f"{format_team(lower_points_team)} receives pre-bans",
