@@ -28,7 +28,8 @@ async def on_ready():
         "commands.admin_commands",
         "commands.history_commands",
         "commands.topwinrate",
-        "commands.sync"
+        "commands.sync",
+        "commands.help"
     ]
     
     for ext in extensions:
