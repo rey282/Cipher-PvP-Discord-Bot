@@ -183,13 +183,12 @@ class MatchmakingCommands(commands.Cog):
         embed.add_field(
             name="Reflections",
             value=f"UID: {uid}\n"
-                f"Mirror ID: {mirror_id}\n"
                 f"Total Cost: {points}\n"
                 f"Rank: {rank}",
             inline=False
         )
 
-        embed.set_footer(text="Handled with care by Kyasutorisu")
+        embed.set_footer(text=f"Mirror ID: {mirror_id} • Handled with care by Kyasutorisu")
 
         await interaction.followup.send(embed=embed)
 
