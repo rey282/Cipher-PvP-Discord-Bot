@@ -29,7 +29,7 @@ ALLOWED_COLORS = {
 }
 
 class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
-    description = ui.TextInput(
+    description = discord.ui.TextInput(
         label="If you'd like… what gentle words describe your soul?",
         placeholder="You may leave this blank if you prefer silence…",
         max_length=43,
@@ -37,7 +37,7 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
         required=False
     )
 
-    profile_color = ui.TextInput(
+    profile_color = discord.ui.TextInput(
         label="If I may, what color resonates with your soul?)",
         placeholder="Try pink, blue, or #FF69B4…",
         required=False,
