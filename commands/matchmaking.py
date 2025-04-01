@@ -100,7 +100,7 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
         save_elo_data(elo_data)
 
         await interaction.response.send_message(
-            "Your soul’s thread has been gently updated.\n> *{desc or '…silent, but still meaningful…'", ephemeral=False
+            "Your soul’s thread has been gently woven, as if whispered by the loom itself.\n> A new chapter begins in your gentle journey…", ephemeral=False
         )
 
 class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence"):
