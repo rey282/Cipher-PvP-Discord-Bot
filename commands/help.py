@@ -9,7 +9,7 @@ class HelpCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="Ah, you seek the threads of wisdom? Very well, I shall gently guide you through the pathways of possibility…")
+    @app_commands.command(name="help", description="Ah, you wish to know the paths before you? Here are the threads of destiny:")
     @app_commands.guilds(GUILD_ID)
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
