@@ -88,7 +88,7 @@ class AdminCommands(commands.Cog):
     async def update_leaderboard(self):
         """Check for changes in JSON file and update the leaderboard."""
         try:
-            current_data = load_elo_data()
+            current_data = await asyncio.to_thread(load_elo_data)
             
             if current_data != self.last_elo_data:
                 self.last_elo_data = current_data  # Update cache
@@ -213,7 +213,7 @@ class AdminCommands(commands.Cog):
             # Initialize player data if not exists
             if player_id not in elo_data:
                 elo_data[player_id] = {
-                    "elo": new_rating,  # Set to new value
+                    "elo": new_rating, 
                     "win_rate": 0.0,
                     "games_played": 0,
                     "uid": "Not Registered",
