@@ -122,6 +122,7 @@ def initialize_player_data(player_id):
         "points": 0,
         "description": "A glimpse into this soul’s gentle journey…",
         "color": 0xB197FC,  
+    }
 
 
 def rollback_last_match():
