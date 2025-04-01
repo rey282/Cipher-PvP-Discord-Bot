@@ -25,7 +25,9 @@ def initialize_db():
                 win_rate REAL NOT NULL,
                 uid TEXT,
                 mirror_id TEXT,
-                points INTEGER DEFAULT 0
+                points INTEGER DEFAULT 0,
+                description TEXT DEFAULT 'A glimpse into this soul’s gentle journey…',
+                color INTEGER DEFAULT 11658748  -- 0xB197FC in decimal
             )
         ''')
         cursor.execute('''

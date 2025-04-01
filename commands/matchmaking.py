@@ -28,7 +28,7 @@ ALLOWED_COLORS = {
     "magenta": 0xFF00FF,
 }
 
-class DescriptionModal(ui.Modal, title="Rewrite Your Soul’s Thread"):
+class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
     description = ui.TextInput(
         label="If you'd like… what gentle words describe your soul?",
         placeholder="You may leave this blank if you prefer silence…",
