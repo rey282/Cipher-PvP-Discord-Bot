@@ -227,6 +227,14 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
             wins += 1
         player_data["win_rate"] = wins / player_data["games_played"]
 
+        # Now apply the tapering after the teammate ELO logic
+        if abs(individual_change) > 30:
+            taper_factor = max(0.7 - (abs(individual_change) - 30) * 0.01, 0.2)
+            individual_change = individual_change * taper_factor
+
+        final_elo = player_elo + individual_change if gain else player_elo - individual_change
+        player_data["elo"] = max(100, round(final_elo, 2))
+
         changes[player_id] = round(individual_change if gain else -individual_change, 2)
 
     return changes
