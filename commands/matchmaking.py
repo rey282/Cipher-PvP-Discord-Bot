@@ -4,7 +4,7 @@ import os
 import re
 from discord.ext import commands
 from discord import app_commands
-from discord import Interaction, ui
+from discord import Interaction
 from utils.db_utils import load_elo_data, save_elo_data
 from utils.rank_utils import get_rank
 from dotenv import load_dotenv
