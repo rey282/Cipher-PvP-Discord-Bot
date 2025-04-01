@@ -224,7 +224,7 @@ class MatchmakingCommands(commands.Cog):
     async def register(self, interaction: Interaction):
         await interaction.response.send_modal(RegisterPlayerModal())
 
-    @app.tree.command(name="setplayercard", description="Gently adjust your soul’s card — a new whisper, a new color…")
+    @app.commands.command(name="setplayercard", description="Gently adjust your soul’s card — a new whisper, a new color…")
     @app_commands.describe(text="The new description to appear on your card")
     async def setdescription(interaction: discord.Interaction, text: str):
         modal = DescriptionModal(interaction.user.id)
