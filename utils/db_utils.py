@@ -51,7 +51,8 @@ def load_elo_data():
                 "win_rate": row['win_rate'],
                 "uid": row.get('uid', 'Not Registered'),
                 "mirror_id": row.get('mirror_id', 'Not Set'),
-                "points": row.get('points', 0)
+                "points": row.get('points', 0),
+                "description": row.get('description', '')
             } for row in rows
         }
 
@@ -69,7 +70,8 @@ def save_elo_data(data):
                     win_rate = EXCLUDED.win_rate,
                     uid = EXCLUDED.uid,
                     mirror_id = EXCLUDED.mirror_id,
-                    points = EXCLUDED.points
+                    points = EXCLUDED.points,
+                    description = EXCLUDED.description
             ''', (
                 discord_id,
                 stats.get("elo", 200),
@@ -77,7 +79,8 @@ def save_elo_data(data):
                 stats.get("win_rate", 0.0),
                 stats.get("uid", "Not Registered"),
                 stats.get("mirror_id", "Not Set"),
-                stats.get("points", 0)
+                stats.get("points", 0),
+                stats.get("description", "")
             ))
         conn.commit()
 

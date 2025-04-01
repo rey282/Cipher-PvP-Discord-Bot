@@ -12,6 +12,43 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
+class DescriptionModal(ui.Modal, title="Rewrite Your Soul’s Thread"):
+    description = ui.TextInput(
+        label="If I may… how would you like to be remembered?",
+        placeholder="A soft shimmer in the river of fate…",
+        max_length=43,
+        style=discord.TextStyle.short,
+        required=True
+    )
+
+    def __init__(self, user_id):
+        super().__init__()
+        self.user_id = str(user_id)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        desc = str(self.description).strip()
+
+        # Basic link/URL validation (reject discord links, http, etc.)
+        if re.search(r"(https?:\/\/|discord\.gg|discordapp\.com|@|\.com|\.net|\.org)", desc, re.IGNORECASE):
+            await interaction.response.send_message(
+                "Oh… I must apologize… descriptions with links aren’t permitted. It’s for your safety…",
+                ephemeral=True
+            )
+            return
+
+        elo_data = load_elo_data()
+
+        if self.user_id not in elo_data:
+            from utils.elo_utils import initialize_player_data  # or wherever it's defined
+            elo_data[self.user_id] = initialize_player_data()
+
+        elo_data[self.user_id]["description"] = str(self.description)
+        save_elo_data(elo_data)
+
+        await interaction.response.send_message(
+            "Your soul’s description has been updated.", ephemeral=False
+        )
+
 class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence"):
     uid = discord.ui.TextInput(label="UID", required=False, placeholder="9-digit UID")
     mirror_id = discord.ui.TextInput(label="Mirror ID", required=False, placeholder="Mirror ID")
@@ -133,6 +170,11 @@ class MatchmakingCommands(commands.Cog):
     async def register(self, interaction: Interaction):
         await interaction.response.send_modal(RegisterPlayerModal())
 
+    @bot.tree.command(name="setdescription", description="Update your playercard description.")
+    @app_commands.describe(text="The new description to appear on your card")
+    async def setdescription(interaction: discord.Interaction, text: str):
+        modal = DescriptionModal(interaction.user.id)
+        await interaction.response.send_modal(modal)
 
     @app_commands.command(name="playercard", description="Would you like to glimpse a player’s thread…? I can show you their profile.")
     @app_commands.guilds(GUILD_ID)
@@ -159,7 +201,8 @@ class MatchmakingCommands(commands.Cog):
         # Create embed with new layout
         embed = discord.Embed(
             title=f"Thread of {user.display_name}",
-            description="A glimpse into this soul’s gentle journey...",
+            description = elo_data.get(user_id, {}).get("description", "A glimpse into this soul’s gentle journey…")
+            embed.description = description
             color=user.color
         )
         embed.set_thumbnail(url=user.display_avatar.url)
