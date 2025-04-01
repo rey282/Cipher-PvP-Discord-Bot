@@ -188,7 +188,7 @@ class MatchmakingCommands(commands.Cog):
             inline=False
         )
 
-        embed.set_footer(text=f"Mirror ID: {mirror_id} • Handled with care by Kyasutorisu")
+        embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
 
         await interaction.followup.send(embed=embed)
 
