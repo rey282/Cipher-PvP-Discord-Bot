@@ -95,8 +95,8 @@ class UpdateEloView(ui.View):
 
         base_gain = 20
         base_loss = 20
-        variance_gain = 1.0
-        variance_loss = 0.85
+        variance_gain = 1.2
+        variance_loss = 0.65
 
         per_player_gain, per_player_loss = calculate_team_elo_change(
             winner_avg_elo=avg_winner_elo,
@@ -264,8 +264,8 @@ class TiebreakerView(ui.View):
             loser_avg_elo=avg_loser_elo,
             base_gain=20,
             base_loss=20,
-            variance_gain=1.0,
-            variance_loss=0.85
+            variance_gain=1.2,
+            variance_loss=0.65
         )
 
         winner_elo_changes = distribute_team_elo_change(winner_team, per_player_gain, self.elo_data, gain=True)
