@@ -5,7 +5,7 @@ import re
 from discord.ext import commands
 from discord import app_commands
 from discord import Interaction
-from utils.db_utils import load_elo_data, save_elo_data
+from utils.db_utils import load_elo_data, save_elo_data, initialize_player_data
 from utils.rank_utils import get_rank
 from dotenv import load_dotenv
 
@@ -90,10 +90,11 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
         elo_data = load_elo_data()
 
         if self.user_id not in elo_data:
-            from utils.elo_utils import initialize_player_data  # or wherever it's defined
-            elo_data[self.user_id] = initialize_player_data()
+            elo_data[self.user_id] = initialize_player_data(self.user_id)
 
-        elo_data[self.user_id]["description"] = desc
+        if update_desc:
+            elo_data[self.user_id]["description"] = desc
+            
         if color_code is not None:
             elo_data[self.user_id]["color"] = color_code
 

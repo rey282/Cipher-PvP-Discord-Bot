@@ -112,6 +112,17 @@ def save_match_history(match_data):
         ))
         conn.commit()
 
+def initialize_player_data(player_id):
+    return {
+        "elo": 200,
+        "games_played": 0,
+        "win_rate": 0.0,
+        "uid": "Not Registered",
+        "mirror_id": "Not Set",
+        "points": 0,
+        "description": "A glimpse into this soul’s gentle journey…",
+        "color": 0xB197FC,  
+
 
 def rollback_last_match():
     with get_connection() as conn:

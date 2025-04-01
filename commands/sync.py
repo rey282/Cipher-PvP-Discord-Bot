@@ -22,7 +22,7 @@ class AdminSync(commands.Cog):
                 "*You’re not Haya, are you…?*",
                 ephemeral=True
             )
-        return
+            return
 
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
