@@ -20,7 +20,7 @@ class HelpCommand(commands.Cog):
 
         embed.add_field(
             name="/match-history",
-            value="Allow me to gently weave a random 2v2 from the threads you've offered...",
+            value="Let me gently reveal the echoes of a player's past battles.",
             inline=False
         )
         embed.add_field(
