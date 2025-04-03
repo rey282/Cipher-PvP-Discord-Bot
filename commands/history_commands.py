@@ -104,6 +104,16 @@ class MatchHistoryView(ui.View):
         ),
             inline=False
         )
+
+        # Add result at the bottom
+        winner = match.get("winner", "")
+        if winner == "blue":
+            result = "🔵 *The Blue Thread shimmered brighter that day...*"
+        elif winner == "red":
+            result = "🔴 *The Red Thread held firm in fate’s embrace.*"
+        else:
+            result = "⚪ *Neither thread frayed — a balance untouched.*"
+        embed.add_field(name="Result", value=result, inline=False)
         
         # Footer with match counter
         embed.set_footer(text=f"Memory {self.current_index + 1} of {len(self.matches)} — preserved with care")
