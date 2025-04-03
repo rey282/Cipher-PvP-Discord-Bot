@@ -46,7 +46,10 @@ class HistoryCommands(commands.Cog):
             )
             return
 
-        user_matches.sort(key=lambda x: x.get('date', ''), reverse=True)  # Sort by date (newest first)
+        user_matches.sort(
+            key=lambda x: datetime.strptime(x.get('date', '01/01/1900'), "%d/%m/%Y"),
+            reverse=True
+        )
         user_matches = user_matches[:15]  # Limit to 15 most recent matches
             
         view = MatchHistoryView(user_matches, target_user)
