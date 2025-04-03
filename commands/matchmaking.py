@@ -373,7 +373,7 @@ class MatchmakingCommands(commands.Cog):
                 joker_bans = 5 + (point_diff - 1060) // 200
             elif point_diff >= 360:
                 regular_bans = 3
-                joker_bans = min(5, (point_diff - 300) // 140)
+                joker_bans = min(5, (point_diff - 360) // 140)
             else:
                 regular_bans = min(3, point_diff // 120)
                 joker_bans = 0
