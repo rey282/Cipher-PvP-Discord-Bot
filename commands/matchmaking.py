@@ -346,7 +346,7 @@ class MatchmakingCommands(commands.Cog):
             lower_points_team = team2 if points1 > points2 else team1
 
             # Check if point difference is less than 100
-            if point_diff < 120:
+            if point_diff < 100:
                 embed = discord.Embed(
                     title=f"Pre-Bans Calculation for {match_type}",
                     color=discord.Color.purple()
@@ -368,14 +368,14 @@ class MatchmakingCommands(commands.Cog):
                 return  
             
             # Calculate bans
-            if point_diff >= 1060:
+            if point_diff >= 900:
                 regular_bans = 3
-                joker_bans = 5 + (point_diff - 1060) // 200
-            elif point_diff >= 360:
+                joker_bans = 5 + (point_diff - 900) // 200
+            elif point_diff >= 300:
                 regular_bans = 3
-                joker_bans = min(5, (point_diff - 360) // 140)
+                joker_bans = min(5, (point_diff - 360) // 120)
             else:
-                regular_bans = min(3, point_diff // 120)
+                regular_bans = min(3, point_diff // 100)
                 joker_bans = 0
 
             # Create embed
@@ -396,10 +396,10 @@ class MatchmakingCommands(commands.Cog):
             # Add bans info
             ban_info = []
             if regular_bans > 0:
-                ban_info.append(f"▸ {regular_bans} regular ban(s) (120pts each)")
+                ban_info.append(f"▸ {regular_bans} regular ban(s) (100pts each)")
             if joker_bans > 0:
-                if point_diff >= 1060:
-                    ban_info.append(f"▸ 5 joker bans (140pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
+                if point_diff >= 900:
+                    ban_info.append(f"▸ 5 joker bans (120pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
                 else:
                     ban_info.append(f"▸ {joker_bans} joker ban(s) (140pts each)")
 
