@@ -289,6 +289,25 @@ class MatchmakingCommands(commands.Cog):
 
         embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
 
+        custom_banners = {
+        "371513247641370625": "https://tenor.com/view/vivian-vivian-zzz-gif-2645749298490638118",
+        "663145925807702029": "https://tenor.com/view/feixiao-feixiao-honkai-star-rail-feixiao-hsr-feixiao-honkai-feixiao-ult-gif-9999284838159144419",
+        }
+
+        users_with_discord_banners = {
+            "249042315736252417"  
+        }
+
+        if uid in custom_banners:
+            embed.set_image(url=custom_banners[uid])
+        elif player_id in users_with_discord_banners:
+            try:
+                full_user = await user.fetch()
+                if full_user.banner:
+                    embed.set_image(url=full_user.banner.url)
+            except Exception as e:
+                print(f"[Banner] Failed to fetch for {user}: {e}")
+    
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="prebans", description="Allow me to gently calculate the pre-bans, with teams woven into their fates.")
