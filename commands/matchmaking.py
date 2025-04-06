@@ -290,8 +290,8 @@ class MatchmakingCommands(commands.Cog):
         embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
 
         custom_banners = {
-        "371513247641370625": "https://tenor.com/view/vivian-vivian-zzz-gif-2645749298490638118",
-        "663145925807702029": "https://tenor.com/view/feixiao-feixiao-honkai-star-rail-feixiao-hsr-feixiao-honkai-feixiao-ult-gif-9999284838159144419",
+        "805178244": "https://tenor.com/view/vivian-vivian-zzz-gif-2645749298490638118",
+        "804246777": "https://tenor.com/view/feixiao-feixiao-honkai-star-rail-feixiao-hsr-feixiao-honkai-feixiao-ult-gif-9999284838159144419",
         }
 
         users_with_discord_banners = {
@@ -302,7 +302,7 @@ class MatchmakingCommands(commands.Cog):
             embed.set_image(url=custom_banners[uid])
         elif player_id in users_with_discord_banners:
             try:
-                full_user = await user.fetch()
+                full_user = await interaction.client.fetch_user(user.id)
                 if full_user.banner:
                     embed.set_image(url=full_user.banner.url)
             except Exception as e:
