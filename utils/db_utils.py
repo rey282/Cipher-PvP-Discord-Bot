@@ -67,7 +67,7 @@ def save_elo_data(data):
         for discord_id, stats in data.items():
             cursor.execute('''
                 INSERT INTO players (discord_id, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (discord_id) DO UPDATE SET
                     elo = EXCLUDED.elo,
                     games_played = EXCLUDED.games_played,
