@@ -290,8 +290,8 @@ class MatchmakingCommands(commands.Cog):
         embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
 
         custom_banners = {
-        "805178244": "https://tenor.com/view/vivian-vivian-zzz-gif-2645749298490638118",
-        "804246777": "https://tenor.com/view/feixiao-feixiao-honkai-star-rail-feixiao-hsr-feixiao-honkai-feixiao-ult-gif-9999284838159144419",
+        "805178244": "https://media1.tenor.com/m/JLeW-B1F_yYAAAAd/vivian-vivian-zzz.gif",
+        "804246777": "https://media1.tenor.com/m/isSYlPJs1eMAAAAd/feixiao-feixiao-honkai-star-rail.gif",
         }
 
         users_with_discord_banners = {
