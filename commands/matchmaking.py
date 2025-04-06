@@ -45,6 +45,15 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
         style=discord.TextStyle.short
     )
 
+    banner_url = discord.ui.TextInput(
+        label="Do you have a banner for your soul’s thread?",
+        placeholder="Paste a direct image or gif URL here or type none to remove",
+        required=False,
+        max_length=300,
+        style=discord.TextStyle.short
+    )
+
+
     def __init__(self, user_id):
         super().__init__()
         self.user_id = str(user_id)
@@ -54,6 +63,27 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
         color_input = str(self.profile_color).strip().lower()
         color_code = None
         update_desc = True
+
+        banner = str(self.banner_url).strip()
+        update_banner = False
+
+        if banner:
+            if any(banner.lower().endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".gif", ".webp")):
+                if re.match(r"^https:\/\/", banner, re.IGNORECASE):
+                    update_banner = True
+                else:
+                    await interaction.response.send_message(
+                        "Forgive me… your banner must begin with `https://` to be safely woven into your profile.",
+                        ephemeral=True
+                    )
+                    return
+            else:
+                await interaction.response.send_message(
+                    "Ah… that banner doesn't seem to be a direct image link. I can only accept `.png`, `.jpg`, `.gif`, etc.",
+                    ephemeral=True
+                )
+                return
+
 
         # Basic link/URL validation (reject discord links, http, etc.)
         if desc and re.search(r"(https?:\/\/|discord\.gg|discordapp\.com|@|\.com|\.net|\.org)", desc, re.IGNORECASE):
@@ -69,6 +99,10 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
             desc = "A glimpse into this soul’s gentle journey…"
         elif not desc:
             update_desc = False
+
+        if banner.lower() in ("none", "default"):
+            elo_data[self.user_id].pop("banner_url", None)
+
 
         # Validate color
         if color_input:
@@ -88,6 +122,10 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
                 return
 
         elo_data = load_elo_data()
+
+        if update_banner:
+            elo_data[self.user_id]["banner_url"] = banner
+
 
         if self.user_id not in elo_data:
             elo_data[self.user_id] = initialize_player_data(self.user_id)
@@ -254,6 +292,7 @@ class MatchmakingCommands(commands.Cog):
         rank = get_rank(elo_score=elo, player_id=player_id, elo_data=elo_data)
         
         # Create embed with new layout
+        banner_url = player_data.get("banner_url")
         color = elo_data.get(player_id, {}).get("color", 0xB197FC)
         description = elo_data.get(player_id, {}).get("description", "A glimpse into this soul’s gentle journey…")
         embed = discord.Embed(
@@ -287,27 +326,10 @@ class MatchmakingCommands(commands.Cog):
             inline=False
         )
 
+        if banner_url:
+            embed.set_image(url=banner_url)
+        
         embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
-
-        custom_banners = {
-            "805178244": "https://media.tenor.com/JLeW-B1F_yYAAAAd/vivian-vivian-zzz.gif",
-            "804246777": "https://media.tenor.com/isSYlPJs1eMAAAAd/feixiao-feixiao-honkai-star-rail.gif",
-        }
-
-
-        users_with_discord_banners = {
-            "249042315736252417"  
-        }
-
-        if uid in custom_banners:
-            embed.set_image(url=custom_banners[uid])
-        elif player_id in users_with_discord_banners:
-            try:
-                full_user = await interaction.client.fetch_user(user.id)
-                if full_user.banner:
-                    embed.set_image(url=full_user.banner.url)
-            except Exception as e:
-                print(f"[Banner] Failed to fetch for {user}: {e}")
     
         await interaction.followup.send(embed=embed)
 
