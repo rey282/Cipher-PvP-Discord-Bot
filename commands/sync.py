@@ -72,15 +72,25 @@ class AdminSync(commands.Cog):
 
         data = load_elo_data()  
         updated = 0
+        not_found = 0
 
         for discord_id in data:
-            member = guild.get_member(int(discord_id))
-            if member:
-                nickname = member.nick or member.name
-                data[discord_id]["nickname"] = nickname
-                updated += 1
+            try:
+                member = guild.get_member(int(discord_id))
+                if member:
+                    nickname = member.nick or member.name
+                    data[discord_id]["nickname"] = nickname
+                    updated += 1
+                else:
+                    not_found += 1
+            except Exception as e:
+                print(f"Error updating {discord_id}: {e}")
 
         save_elo_data(data)
+
+        if not_found:
+            message += f"\n...B-but I couldn’t find **{not_found}** souls in the server... "
+
         await interaction.followup.send(f"✅ Updated nicknames for {updated} members.")
 
 async def setup(bot: commands.Bot):
