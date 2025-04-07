@@ -7,7 +7,6 @@ from datetime import datetime
 
 load_dotenv()
 
-GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
@@ -66,11 +65,6 @@ def load_elo_data():
 
 
 def save_elo_data(data):
-    from bot import get_bot
-    
-    bot = get_bot()
-    guild = bot.get_guild(GUILD_ID)
-
     with get_connection() as conn:
         cursor = conn.cursor()
         for discord_id, stats in data.items():
