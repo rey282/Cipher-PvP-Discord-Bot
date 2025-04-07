@@ -88,6 +88,10 @@ class AdminSync(commands.Cog):
 
         save_elo_data(data)
 
+        message = (
+            f"I-I’ve gently refreshed **{updated}** nicknames... "
+        )
+
         if not_found:
             message += f"\n...B-but I couldn’t find **{not_found}** souls in the server... "
 
