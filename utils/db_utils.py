@@ -1,7 +1,6 @@
 import os
 import json
 import psycopg2
-from bot import get_bot
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from datetime import datetime
@@ -67,6 +66,8 @@ def load_elo_data():
 
 
 def save_elo_data(data):
+    from bot import get_bot
+    
     bot = get_bot()
     guild = bot.get_guild(GUILD_ID)
 
