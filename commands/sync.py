@@ -76,7 +76,7 @@ class AdminSync(commands.Cog):
 
         for discord_id in data:
             try:
-                member = guild.get_member(int(discord_id))
+                member = await guild.fetch_member(int(discord_id))
                 if member:
                     nickname = member.nick or member.name
                     data[discord_id]["nickname"] = nickname
