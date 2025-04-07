@@ -2,7 +2,7 @@ import discord
 import os
 from discord.ext import commands
 from discord import app_commands, Interaction
-from utils.db_utils import load_elo_data
+from utils.db_utils import load_elo_data, save_elo_data
 from utils.rank_utils import update_rank_role
 from dotenv import load_dotenv
 
