@@ -20,6 +20,7 @@ def initialize_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS players (
                 discord_id TEXT PRIMARY KEY,
+                nickname TEXT,
                 elo INTEGER NOT NULL,
                 games_played INTEGER NOT NULL,
                 win_rate REAL NOT NULL,
@@ -27,7 +28,8 @@ def initialize_db():
                 mirror_id TEXT,
                 points INTEGER DEFAULT 0,
                 description TEXT DEFAULT 'A glimpse into this soul’s gentle journey…',
-                color INTEGER DEFAULT 11658748  -- 0xB197FC in decimal
+                color INTEGER DEFAULT 11658748,  -- 0xB197FC in decimal
+                banner_url TEXT
             )
         ''')
         cursor.execute('''
@@ -48,6 +50,7 @@ def load_elo_data():
         rows = cursor.fetchall()
         return {
             row['discord_id']: {
+                "nickname": row.get('nickname', ''),
                 "elo": row['elo'],
                 "games_played": row['games_played'],
                 "win_rate": row['win_rate'],
@@ -66,9 +69,10 @@ def save_elo_data(data):
         cursor = conn.cursor()
         for discord_id, stats in data.items():
             cursor.execute('''
-                INSERT INTO players (discord_id, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO players (discord_id, nickname, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (discord_id) DO UPDATE SET
+                    nickname = EXCLUDED.nickname,
                     elo = EXCLUDED.elo,
                     games_played = EXCLUDED.games_played,
                     win_rate = EXCLUDED.win_rate,
@@ -80,6 +84,7 @@ def save_elo_data(data):
                     banner_url = EXCLUDED.banner_url
             ''', (
                 discord_id,
+                stats.get("nickname", ""),
                 stats.get("elo", 200),
                 stats.get("games_played", 0),
                 stats.get("win_rate", 0.0),

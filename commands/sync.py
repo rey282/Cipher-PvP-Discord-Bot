@@ -53,5 +53,39 @@ class AdminSync(commands.Cog):
             ephemeral=True
         )
 
+class RefreshNickname(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="refresh_nickname", description="Update nicknames in the database")
+    @app_commands.guilds(GUILD_ID)
+    async def refresh_nickname(self, interaction: discord.Interaction):
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> O-oh… I’m sorry, but only Haya may realign the threads of fate like this...\n"
+                "*You’re not Haya, are you…?*",
+                ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        guild = interaction.guild
+        if guild is None:
+            await interaction.followup.send("This command must be run in a server.")
+            return
+
+        data = load_elo_data()  
+        updated = 0
+
+        for discord_id in data:
+            member = guild.get_member(int(discord_id))
+            if member:
+                nickname = member.nick or member.name
+                data[discord_id]["nickname"] = nickname
+                updated += 1
+
+        save_elo_data(data)
+        await interaction.followup.send(f"✅ Updated nicknames for {updated} members.")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(AdminSync(bot))
