@@ -53,11 +53,7 @@ class AdminSync(commands.Cog):
             ephemeral=True
         )
 
-class RefreshNickname(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-
-    @app_commands.command(name="refresh_nickname", description="Update nicknames in the database")
+    @app_commands.command(name="refresh-nickname", description="Softly whispers everyone's names into the stars...")
     @app_commands.guilds(GUILD_ID)
     async def refresh_nickname(self, interaction: discord.Interaction):
         if interaction.user.id != OWNER_ID:
