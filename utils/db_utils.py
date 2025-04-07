@@ -68,10 +68,6 @@ def save_elo_data(data):
     with get_connection() as conn:
         cursor = conn.cursor()
         for discord_id, stats in data.items():
-            if guild:
-                member = guild.get_member(int(discord_id))
-                if member:
-                    stats["nickname"] = member.nick or member.name
             cursor.execute('''
                 INSERT INTO players (discord_id, nickname, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
