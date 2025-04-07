@@ -1,12 +1,14 @@
 import os
 import json
 import psycopg2
+from bot import get_bot
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
 
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
@@ -65,9 +67,16 @@ def load_elo_data():
 
 
 def save_elo_data(data):
+    bot = get_bot()
+    guild = bot.get_guild(GUILD_ID)
+
     with get_connection() as conn:
         cursor = conn.cursor()
         for discord_id, stats in data.items():
+            if guild:
+                member = guild.get_member(int(discord_id))
+                if member:
+                    stats["nickname"] = member.nick or member.name
             cursor.execute('''
                 INSERT INTO players (discord_id, nickname, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)

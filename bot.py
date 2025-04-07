@@ -54,3 +54,6 @@ async def on_ready():
 
 # Run the bot
 client.run(TOKEN)
+
+def get_bot():
+    return client
