@@ -410,12 +410,12 @@ class MatchmakingCommands(commands.Cog):
                 return  
             
             # Calculate bans
-            if point_diff >= 900:
+            if point_diff >= 950:
                 regular_bans = 3
-                joker_bans = 5 + (point_diff - 900) // 200
+                joker_bans = 5 + (point_diff - 950) // 200
             elif point_diff >= 300:
                 regular_bans = 3
-                joker_bans = min(5, (point_diff - 300) // 120)
+                joker_bans = min(5, (point_diff - 300) // 130)
             else:
                 regular_bans = min(3, point_diff // 100)
                 joker_bans = 0
@@ -440,10 +440,10 @@ class MatchmakingCommands(commands.Cog):
             if regular_bans > 0:
                 ban_info.append(f"▸ {regular_bans} regular ban(s) (100pts each)")
             if joker_bans > 0:
-                if point_diff >= 900:
-                    ban_info.append(f"▸ 5 joker bans (120pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
+                if point_diff >= 950:
+                    ban_info.append(f"▸ 5 joker bans (130pts each) + {joker_bans-5} extra joker ban(s) (200pts each)")
                 else:
-                    ban_info.append(f"▸ {joker_bans} joker ban(s) (120pts each)")
+                    ban_info.append(f"▸ {joker_bans} joker ban(s) (130pts each)")
 
             embed.add_field(
                 name=f"{format_team(lower_points_team)} receives pre-bans",
