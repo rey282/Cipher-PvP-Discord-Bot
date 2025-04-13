@@ -74,7 +74,7 @@ class TopWinRate(commands.Cog):
 
     async def get_db_pool(self):
         if not hasattr(self.bot, "db_pool"):
-            self.bot.db_pool = await asyncpg.create_pool(DATABASE_URL)
+            self.bot.db_pool = await asyncpg.create_pool(POSTGRES_URL_URL)
         return self.bot.db_pool
 
     @app_commands.command(name="show-cipher", description="Gently unveiling the Mirror ID and Cipher Points for up to 4 players, woven by fate...")
