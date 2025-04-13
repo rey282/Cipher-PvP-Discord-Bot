@@ -1,4 +1,5 @@
 import discord
+import asyncpg
 import os
 import psycopg2
 from discord.ext import commands
