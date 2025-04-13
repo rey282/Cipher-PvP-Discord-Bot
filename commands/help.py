@@ -54,6 +54,11 @@ class HelpCommand(commands.Cog):
             inline=False
         )
         embed.add_field(
+            name="/show-cipher",
+            value="Gently unveiling the Mirror ID and Cipher Points for up to 4 players, woven by fate..",
+            inline=False
+        )
+        embed.add_field(
             name="/setplayercard",
             value="Gently adjust your soul’s card — a new whisper, a new color…",
             inline=False
