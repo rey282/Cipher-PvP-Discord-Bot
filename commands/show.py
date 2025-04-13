@@ -77,6 +77,7 @@ class TopWinRate(commands.Cog):
         return self.bot.db_pool
 
     @app_commands.command(name="show-cipher", description="Gently unveiling the Mirror ID and Cipher Points for up to 4 players, woven by fate...")
+    @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         player1="First player",
         player2="Second player",
