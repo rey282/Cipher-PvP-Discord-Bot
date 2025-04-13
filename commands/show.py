@@ -101,10 +101,10 @@ class TopWinRate(commands.Cog):
         pool = await self.get_db_pool()
         async with pool.acquire() as conn:
             records = await conn.fetch(
-                "SELECT uid, mirror_id, points FROM players WHERE uid = ANY($1::text[])",
+                "SELECT discord_id, mirror_id, points FROM players WHERE discord_id = ANY($1::text[])",
                 ids
             )
-        data = {row['uid']: row for row in records}
+        data = {row['discord_id']: row for row in records}
 
         embed = discord.Embed(
             title="Threads of Fate: Cipher Report",
@@ -117,7 +117,7 @@ class TopWinRate(commands.Cog):
             record = data.get(str(member.id))
             if record:
                 embed.add_field(
-                    name=f"🧵 {member.display_name}",
+                    name=f"{member.display_name}",
                     value=(
                         f"**Cipher Points:** `{record['points']}`\n"
                         f"**Mirror ID:** `{record['mirror_id']}`"
