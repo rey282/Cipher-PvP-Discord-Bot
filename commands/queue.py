@@ -21,7 +21,7 @@ class MatchmakingQueue(commands.Cog):
             if user.voice is None:
                 self.queue.remove(user)
                 await interaction.channel.send(
-                    f"❌ **{user.display_name}** was removed from the queue as they are no longer in a voice channel."
+                    f"**{user.display_name}** has gently slipped from the queue, as they are no longer in the voice channel. May the threads weave once more when you return."
                 )
                 break
             await asyncio.sleep(5)
