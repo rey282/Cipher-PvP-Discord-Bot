@@ -55,7 +55,7 @@ class MatchmakingQueue(commands.Cog):
             self.queue = self.queue[4:]
 
             cog_matchmaking = MatchmakingCommands(self.bot)
-            await cog_matchmaking.matchmaking(interaction, *players)
+            await cog_matchmaking.matchmaking_logic(interaction, *players)
 
             cog = TopWinRate(self.bot) 
             await cog.show_cipher(interaction, *players)
