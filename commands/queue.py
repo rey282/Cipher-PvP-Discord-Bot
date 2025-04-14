@@ -19,11 +19,11 @@ class MatchmakingQueue(commands.Cog):
         user = interaction.user
 
         if user.id in [u.id for u in self.queue]:
-            await interaction.response.send_message("**You're already woven into the queue", ephemeral=True)
+            await interaction.response.send_message("You're already woven into the queue", ephemeral=True)
             return
 
         self.queue.append(user)
-        await interaction.response.send_message(f"**`{user.display_name}` has joined the queue. The threads of fate are being woven.", ephemeral=False)
+        await interaction.response.send_message(f"`{user.display_name}` has joined the queue. The threads of fate are being woven.", ephemeral=False)
 
         if len(self.queue) >= 4:
             players = self.queue[:4]
@@ -32,7 +32,7 @@ class MatchmakingQueue(commands.Cog):
             await interaction.channel.send(
                 f"**Match Found!**\n"
                 f"**Players:** {mentions}\n"
-                f"**Fate has woven your paths together. Best of luck"
+                f"Fate has woven your paths together. Best of luck"
             )
 
     @app_commands.command(name="leavequeue", description="Untie your thread from the queue.")
@@ -41,17 +41,17 @@ class MatchmakingQueue(commands.Cog):
         user = interaction.user
 
         if user not in self.queue:
-            await interaction.response.send_message("**You were never in the thread to begin with.", ephemeral=True)
+            await interaction.response.send_message("You were never in the thread to begin with.", ephemeral=True)
             return
 
         self.queue.remove(user)
-        await interaction.response.send_message("**Your thread has been untied from the queue.", ephemeral=True)
+        await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=True)
 
     @app_commands.command(name="queue", description="Peek at those waiting in the thread.")
     @app_commands.guilds(GUILD_ID)
     async def show_queue(self, interaction: Interaction):
         if not self.queue:
-            await interaction.response.send_message("**It’s so quiet in here... The threads of fate are still at rest.", ephemeral=False)
+            await interaction.response.send_message("It’s so quiet in here... The threads of fate are still at rest.", ephemeral=False)
             return
 
         embed = discord.Embed(
