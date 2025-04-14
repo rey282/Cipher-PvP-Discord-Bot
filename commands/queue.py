@@ -2,6 +2,7 @@ import discord
 import os
 from discord.ext import commands
 from discord import app_commands, Interaction
+from dotenv import load_dotenv
 
 load_dotenv()
 
