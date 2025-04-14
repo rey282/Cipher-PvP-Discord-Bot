@@ -23,7 +23,7 @@ class MatchmakingQueue(commands.Cog):
             return
 
         self.queue.append(user)
-        await interaction.response.send_message(f"`{user.display_name}` has joined the queue. The threads of fate are being woven.", ephemeral=False)
+        await interaction.response.send_message(f"{user.display_name} has joined the queue. The threads of fate are being woven.", ephemeral=False)
 
         if len(self.queue) >= 4:
             players = self.queue[:4]
@@ -45,7 +45,7 @@ class MatchmakingQueue(commands.Cog):
             return
 
         self.queue.remove(user)
-        await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=True)
+        await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=False)
 
     @app_commands.command(name="queue", description="Peek at those waiting in the thread.")
     @app_commands.guilds(GUILD_ID)
