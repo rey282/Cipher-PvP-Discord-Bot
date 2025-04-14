@@ -18,7 +18,7 @@ class EloCommands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="submit-match", description="Whisper the outcome... and I shall adjust the threads of fate (ELO).")
-    @app_commands.guilds(GUILD_ID)  # Associate the command with a specific guild
+    @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         blue_player_1="First player",
         blue_player_2="Second player",

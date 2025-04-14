@@ -29,7 +29,8 @@ async def on_ready():
         "commands.history_commands",
         "commands.show",
         "commands.sync",
-        "commands.help"
+        "commands.help",
+        "commands.queue"
     ]
     
     for ext in extensions:
