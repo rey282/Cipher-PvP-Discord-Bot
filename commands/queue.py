@@ -4,8 +4,8 @@ import asyncio
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
-from .show import show_cipher
-from .matchmaking import matchmaking
+from .show import TopWinRate
+from .matchmaking import MatchmakingCommands
 
 load_dotenv()
 
@@ -45,9 +45,11 @@ class MatchmakingQueue(commands.Cog):
             players = self.queue[:4]
             self.queue = self.queue[4:]
 
-            await matchmaking(self, interaction, *players)
+            cog_matchmaking = MatchmakingCommands(self.bot)
+            await cog_matchmaking.matchmaking(interaction, *players)
 
-            await show_cipher(self, interaction, *players)
+            cog = TopWinRate(self.bot) 
+            await cog.show_cipher(interaction, *players)
 
             mentions = ", ".join(p.mention for p in players)
             await interaction.channel.send(
