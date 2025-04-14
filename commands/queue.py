@@ -82,6 +82,13 @@ class MatchmakingQueue(commands.Cog):
             random.shuffle(players) 
             team1, team2 = players[:2], players[2:]
 
+            mentions = ", ".join(p.mention for p in players)
+            await interaction.channel.send(
+                f"**Match Found!**\n"
+                f"**Players:** {mentions}\n"
+                f"Fate has woven your paths together. Best of luck"
+            )
+
             embed = discord.Embed(
                 title="Threads Aligned",
                 description="The threads have been gently woven… Here is your match.",
@@ -92,13 +99,6 @@ class MatchmakingQueue(commands.Cog):
             embed.set_footer(text="Woven gently by Kyasutorisu")
 
             await interaction.followup.send(embed=embed)
-
-            mentions = ", ".join(p.mention for p in players)
-            await interaction.channel.send(
-                f"**Match Found!**\n"
-                f"**Players:** {mentions}\n"
-                f"Fate has woven your paths together. Best of luck"
-            )
 
     @app_commands.command(name="leavequeue", description="Untie your thread from the queue.")
     @app_commands.guilds(GUILD_ID)
