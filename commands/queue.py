@@ -20,7 +20,7 @@ class MatchmakingQueue(commands.Cog):
     async def check_single_player_in_queue(self, interaction):
         """Check if there's only one player left in the queue and remove them after a timeout if they're not matched."""
         # Wait for a certain period (e.g., 10 minutes) before automatically removing the player
-        await asyncio.sleep(10 * 60)  # Wait for 10 minutes
+        await asyncio.sleep(15 * 60)  # Wait for 10 minutes
 
         if len(self.queue) == 1:
             user = self.queue[0] 
