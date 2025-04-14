@@ -1,5 +1,6 @@
 import discord
 import os
+import asyncio
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
@@ -10,8 +11,20 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class MatchmakingQueue(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
         self.queue = []
+        self.player_timers = {}
+        self.voice_channel_monitor = {}
+
+     async def check_voice_channel(self, user, interaction):
+        """Check if the player is in the voice channel, and if not, kick them from the queue."""
+        while user in self.queue:
+            if user.voice is None:
+                self.queue.remove(user)
+                await interaction.channel.send(
+                    f"❌ **{user.display_name}** was removed from the queue as they are no longer in a voice channel."
+                )
+                break
+            await asyncio.sleep(5)
 
     @app_commands.command(name="joinqueue", description="Tie your thread to the matchmaking queue.")
     @app_commands.guilds(GUILD_ID)
@@ -23,6 +36,7 @@ class MatchmakingQueue(commands.Cog):
             return
 
         self.queue.append(user)
+        self.voice_channel_monitor[user] = asyncio.create_task(self.check_voice_channel(user, interaction))
         await interaction.response.send_message(f"{user.display_name} has joined the queue. The threads of fate are being woven.", ephemeral=False)
 
         if len(self.queue) >= 4:
@@ -45,6 +59,8 @@ class MatchmakingQueue(commands.Cog):
             return
 
         self.queue.remove(user)
+        if user in self.voice_channel_monitor:
+            self.voice_channel_monitor[user].cancel()
         await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=False)
 
     @app_commands.command(name="queue", description="Peek at those waiting in the thread.")
