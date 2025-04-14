@@ -13,6 +13,7 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class MatchmakingQueue(commands.Cog):
     def __init__(self, bot):
+        self.bot = bot
         self.queue = []
         self.player_timers = {}
         self.voice_channel_monitor = {}
@@ -32,6 +33,14 @@ class MatchmakingQueue(commands.Cog):
     @app_commands.guilds(GUILD_ID)
     async def join_queue(self, interaction: Interaction):
         user = interaction.user
+
+        # Check if the user is in a voice channel
+        if user.voice is None:
+            await interaction.response.send_message(
+                "Oops! You must be in a voice channel to join the queue. Please join a voice channel and try again.",
+                ephemeral=True
+            )
+            return
 
         if user.id in [u.id for u in self.queue]:
             await interaction.response.send_message("You're already woven into the queue", ephemeral=True)
