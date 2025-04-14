@@ -28,6 +28,15 @@ class MatchmakingQueue(commands.Cog):
                 break
             await asyncio.sleep(5)
 
+        await asyncio.sleep(30 * 60)
+
+        # After 30 minutes, check if the player is still in the queue and not in a voice channel
+        if user in self.queue and user.voice is None:
+            self.queue.remove(user)
+            await interaction.channel.send(
+                f"**{user.display_name}** has been removed from the queue after being out of the voice channel for 30 minutes."
+            )
+
     @app_commands.command(name="joinqueue", description="Tie your thread to the matchmaking queue.")
     @app_commands.guilds(GUILD_ID)
     async def join_queue(self, interaction: Interaction):
