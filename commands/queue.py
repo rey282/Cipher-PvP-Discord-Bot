@@ -4,6 +4,8 @@ import asyncio
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
+from show import show_cipher
+from matchmaking import matchmaking
 
 load_dotenv()
 
@@ -42,6 +44,11 @@ class MatchmakingQueue(commands.Cog):
         if len(self.queue) >= 4:
             players = self.queue[:4]
             self.queue = self.queue[4:]
+
+            await matchmaking(self, interaction, *players)
+
+            await show_cipher(self, interaction, *players)
+
             mentions = ", ".join(p.mention for p in players)
             await interaction.channel.send(
                 f"**Match Found!**\n"
