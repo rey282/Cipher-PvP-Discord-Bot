@@ -64,13 +64,18 @@ class HelpCommand(commands.Cog):
             inline=False
         )
         embed.add_field(
-            name="/change-rating",
-            value="Gently adjust a player's ELO rating, weaving their journey with care.",
+            name="/joinqueue",
+            value="Tie your thread to the matchmaking queue.",
             inline=False
         )
         embed.add_field(
-            name="/reset",
-            value="The threads of fate are reset for all players... A new season begins.",
+            name="/leavequeue",
+            value="Untie your thread from the queue.",
+            inline=False
+        )
+        embed.add_field(
+            name="/queue",
+            value="Peek at those waiting in the thread.",
             inline=False
         )
 
