@@ -16,37 +16,49 @@ class MatchmakingQueue(commands.Cog):
         self.queue = []
         self.player_timers = {}
         self.voice_channel_monitor = {}
+        self.afk_monitor = {}
+        self.queue_inactivity_monitor = None
+
+    async def check_queue_inactivity(self, interaction):
+        
+        await asyncio.sleep(45 * 60) 
+
+        if len(self.queue) > 0:
+            await interaction.channel.send(
+                f"The threads of fate have not woven any new paths for 45 minutes... As a result, the queue has been gently disbanded. May your threads intertwine again when the time is right."
+            )
+            self.queue.clear()
+            self.queue_inactivity_monitor = None
+
+    async def check_afk(self, user, interaction):
+        afk_timeout = 15 * 60  
+
+        await asyncio.sleep(afk_timeout)
+
+        if user in self.queue:
+            if user.voice is None and (not user.last_message_at or (discord.utils.utcnow() - user.last_message_at).total_seconds() > afk_timeout):
+                await interaction.channel.send(
+                    f"**{user.display_name}** ,I’m afraid your thread has been gently unraveled from the queue. You’ve drifted away from the voice and text realms for too long..."
+                )
+                self.queue.remove(user)
 
     async def check_single_player_in_queue(self, interaction):
-        """Check if there's only one player left in the queue and remove them after a timeout if they're not matched."""
-        # Wait for a certain period (e.g., 10 minutes) before automatically removing the player
-        await asyncio.sleep(15 * 60)  # Wait for 10 minutes
+        await asyncio.sleep(15 * 60) 
 
         if len(self.queue) == 1:
             user = self.queue[0] 
             self.queue.remove(user)
             await interaction.channel.send(
-                f"**{user.display_name}** has been removed from the queue after waiting too long for a match. We hope to see you again soon!"
+                f"**{user.display_name}** , alas, your thread has been gently unwoven from the queue. You've waited with patience, but fate has not yet woven your match. Please return soon, dear one..."
             )
 
     async def check_voice_channel(self, user, interaction):
-        """Check if the player is in the voice channel, and if not, kick them from the queue."""
-        while user in self.queue:
-            if user.voice is None:
-                self.queue.remove(user)
-                await interaction.channel.send(
-                    f"**{user.display_name}** has gently slipped from the queue, as they are no longer in the voice channel. May the threads weave once more when you return."
-                )
-                break
-            await asyncio.sleep(5)
+        await asyncio.sleep(10) 
 
-        await asyncio.sleep(30 * 60)
-
-        # After 30 minutes, check if the player is still in the queue and not in a voice channel
         if user in self.queue and user.voice is None:
             self.queue.remove(user)
             await interaction.channel.send(
-                f"**{user.display_name}** has been removed from the queue after being out of the voice channel for 30 minutes."
+                f"**{user.display_name}**, your thread has been gently unwoven from the queue, as you are no longer in the voice channel. May the threads weave once more when you return."
             )
 
     @app_commands.command(name="joinqueue", description="Tie your thread to the matchmaking queue.")
@@ -68,9 +80,12 @@ class MatchmakingQueue(commands.Cog):
 
         self.queue.append(user)
         self.voice_channel_monitor[user] = asyncio.create_task(self.check_voice_channel(user, interaction))
+        self.afk_monitor[user] = asyncio.create_task(self.check_afk(user, interaction))
+
+        if self.queue_inactivity_monitor is None or self.queue_inactivity_monitor.done():
+            self.queue_inactivity_monitor = asyncio.create_task(self.check_queue_inactivity(interaction))
 
         if len(self.queue) == 1:
-            # Start the timer for checking the single player timeout
             asyncio.create_task(self.check_single_player_in_queue(interaction))
 
         await interaction.response.send_message(f"{user.display_name} has joined the queue. The threads of fate are being woven.", ephemeral=False)
@@ -112,6 +127,10 @@ class MatchmakingQueue(commands.Cog):
         self.queue.remove(user)
         if user in self.voice_channel_monitor:
             self.voice_channel_monitor[user].cancel()
+        if user in self.afk_monitor:
+            self.afk_monitor[user].cancel()  
+        if self.queue_inactivity_monitor:
+            self.queue_inactivity_monitor.cancel()
         await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=False)
 
     @app_commands.command(name="queue", description="Peek at those waiting in the thread.")
