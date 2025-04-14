@@ -4,8 +4,6 @@ import asyncio
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
-from .show import TopWinRate
-from .matchmaking import MatchmakingCommands
 
 load_dotenv()
 
@@ -54,11 +52,19 @@ class MatchmakingQueue(commands.Cog):
             players = self.queue[:4]
             self.queue = self.queue[4:]
 
-            cog_matchmaking = MatchmakingCommands(self.bot)
-            await cog_matchmaking.matchmaking_logic(interaction, *players)
+            random.shuffle(players) 
+            team1, team2 = players[:2], players[2:]
 
-            cog = TopWinRate(self.bot) 
-            await cog.show_cipher(interaction, *players)
+            embed = discord.Embed(
+                title="Threads Aligned",
+                description="The threads have been gently woven… Here is your match.",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
+            embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
+            embed.set_footer(text="Woven gently by Kyasutorisu")
+
+            await interaction.followup.send(embed=embed)
 
             mentions = ", ".join(p.mention for p in players)
             await interaction.channel.send(
