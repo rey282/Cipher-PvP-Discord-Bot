@@ -17,6 +17,18 @@ class MatchmakingQueue(commands.Cog):
         self.player_timers = {}
         self.voice_channel_monitor = {}
 
+    async def check_single_player_in_queue(self, interaction):
+        """Check if there's only one player left in the queue and remove them after a timeout if they're not matched."""
+        # Wait for a certain period (e.g., 10 minutes) before automatically removing the player
+        await asyncio.sleep(10 * 60)  # Wait for 10 minutes
+
+        if len(self.queue) == 1:
+            user = self.queue[0] 
+            self.queue.remove(user)
+            await interaction.channel.send(
+                f"**{user.display_name}** has been removed from the queue after waiting too long for a match. We hope to see you again soon!"
+            )
+
     async def check_voice_channel(self, user, interaction):
         """Check if the player is in the voice channel, and if not, kick them from the queue."""
         while user in self.queue:
@@ -56,6 +68,11 @@ class MatchmakingQueue(commands.Cog):
 
         self.queue.append(user)
         self.voice_channel_monitor[user] = asyncio.create_task(self.check_voice_channel(user, interaction))
+
+        if len(self.queue) == 1:
+            # Start the timer for checking the single player timeout
+            asyncio.create_task(self.check_single_player_in_queue(interaction))
+
         await interaction.response.send_message(f"{user.display_name} has joined the queue. The threads of fate are being woven.", ephemeral=False)
 
         if len(self.queue) >= 4:
