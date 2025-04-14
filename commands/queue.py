@@ -15,7 +15,7 @@ class MatchmakingQueue(commands.Cog):
         self.player_timers = {}
         self.voice_channel_monitor = {}
 
-     async def check_voice_channel(self, user, interaction):
+    async def check_voice_channel(self, user, interaction):
         """Check if the player is in the voice channel, and if not, kick them from the queue."""
         while user in self.queue:
             if user.voice is None:
