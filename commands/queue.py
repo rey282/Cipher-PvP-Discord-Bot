@@ -4,8 +4,8 @@ import asyncio
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
-from show import show_cipher
-from matchmaking import matchmaking
+from .show import show_cipher
+from .matchmaking import matchmaking
 
 load_dotenv()
 
