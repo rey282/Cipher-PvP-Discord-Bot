@@ -82,8 +82,9 @@ class MatchmakingQueue(commands.Cog):
         self.voice_channel_monitor[user] = asyncio.create_task(self.check_voice_channel(user, interaction))
         self.afk_monitor[user] = asyncio.create_task(self.check_afk(user, interaction))
 
-        if self.queue_inactivity_monitor is None or self.queue_inactivity_monitor.done():
-            self.queue_inactivity_monitor = asyncio.create_task(self.check_queue_inactivity(interaction))
+        if self.queue_inactivity_monitor:
+            self.queue_inactivity_monitor.cancel()
+        self.queue_inactivity_monitor = asyncio.create_task(self.check_queue_inactivity(interaction))
 
         if len(self.queue) == 1:
             asyncio.create_task(self.check_single_player_in_queue(interaction))
