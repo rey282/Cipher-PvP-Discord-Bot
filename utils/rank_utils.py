@@ -7,18 +7,18 @@ def is_akivili_now(player_id: str, elo_data: dict) -> bool:
         key=lambda x: x[1].get("elo", 200),
         reverse=True
     )[:3]
-    return any(pid == player_id and pdata.get("elo", 0) >= 1400 for pid, pdata in top_players)
+    return any(pid == player_id and pdata.get("elo", 0) >= 1100 for pid, pdata in top_players)
 
 def get_rank(elo_score, player_id=None, elo_data=None):
     if elo_score < 300:
         return "Trailblazer"
-    elif 300 <= elo_score < 600:
+    elif 300 <= elo_score < 500:
         return "Memokeeper"
-    elif 600 <= elo_score < 850:
+    elif 500 <= elo_score < 650:
         return "Genius Scholar"
-    elif 850 <= elo_score < 1100:
+    elif 650 <= elo_score < 800:
         return "Arbitor General"
-    elif 1100 <= elo_score < 1300:
+    elif 800 <= elo_score < 1000:
         return "Emanator"
     else:
         return "Aeon"
@@ -85,7 +85,7 @@ async def update_rank_role(
 
     if new_rank == "Akivili":
         top_akivilis = sorted(
-            [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1400],
+            [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1100],
             key=lambda x: x[1].get("elo", 200),
             reverse=True
         )[:3]
