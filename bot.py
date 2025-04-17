@@ -40,7 +40,7 @@ async def update_games_played():
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
-
+    update_games_played.start() 
     # Load extensions
     extensions = [
         "commands.fun_commands",
