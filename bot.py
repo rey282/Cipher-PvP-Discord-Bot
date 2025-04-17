@@ -84,8 +84,8 @@ async def track_win_streak():
         raw_data = json.loads(match['raw_data'])  # This parses the string into a dictionary
 
         winner = raw_data['winner']
-        # Assuming `elo_gains` is the key for storing player ELO changes and has the player IDs as keys
-        elo_gains = match['elo_gains']
+        # Parse the elo_gains field to a dictionary
+        elo_gains = json.loads(match['elo_gains'])  # This parses the string into a dictionary
 
         for player_id, elo_gain in elo_gains.items():
             # You may need to adjust how you calculate the streak based on your logic
