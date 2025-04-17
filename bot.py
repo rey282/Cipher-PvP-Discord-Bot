@@ -98,6 +98,7 @@ async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
     mode_count = await get_match_modes()
+    longest_streak_player, longest_streak = await track_win_streak()
 
     games_channel = client.get_channel(1362383355290849450)
     member_channel = client.get_channel(1362388485398593546)
