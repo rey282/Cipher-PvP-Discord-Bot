@@ -48,24 +48,78 @@ async def get_member_counts():
         return total_members, online_members
     return 0, 0
 
+async def get_match_modes():
+    conn = await get_db_connection()
+    result = await conn.fetch('SELECT match_id, elo_gains FROM matches')  # Adjust the query as needed
+    await conn.close()
+
+    mode_count = {"1v1": 0, "1v2": 0, "2v2": 0}
+
+    for match in result:
+        elo_gains = match['elo_gains'] 
+        total_players = len(elo_gains)
+
+        if total_players == 2:
+            mode_count["1v1"] += 1
+        elif total_players == 3:
+            mode_count["1v2"] += 1
+        elif total_players == 4:
+            mode_count["2v2"] += 1
+
+    return mode_count
+
+async def track_win_streak():
+    conn = await get_db_connection()
+    result = await conn.fetch('SELECT winner, elo_gains FROM matches')  # Query matches to get ELO gains
+    await conn.close()
+
+    player_streaks = {}
+
+    for match in result:
+        winner = match['winner']
+        elo_gains = match['elo_gains']
+
+        for player_id, elo_change in elo_gains.items():
+            if player_id not in player_streaks:
+                player_streaks[player_id] = {'streak': 0, 'name': player_id}  # Initialize streak
+            
+            if elo_change > 0:
+                player_streaks[player_id]['streak'] += 1
+            else:
+                player_streaks[player_id]['streak'] = 0
+
+    longest_streak_player = max(player_streaks.values(), key=lambda x: x['streak'], default={'name': 'No player', 'streak': 0})
+
+    return longest_streak_player['name'], longest_streak_player['streak']
 
 # Update the games played and member count
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=7)
 async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
+    mode_count = await get_match_modes()
 
     games_channel = client.get_channel(1362383355290849450)
     member_channel = client.get_channel(1362388485398593546)
+    match_mode_channel = client.get_channel(1362420110480113766)
+    streak_channel = client.get_channel(1362421712540401734)
 
     try:
         if games_channel:
             await games_channel.edit(name=f"Games Played: {games_played}")
         if member_channel:
             await member_channel.edit(name=f"Members: {total_members} | Online: {online_members}")
+        if match_mode_channel:
+            await match_mode_channel.edit(
+                name=f"1v1: {mode_count['1v1']} | 1v2: {mode_count['1v2']} | 2v2: {mode_count['2v2']}"
+            )
+        if streak_channel:
+            await streak_channel.edit(name=f"Longest Win Streak: {longest_streak_player} - {longest_streak} wins")
+        
     except discord.errors.HTTPException as e:
-        print(f"Rate limit hit: {e}")
-        await asyncio.sleep(197)
+        retry_after = e.response.get('retry_after', 1) 
+        await asyncio.sleep(retry_after)
+        await update_stats()
 
 @client.event
 async def on_ready():
