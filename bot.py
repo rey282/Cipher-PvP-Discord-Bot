@@ -34,12 +34,9 @@ async def get_games_played():
 async def get_member_counts():
     guild = client.get_guild(GUILD_ID)
     if guild:
+        await guild.fetch_members()
         total_members = guild.member_count
-        online_members = 0
-        for member in guild.members:
-            print(f"{member.name}: {member.status}")  # Debug: Print each member's status
-            if member.status != discord.Status.offline:
-                online_members += 1
+        online_members = sum(1 for member in guild.members if member.status != discord.Status.offline)
         return total_members, online_members
     return 0, 0
 
