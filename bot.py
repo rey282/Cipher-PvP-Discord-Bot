@@ -37,14 +37,18 @@ async def get_member_counts():
     if guild:
         total_members = guild.member_count
         online_members = 0
+        print(f"Total members in guild: {total_members}")  # Debug: print total members
 
         # Fetch all members asynchronously
         async for member in guild.fetch_members():
+            print(f"Checking member: {member.name} - Status: {member.status}")  # Debug: print member status
             if member.status != discord.Status.offline:
                 online_members += 1
 
+        print(f"Online members: {online_members}")  # Debug: print online members
         return total_members, online_members
     return 0, 0
+
 
 # Update the games played and member count
 @tasks.loop(minutes=5)
@@ -63,7 +67,7 @@ async def update_stats():
     except discord.errors.HTTPException as e:
         print(f"Rate limit hit: {e}")
         await asyncio.sleep(197)
-        
+
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
