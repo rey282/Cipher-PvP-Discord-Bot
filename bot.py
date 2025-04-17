@@ -39,23 +39,26 @@ async def get_member_counts():
         return total_members, online_members
     return 0, 0
 
-@tasks.loop(minutes=5) 
-async def update_games_played():
-    games_played = await get_games_played()
-    channel = client.get_channel(1362383355290849450)
-    await channel.edit(name=f"Games Played: {games_played}")
-
+# Update the games played and member count
 @tasks.loop(minutes=5)
-async def update_member_count():
+async def update_stats():
+    games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
-    channel = client.get_channel(1362388485398593546)  # Replace with your channel ID
-    await channel.edit(name=f"Members: {total_members} | Online: {online_members}")
+    
+    # Update the 'Games Played' channel name
+    games_channel = client.get_channel(1362383355290849450)  # Replace YOUR_CHANNEL_ID with the correct channel ID
+    if games_channel:
+        await games_channel.edit(name=f"Games Played: {games_played}")
+    
+    # Update the 'Members' channel name
+    member_channel = client.get_channel(1362388485398593546)  # Replace YOUR_MEMBER_CHANNEL_ID with the correct channel ID
+    if member_channel:
+        await member_channel.edit(name=f"Members: {total_members} | Online: {online_members}")
 
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
-    update_games_played.start() 
-    update_member_count.start()
+    update_stats.start()
     # Load extensions
     extensions = [
         "commands.fun_commands",
