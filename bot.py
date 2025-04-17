@@ -33,7 +33,7 @@ async def get_games_played():
 @tasks.loop(minutes=5) 
 async def update_games_played():
     games_played = await get_games_played()
-    channel = bot.get_channel(1362383355290849450)
+    channel = client.get_channel(1362383355290849450)
     await channel.edit(name=f"Games Played: {games_played}")
 
 
