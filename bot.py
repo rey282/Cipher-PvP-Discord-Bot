@@ -106,7 +106,15 @@ async def track_win_streak():
                 longest_streak = current_streak
                 longest_streak_player = player_id
 
-    longest_streak_player_name = await get_player_name(longest_streak_player)
+    conn = await get_db_connection()
+    player_data = await conn.fetchrow('SELECT nickname FROM players WHERE discord_id = $1', longest_streak_player)
+    await conn.close()
+
+    if player_data:
+        longest_streak_player_name = player_data['nickname'] 
+    else:
+        longest_streak_player_name = "Unknown"
+
     return longest_streak_player, longest_streak
 
 # Update the games played and member count
