@@ -55,6 +55,11 @@ async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
     update_games_played.start() 
     update_member_count.start()
+    guild = client.get_guild(GUILD_ID)
+    if guild:
+        print(f"Total members: {guild.member_count}")
+        for member in guild.members:
+            print(f"{member.display_name} is {member.status}")
     # Load extensions
     extensions = [
         "commands.fun_commands",
