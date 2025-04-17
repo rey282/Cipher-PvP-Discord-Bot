@@ -71,58 +71,16 @@ async def get_match_modes():
 
     return mode_count
 
-async def track_win_streak():
-    conn = await get_db_connection()
-    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  
-    await conn.close()
-
-    longest_streak_player = None
-    longest_streak = 0
-    current_streak_player = None
-    current_streak = 0
-
-    for match in result:
-        raw_data = json.loads(match['raw_data'])
-
-        winner = raw_data['winner']
-        
-        elo_gains = json.loads(match['elo_gains'])  
-
-        for player_id, elo_gain in elo_gains.items():
-            
-            if player_id == current_streak_player:
-                current_streak += 1
-            else:
-                current_streak_player = player_id
-                current_streak = 1
-
-            if current_streak > longest_streak:
-                longest_streak = current_streak
-                longest_streak_player = player_id
-
-    conn = await get_db_connection()
-    player_data = await conn.fetchrow('SELECT nickname FROM players WHERE discord_id = $1', longest_streak_player)
-    await conn.close()
-
-    if player_data:
-        longest_streak_player_name = player_data['nickname'] 
-    else:
-        longest_streak_player_name = "Unknown"
-
-    return longest_streak_player_name, longest_streak
-
 # Update the games played and member count
 @tasks.loop(minutes=7)
 async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
     mode_count = await get_match_modes()
-    longest_streak_player_name, longest_streak = await track_win_streak()
 
     games_channel = client.get_channel(1362383355290849450)
     member_channel = client.get_channel(1362388485398593546)
     match_mode_channel = client.get_channel(1362420110480113766)
-    streak_channel = client.get_channel(1362421712540401734)
 
     try:
         if games_channel:
@@ -133,8 +91,6 @@ async def update_stats():
             await match_mode_channel.edit(
                 name=f"1v1: {mode_count['1v1']} | 1v2: {mode_count['1v2']} | 2v2: {mode_count['2v2']}"
             )
-        if streak_channel:
-            await streak_channel.edit(name=f"{longest_streak_player_name} - {longest_streak} wins")
         
     except discord.errors.HTTPException as e:
         retry_after = e.response.get('retry_after', 1) 
