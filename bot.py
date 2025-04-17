@@ -51,13 +51,15 @@ async def get_member_counts():
 
 async def get_match_modes():
     conn = await get_db_connection()
-    result = await conn.fetch('SELECT match_id, elo_gains FROM matches')  # Adjust the query as needed
+    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  
     await conn.close()
 
     mode_count = {"1v1": 0, "1v2": 0, "2v2": 0}
 
     for match in result:
-        elo_gains = match['elo_gains'] 
+        raw_data = json.loads(match['raw_data'])
+        elo_gains = json.loads(match['elo_gains'])  
+        
         total_players = len(elo_gains)
 
         if total_players == 2:
@@ -69,9 +71,19 @@ async def get_match_modes():
 
     return mode_count
 
+
+async def get_player_name(player_id):
+    conn = await get_db_connection()
+    player_data = await conn.fetchrow('SELECT name FROM players WHERE player_id = $1', player_id)
+    await conn.close()
+    
+    if player_data:
+        return player_data['name']
+    return None
+
 async def track_win_streak():
     conn = await get_db_connection()
-    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  # Query matches to get raw data and elo gains
+    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  
     await conn.close()
 
     longest_streak_player = None
@@ -80,15 +92,14 @@ async def track_win_streak():
     current_streak = 0
 
     for match in result:
-        # Parse the raw_data field to a dictionary
-        raw_data = json.loads(match['raw_data'])  # This parses the string into a dictionary
+        raw_data = json.loads(match['raw_data'])
 
         winner = raw_data['winner']
-        # Parse the elo_gains field to a dictionary
-        elo_gains = json.loads(match['elo_gains'])  # This parses the string into a dictionary
+        
+        elo_gains = json.loads(match['elo_gains'])  
 
         for player_id, elo_gain in elo_gains.items():
-            # You may need to adjust how you calculate the streak based on your logic
+            
             if player_id == current_streak_player:
                 current_streak += 1
             else:
@@ -99,6 +110,7 @@ async def track_win_streak():
                 longest_streak = current_streak
                 longest_streak_player = player_id
 
+    longest_streak_player_name = await get_player_name(longest_streak_player)
     return longest_streak_player, longest_streak
 
 # Update the games played and member count
