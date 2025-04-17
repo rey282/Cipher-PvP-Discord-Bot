@@ -105,9 +105,11 @@ async def track_win_streak():
     await conn.close()
 
     if player_data:
-        longest_streak_player_name = player_data['nickname'] 
+        longest_streak_player_name = player_data['nickname']  # Get player nickname
+        print(f"Player found: {longest_streak_player_name}")  # Debugging line
     else:
-        longest_streak_player_name = "Unknown"
+        longest_streak_player_name = "Unknown"  # In case the player doesn't exist in the database
+        print(f"Player not found for ID: {longest_streak_player}") 
 
     return longest_streak_player, longest_streak
 
