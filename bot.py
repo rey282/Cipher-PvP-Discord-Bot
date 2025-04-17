@@ -71,12 +71,6 @@ async def get_match_modes():
 
     return mode_count
 
-async def get_player_name(player_id):
-    user = await client.fetch_user(player_id) 
-    if user:
-        return user.name  
-    return "Unknown"
-
 async def track_win_streak():
     conn = await get_db_connection()
     result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  
