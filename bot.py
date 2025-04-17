@@ -134,7 +134,7 @@ async def update_stats():
                 name=f"1v1: {mode_count['1v1']} | 1v2: {mode_count['1v2']} | 2v2: {mode_count['2v2']}"
             )
         if streak_channel:
-            await streak_channel.edit(name=f"Longest Win Streak: {longest_streak_player_name} - {longest_streak} wins")
+            await streak_channel.edit(name=f"{longest_streak_player_name} - {longest_streak} wins")
         
     except discord.errors.HTTPException as e:
         retry_after = e.response.get('retry_after', 1) 
