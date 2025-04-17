@@ -37,15 +37,16 @@ async def get_member_counts():
     if guild:
         total_members = guild.member_count
         online_members = 0
-        print(f"Total members in guild: {total_members}")  # Debug: print total members
 
-        # Fetch all members asynchronously
-        async for member in guild.fetch_members():
-            print(f"Checking member: {member.name} - Status: {member.status}")  # Debug: print member status
+        # Ensure that members are fetched with the correct intents
+        await guild.chunk()  # This will ensure that all members are cached for presence checking
+        
+        # Iterate over all members to check for online status
+        for member in guild.members:
             if member.status != discord.Status.offline:
                 online_members += 1
 
-        print(f"Online members: {online_members}")  # Debug: print online members
+        print(f"Online members: {online_members}")  # Debug: Check online members
         return total_members, online_members
     return 0, 0
 
