@@ -34,7 +34,7 @@ async def get_member_counts():
     guild = client.get_guild(GUILD_ID)
     if guild:
         total_members = guild.member_count
-        online_members = sum(1 for member in guild.members if member.status == discord.Status.online)
+        online_members = sum(1 for member in guild.members if member.status in [discord.Status.online, discord.Status.idle, discord.Status.dnd])
         return total_members, online_members
     return 0, 0
 
