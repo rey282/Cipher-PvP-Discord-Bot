@@ -105,13 +105,11 @@ async def track_win_streak():
     await conn.close()
 
     if player_data:
-        longest_streak_player_name = player_data['nickname']  # Get player nickname
-        print(f"Player found: {longest_streak_player_name}")  # Debugging line
+        longest_streak_player_name = player_data['nickname'] 
     else:
-        longest_streak_player_name = "Unknown"  # In case the player doesn't exist in the database
-        print(f"Player not found for ID: {longest_streak_player}") 
+        longest_streak_player_name = "Unknown"
 
-    return longest_streak_player, longest_streak
+    return longest_streak_player_name, longest_streak
 
 # Update the games played and member count
 @tasks.loop(minutes=7)
@@ -119,7 +117,7 @@ async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
     mode_count = await get_match_modes()
-    longest_streak_player, longest_streak = await track_win_streak()
+    longest_streak_player_name, longest_streak = await track_win_streak()
 
     games_channel = client.get_channel(1362383355290849450)
     member_channel = client.get_channel(1362388485398593546)
@@ -136,7 +134,7 @@ async def update_stats():
                 name=f"1v1: {mode_count['1v1']} | 1v2: {mode_count['1v2']} | 2v2: {mode_count['2v2']}"
             )
         if streak_channel:
-            await streak_channel.edit(name=f"Longest Win Streak: {longest_streak_player} - {longest_streak} wins")
+            await streak_channel.edit(name=f"Longest Win Streak: {longest_streak_player_name} - {longest_streak} wins")
         
     except discord.errors.HTTPException as e:
         retry_after = e.response.get('retry_after', 1) 
