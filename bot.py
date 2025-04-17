@@ -30,17 +30,31 @@ async def get_games_played():
     await conn.close()
     return result
 
+async def get_member_counts():
+    guild = client.get_guild(GUILD_ID)
+    if guild:
+        total_members = guild.member_count
+        online_members = sum(1 for member in guild.members if member.status == discord.Status.online)
+        return total_members, online_members
+    return 0, 0
+
 @tasks.loop(minutes=5) 
 async def update_games_played():
     games_played = await get_games_played()
     channel = client.get_channel(1362383355290849450)
     await channel.edit(name=f"Games Played: {games_played}")
 
+@tasks.loop(minutes=5)
+async def update_member_count():
+    total_members, online_members = await get_member_counts()
+    channel = client.get_channel(1362388485398593546)  # Replace with your channel ID
+    await channel.edit(name=f"Members: {total_members} | Online: {online_members}")
 
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
     update_games_played.start() 
+    update_member_count.start()
     # Load extensions
     extensions = [
         "commands.fun_commands",
