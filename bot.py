@@ -1,6 +1,7 @@
 import discord
 import asyncpg
 import asyncio
+import json
 from discord.ext import commands
 from discord import app_commands 
 from dotenv import load_dotenv
@@ -70,51 +71,33 @@ async def get_match_modes():
 
 async def track_win_streak():
     conn = await get_db_connection()
-    
-    # Query matches to get raw data and Elo gains
-    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')
+    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  # Query matches to get raw data and elo gains
     await conn.close()
 
-    streaks = {}
+    longest_streak_player = None
+    longest_streak = 0
+    current_streak_player = None
+    current_streak = 0
 
-    # Loop through all matches to track win streaks
     for match in result:
-        raw_data = match['raw_data']
-        winner = raw_data['winner']
+        # Parse the raw_data field to a dictionary
+        raw_data = json.loads(match['raw_data'])  # This parses the string into a dictionary
 
+        winner = raw_data['winner']
+        # Assuming `elo_gains` is the key for storing player ELO changes and has the player IDs as keys
         elo_gains = match['elo_gains']
 
-        # Iterate through red and blue teams
-        for team in ['red_team', 'blue_team']:
-            team_members = raw_data[team]
-            
-            for member in team_members:
-                player_id = str(member['id'])
-                cycles = member['cycles']
+        for player_id, elo_gain in elo_gains.items():
+            # You may need to adjust how you calculate the streak based on your logic
+            if player_id == current_streak_player:
+                current_streak += 1
+            else:
+                current_streak_player = player_id
+                current_streak = 1
 
-                # Check if player won based on the winner
-                if winner == team[0:3]:  # 'red' or 'blue'
-                    if player_id not in streaks:
-                        streaks[player_id] = {'streak': 0, 'last_winner': winner}
-
-                    # Increase win streak if the player is part of the winning team
-                    if streaks[player_id]['last_winner'] == winner:
-                        streaks[player_id]['streak'] += 1
-                    else:
-                        streaks[player_id]['streak'] = 1  # Reset streak if the winner changes
-
-                    streaks[player_id]['last_winner'] = winner
-
-                else:
-                    # Reset streak if they didn't win
-                    if player_id not in streaks:
-                        streaks[player_id] = {'streak': 0, 'last_winner': winner}
-                    streaks[player_id]['streak'] = 0
-                    streaks[player_id]['last_winner'] = winner
-
-    # Find the player with the longest streak
-    longest_streak_player = max(streaks, key=lambda k: streaks[k]['streak'], default=None)
-    longest_streak = streaks.get(longest_streak_player, {}).get('streak', 0)
+            if current_streak > longest_streak:
+                longest_streak = current_streak
+                longest_streak_player = player_id
 
     return longest_streak_player, longest_streak
 
