@@ -51,17 +51,19 @@ async def get_member_counts():
 async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
-    
-    # Update the 'Games Played' channel name
-    games_channel = client.get_channel(1362383355290849450)  # Replace YOUR_CHANNEL_ID with the correct channel ID
-    if games_channel:
-        await games_channel.edit(name=f"Games Played: {games_played}")
-    
-    # Update the 'Members' channel name
-    member_channel = client.get_channel(1362388485398593546)  # Replace YOUR_MEMBER_CHANNEL_ID with the correct channel ID
-    if member_channel:
-        await member_channel.edit(name=f"Members: {total_members} | Online: {online_members}")
 
+    games_channel = client.get_channel(1362383355290849450)
+    member_channel = client.get_channel(1362388485398593546)
+
+    try:
+        if games_channel:
+            await games_channel.edit(name=f"Games Played: {games_played}")
+        if member_channel:
+            await member_channel.edit(name=f"Members: {total_members} | Online: {online_members}")
+    except discord.errors.HTTPException as e:
+        print(f"Rate limit hit: {e}")
+        await asyncio.sleep(197)
+        
 @client.event
 async def on_ready():
     print(f'Logged on as {client.user}! (ID: {client.user.id})')
