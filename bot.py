@@ -18,6 +18,7 @@ NEON_DATABASE_URL = os.getenv("DATABASE_URL")
 # Bot setup
 intents = discord.Intents.default()
 intents.message_content = True
+intents.presences = True
 client = commands.Bot(command_prefix="c!", intents=intents)
 
 async def get_db_connection():
