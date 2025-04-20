@@ -1,7 +1,7 @@
 import discord
 import asyncpg
 import time
-from datetime import date
+from datetime import date, datetime
 from discord import app_commands, Interaction, Embed
 from discord.ext import commands
 from typing import List
@@ -101,7 +101,7 @@ class UnitInfo(commands.Cog):
             print(f"[Autocomplete Error] {e}")
             return []
 
-    async def get_total_tracked_matches(self, debut_date: str):
+    async def get_total_tracked_matches(self, debut_date):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
             return await conn.fetchval("""
@@ -175,16 +175,19 @@ class UnitInfo(commands.Cog):
         preban = row.get("preban_count", 0)
         joker = row.get("joker_count", 0)
         appearance = row.get("appearance_count", 0)
-        debut_date = str(row.get("debut_date", "2025-04-19"))
-        total_tracked_matches = await self.get_total_tracked_matches(debut_date)
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
+        debut_date = row.get("debut_date", "2025-04-19")
 
-        if debut_date and debut_date > date.today():
+        if isinstance(debut_date, str):
+            debut_date = datetime.strptime(debut_date, "%Y-%m-%d").date()
+
+        if debut_date > date.today():
             await interaction.followup.send(
-                f"O-oh... **{row['name']}** hasn't debuted yet... W-we should wait until their grand entrance!",
+                f"I-I’m sorry! {row['name']} hasn’t debuted yet... Please check back after {debut_date.strftime('%B %d, %Y')}! 🫣",
                 ephemeral=True
             )
             return
+        total_tracked_matches = await self.get_total_tracked_matches(debut_date)
 
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
