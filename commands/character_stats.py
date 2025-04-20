@@ -180,11 +180,11 @@ class UnitInfo(commands.Cog):
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
 
         if debut_date and debut_date > date.today():
-        await interaction.followup.send(
-            f"O-oh... **{row['name']}** hasn't debuted yet... W-we should wait until their grand entrance!",
-            ephemeral=True
-        )
-        return
+            await interaction.followup.send(
+                f"O-oh... **{row['name']}** hasn't debuted yet... W-we should wait until their grand entrance!",
+                ephemeral=True
+            )
+            return
 
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
