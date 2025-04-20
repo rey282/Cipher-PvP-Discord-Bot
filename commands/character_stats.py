@@ -174,7 +174,7 @@ class UnitInfo(commands.Cog):
         preban = row.get("preban_count", 0)
         joker = row.get("joker_count", 0)
         appearance = row.get("appearance_count", 0)
-        debut_date = row.get("debut_date", "2025-04-19")
+        debut_date = str(row.get("debut_date", "2025-04-19"))
         total_tracked_matches = await self.get_total_tracked_matches(debut_date)
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
 
