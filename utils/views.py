@@ -138,7 +138,9 @@ class UpdateEloView(ui.View):
             "blue_picks": self.match_data["blue_picks"],
             "red_picks": self.match_data["red_picks"],
             "blue_bans": self.match_data["blue_bans"],
-            "red_bans": self.match_data["red_bans"]
+            "red_bans": self.match_data["red_bans"],
+            "prebans": self.match_data.get("prebans", []),
+            "jokers": self.match_data.get("jokers", [])
         }
 
         save_match_history(match_data)
@@ -311,7 +313,9 @@ class TiebreakerView(ui.View):
             "blue_picks": self.match_data["blue_picks"],
             "red_picks": self.match_data["red_picks"],
             "blue_bans": self.match_data["blue_bans"],
-            "red_bans": self.match_data["red_bans"]
+            "red_bans": self.match_data["red_bans"],
+            "prebans": self.match_data.get("prebans", []),
+            "jokers": self.match_data.get("jokers", [])
         }
 
         save_match_history(match_data)
