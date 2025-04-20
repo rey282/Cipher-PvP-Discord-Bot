@@ -80,7 +80,7 @@ class HelpCommand(commands.Cog):
         )
         embed.add_field(
             name="/stats",
-            value="Here are the top 10 units based on their win, pick, and ban rates! Let's see who shines the brightest!",
+            value="See the top 10 units by win, pick, and ban rates!",
             inline=False
         )
         embed.add_field(

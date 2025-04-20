@@ -175,7 +175,7 @@ class UnitInfo(commands.Cog):
         embed.set_footer(text="Handled with care by Kyasutorisu")
         await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="stats", description="Here are the top 10 units based on their win, pick, and ban rates! Let's see who shines the brightest!")
+    @app_commands.command(name="stats", description="See the top 10 units by win, pick, and ban rates!")
     @app_commands.guilds(GUILD_ID)
     async def stats(self, interaction: Interaction):
         await interaction.response.defer()
