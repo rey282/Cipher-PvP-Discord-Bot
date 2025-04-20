@@ -106,7 +106,7 @@ class UnitInfo(commands.Cog):
         async with pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT COUNT(*) FROM matches 
-                WHERE has_character_data = TRUE AND timestamp >= $1
+                WHERE has_character_data = TRUE AND timestamp::DATE >= $1
             """, debut_date)
 
     async def fetch_stats_data(self, mode: str):
@@ -135,7 +135,7 @@ class UnitInfo(commands.Cog):
                     SELECT name,
                         {column}::FLOAT / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
+                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date::DATE
                         ), 0) AS rate
                     FROM characters
                     WHERE {column} > 0
