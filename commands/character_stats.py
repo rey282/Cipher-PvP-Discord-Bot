@@ -195,6 +195,7 @@ class UnitInfo(commands.Cog):
         ban = row["ban_count"]
         preban = row.get("preban_count", 0)
         joker = row.get("joker_count", 0)
+        appearance = row.get("appearance_count", 0)
         total_tracked_matches = await self.get_total_tracked_matches()
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
 
