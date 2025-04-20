@@ -410,9 +410,9 @@ class MatchmakingCommands(commands.Cog):
                 return  
             
             # Calculate bans
-            if point_diff >= 950:
+            if point_diff >= 560:
                 regular_bans = 3
-                joker_bans = 5 + (point_diff - 950) // 200
+                joker_bans = 2 + (point_diff - 560) // 200
             elif point_diff >= 300:
                 regular_bans = 3
                 joker_bans = min(5, (point_diff - 300) // 130)
@@ -440,8 +440,8 @@ class MatchmakingCommands(commands.Cog):
             if regular_bans > 0:
                 ban_info.append(f"▸ {regular_bans} regular ban(s) (100pts each)")
             if joker_bans > 0:
-                if point_diff >= 950:
-                    ban_info.append(f"▸ 5 joker bans (130pts each) + {int(joker_bans - 5)} extra joker ban(s) (200pts each)")
+                if point_diff >= 560:
+                    ban_info.append(f"▸ 2 joker bans (130pts each) + {int(joker_bans - 2)} extra joker ban(s) (200pts each)")
                 else:
                     ban_info.append(f"▸ {int(joker_bans)} joker ban(s) (130pts each)")
 
