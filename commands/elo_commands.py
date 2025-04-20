@@ -197,7 +197,9 @@ class EloCommands(commands.Cog):
                 "blue_score": data["total_blue_cycles"],
                 "red_score": data["total_red_cycles"],
                 "blue_penalty": data["blue_penalty"],
-                "red_penalty": data["red_penalty"]
+                "red_penalty": data["red_penalty"],
+                "prebans": data.get("prebans", []),
+                "jokers": data.get("jokers", [])
             }
 
             view = UpdateEloView(

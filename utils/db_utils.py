@@ -177,20 +177,33 @@ def rollback_last_match():
             return False, "No ELO data was affected."
 
         # --- Revert Character Table Stats ---
+        seen_codes = set()
+
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = (team_key.startswith(winner))
+            team_won = team_key.startswith(winner)
 
             for pick in picks:
                 code = pick.get("code")
                 eid = pick.get("eidolon")
 
-                if code is None or eid is None:
+                if not code or eid is None:
                     continue
 
-                # Decrease pick count
+                if code not in seen_codes:
+                    seen_codes.add(code)
+                    cursor.execute(
+                        "UPDATE characters SET appearance_count = GREATEST(appearance_count - 1, 0) WHERE code = %s", (code,)
+                    )
+
+                cursor.execute("UPDATE characters SET pick_count = GREATEST(pick_count - 1, 0) WHERE code = %s", (code,))
+
                 cursor.execute(
-                    "UPDATE characters SET pick_count = GREATEST(pick_count - 1, 0) WHERE code = %s", (code,)
+                    sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
+                        sql.Identifier(f"e{eid}_uses"),
+                        sql.Identifier(f"e{eid}_uses")
+                    ),
+                    (code,)
                 )
 
                 if team_won:
@@ -201,30 +214,40 @@ def rollback_last_match():
                         ),
                         (code,)
                     )
-                cursor.execute(
-                    sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
-                        sql.Identifier(f"e{eid}_uses"),
-                        sql.Identifier(f"e{eid}_uses")
-                    ),
-                    (code,)
-                )
 
         for team_key in ["blue_bans", "red_bans"]:
             bans = match_data.get(team_key, [])
             for ban in bans:
                 code = ban.get("code")
                 if code:
-                    cursor.execute(
-                        "UPDATE characters SET ban_count = GREATEST(ban_count - 1, 0) WHERE code = %s", (code,)
-                    )
+                    if code not in seen_codes:
+                        seen_codes.add(code)
+                        cursor.execute(
+                            "UPDATE characters SET appearance_count = GREATEST(appearance_count - 1, 0) WHERE code = %s", (code,)
+                        )
+                    cursor.execute("UPDATE characters SET ban_count = GREATEST(ban_count - 1, 0) WHERE code = %s", (code,))
 
-        # Save and commit
+        for field, column in [("prebans", "preban_count"), ("jokers", "joker_count")]:
+            for code in match_data.get(field, []):
+                if code not in seen_codes:
+                    seen_codes.add(code)
+                    cursor.execute(
+                        "UPDATE characters SET appearance_count = GREATEST(appearance_count - 1, 0) WHERE code = %s", (code,)
+                    )
+                cursor.execute(
+                    sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
+                        sql.Identifier(column),
+                        sql.Identifier(column)
+                    ),
+                    (code,)
+                )
+
+        # Finalize rollback
         save_elo_data(elo_data)
         cursor.execute("DELETE FROM matches WHERE match_id = %s", (match_id,))
         conn.commit()
-
         return True, "Match rollback successful"
-
+        
 def calculate_team_elo_change(
     winner_avg_elo: float,
     loser_avg_elo: float,
@@ -303,6 +326,8 @@ def update_character_table_stats(match_data, winning_team: str):
     with get_connection() as conn:
         cursor = conn.cursor()
 
+        all_codes = set()
+
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
             team_won = team_key.startswith(winning_team)
@@ -310,6 +335,8 @@ def update_character_table_stats(match_data, winning_team: str):
             for pick in picks:
                 code = pick["code"]
                 eid = pick["eidolon"]
+
+                all_codes.add(code)
 
                 # Fetch or create metadata
                 cursor.execute("SELECT name, subname, rarity, image_url FROM characters WHERE code = %s", (code,))
@@ -348,6 +375,7 @@ def update_character_table_stats(match_data, winning_team: str):
             bans = match_data.get(team_key, [])
             for ban in bans:
                 code = ban["code"]
+                all_codes.add(code)
 
                 cursor.execute("SELECT name, subname, rarity, image_url FROM characters WHERE code = %s", (code,))
                 existing = cursor.fetchone()
@@ -367,4 +395,16 @@ def update_character_table_stats(match_data, winning_team: str):
                 """, (code, name, subname, rarity, image_url))
 
                 cursor.execute("UPDATE characters SET ban_count = ban_count + 1 WHERE code = %s", (code,))
+            
+        for code in match_data.get("prebans", []):
+            all_codes.add(code)
+            cursor.execute("UPDATE characters SET preban_count = preban_count + 1 WHERE code = %s", (code,))
+
+        for code in match_data.get("jokers", []):
+            all_codes.add(code)
+            cursor.execute("UPDATE characters SET joker_count = joker_count + 1 WHERE code = %s", (code,))
+
+        for code in all_codes:
+            cursor.execute("UPDATE characters SET appearance_count = appearance_count + 1 WHERE code = %s", (code,))
+
         conn.commit()

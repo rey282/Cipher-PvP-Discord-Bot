@@ -21,6 +21,10 @@ class StatsView(discord.ui.View):
         self.add_item(StatsButton("Win Rate", "winrate", mode == "winrate"))
         self.add_item(StatsButton("Pick Rate", "pickrate", mode == "pickrate"))
         self.add_item(StatsButton("Ban Rate", "banrate", mode == "banrate"))
+        self.add_item(StatsButton("Preban", "prebanrate", mode == "prebanrate"))
+        self.add_item(StatsButton("Joker", "jokerrate", mode == "jokerrate"))
+        self.add_item(StatsButton("Appearance", "appearancerate", mode == "appearancerate"))
+        self.add_item(StatsButton("Lose Rate", "loserate", mode == "loserate"))
 
     def get_embed(self):
         embed = discord.Embed(
@@ -132,6 +136,44 @@ class UnitInfo(commands.Cog):
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
+            elif mode == "loserate":
+                return await conn.fetch("""
+                    SELECT name,
+                        1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
+                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS rate
+                    FROM characters
+                    WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
+            elif mode == "prebanrate":
+                return await conn.fetch("""
+                    SELECT name,
+                        preban_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
+                    FROM characters
+                    WHERE preban_count > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
+            elif mode == "jokerrate":
+                return await conn.fetch("""
+                    SELECT name,
+                        joker_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
+                    FROM characters
+                    WHERE joker_count > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
+            elif mode == "appearancerate":
+                return await conn.fetch("""
+                    SELECT name,
+                        appearance_count::FLOAT /
+                        NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
+                    FROM characters
+                    WHERE appearance_count > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
 
     @app_commands.command(name="unit-info", description="Let's explore the pick, ban, and win rates, as well as the Eidolon breakdown for your chosen unit!")
     @app_commands.describe(unit="The unit to display.")
@@ -151,6 +193,8 @@ class UnitInfo(commands.Cog):
 
         pick = row["pick_count"]
         ban = row["ban_count"]
+        preban = row.get("preban_count", 0)
+        joker = row.get("joker_count", 0)
         total_tracked_matches = await self.get_total_tracked_matches()
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
 
@@ -162,6 +206,9 @@ class UnitInfo(commands.Cog):
         embed.add_field(name="Pick Rate", value=percent(pick, total_tracked_matches), inline=True)
         embed.add_field(name="Ban Rate", value=percent(ban, total_tracked_matches), inline=True)
         embed.add_field(name="Win Rate", value=percent(total_wins, pick), inline=True)
+        embed.add_field(name="Preban Rate", value=percent(preban, total_tracked_matches), inline=True)
+        embed.add_field(name="Joker Rate", value=percent(joker, total_tracked_matches), inline=True)
+        embed.add_field(name="Appearance Rate", value=percent(appearance, total_tracked_matches), inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         # Eidolon Win Breakdown
