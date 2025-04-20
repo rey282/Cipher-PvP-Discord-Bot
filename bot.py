@@ -111,7 +111,8 @@ async def on_ready():
         "commands.show",
         "commands.sync",
         "commands.help",
-        "commands.queue"
+        "commands.queue",
+        "commands.character_stats"
     ]
     
     for ext in extensions:

@@ -1,9 +1,10 @@
 import discord
 import os
+import json
 from discord.ext import commands
 from discord import ui
 from discord import app_commands
-from discord import Interaction
+from discord import Interaction, Embed, Color
 from discord import Object
 from utils.db_utils import load_elo_data, save_elo_data
 from utils.views import UpdateEloView, TiebreakerView
@@ -13,6 +14,106 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
+# --- PARSE SUBMISSION STRING ---
+def parse_submission_string(submission: str):
+    # Slot map by position
+    slot_map = {
+        1: ("blue_bans", 2),
+        2: ("red_bans", 2),
+        3: ("blue_picks", 4),
+        4: ("red_picks", 4),
+        5: ("red_picks", 4),
+        6: ("blue_picks", 4),
+        7: ("blue_bans", 2),
+        8: ("red_bans", 2),
+        9: ("red_picks", 4),
+        10: ("blue_picks", 4),
+        11: ("blue_picks", 4),
+        12: ("red_picks", 4),
+        13: ("red_picks", 4),
+        14: ("blue_picks", 4),
+        15: ("blue_picks", 4),
+        16: ("red_picks", 4),
+        17: ("red_picks", 4),
+        18: ("blue_picks", 4),
+        19: ("blue_picks", 4),
+        20: ("red_picks", 4)
+    }
+
+    index = 0
+    parsed = {
+        "blue_bans": [], "red_bans": [],
+        "blue_picks": [], "red_picks": []
+    }
+
+    for slot in range(1, 21):
+        key, length = slot_map[slot]
+        raw = submission[index:index + length]
+        if length == 2:
+            parsed[key].append({"code": raw})
+        else:
+            parsed[key].append({
+                "code": raw[:2],
+                "eidolon": int(raw[2]),
+                "superimposition": int(raw[3])
+            })
+        index += length
+        
+    blue_first = int(submission[index:index+2])
+    index += 2
+    blue_second = int(submission[index:index+2])
+    index += 2
+    red_first = int(submission[index:index+2])
+    index += 2
+    red_second = int(submission[index:index+2])
+    index += 2
+
+    blue_cycle_penalty = int(submission[index])
+    index += 1
+    red_cycle_penalty = int(submission[index])
+    index += 1
+
+    blue_time_penalty = int(submission[index:index+2])
+    index += 2
+    red_time_penalty = int(submission[index:index+2])
+    index += 2
+
+    blue_penalty = blue_cycle_penalty + blue_time_penalty
+    red_penalty = red_cycle_penalty + red_time_penalty
+
+    blue_points = int(submission[index])
+    index += 1
+    red_points = int(submission[index])
+    index += 1
+
+    side_selector = submission[index]  # 'b' or 'r'
+    index += 1
+
+    # Parse prebans and jokers
+    split = submission[index:].split("|")
+    prebans = [split[0][i:i + 2] for i in range(0, len(split[0]), 2)] if split and split[0] else []
+    jokers = [split[1][i:i + 2] for i in range(0, len(split[1]), 2)] if len(split) > 1 else []
+
+    total_blue_cycles = blue_first + blue_second + blue_penalty
+    total_red_cycles = red_first + red_second + red_penalty
+
+    parsed.update({
+        "blue_cycles": [blue_first, blue_second],
+        "red_cycles": [red_first, red_second],
+        "blue_penalty": blue_penalty,
+        "red_penalty": red_penalty,
+        "blue_points": blue_points,
+        "red_points": red_points,
+        "winner": "blue" if total_blue_cycles < total_red_cycles else "red" if total_red_cycles < total_blue_cycles else "tie",
+        "prebans": prebans,
+        "jokers": jokers,
+        "total_blue_cycles": total_blue_cycles,
+        "total_red_cycles": total_red_cycles,
+        "side_selector": side_selector
+    })
+
+    return parsed
+
 class EloCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -20,75 +121,63 @@ class EloCommands(commands.Cog):
     @app_commands.command(name="submit-match", description="Whisper the outcome... and I shall adjust the threads of fate (ELO).")
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
-        blue_player_1="First player",
-        blue_player_2="Second player",
-        red_player_1="Third player",
-        red_player_2="Fourth player",
-        blue_player_1_cycle="Cycle score of Blue Player 1 (0-15)",
-        blue_player_2_cycle="Cycle score of Blue Player 2 (0-15)",
-        red_player_1_cycle="Cycle score of Red Player 1 (0-15)",
-        red_player_2_cycle="Cycle score of Red Player 2 (0-15)",
-        blue_cycle_penalty="Cycle penalty for Blue Team",
-        red_cycle_penalty="Cycle penalty for Red Team"
+        blue_player_1="Blue Team Player 1",
+        blue_player_2="Blue Team Player 2",
+        red_player_1="Red Team Player 1",
+        red_player_2="Red Team Player 2",
+        submission_string="Paste the code from the match website",
     )
 
-    async def update_elo(self, interaction: Interaction, blue_player_1: discord.Member, blue_player_2: discord.Member, red_player_1: discord.Member, red_player_2: discord.Member, blue_player_1_cycle: int, blue_player_2_cycle: int, red_player_1_cycle: int, red_player_2_cycle: int, blue_cycle_penalty: int, red_cycle_penalty: int):
+    async def update_elo(
+        self,
+        interaction: Interaction,
+        blue_player_1: discord.Member,
+        blue_player_2: discord.Member,
+        red_player_1: discord.Member,
+        red_player_2: discord.Member,
+        submission_string: str
+    ):
+        await interaction.response.defer()
+
         try:
-            await interaction.response.defer()
             # Validate no duplicate players
             players = [blue_player_1, blue_player_2, red_player_1, red_player_2]
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):
                 await interaction.followup.send("<:Unamurice:1349309283669377064> U-Um… I think you might’ve listed the same soul on both teams... I’m sorry, but each thread must belong to just one side.", ephemeral=False)
                 return
             
-            # Validate scores (0-15)
-            blue_scores = [blue_player_1_cycle, blue_player_2_cycle]
-            red_scores = [red_player_1_cycle, red_player_2_cycle]
-            if any(score < 0 or score > 15 for score in blue_scores + red_scores):
-                await interaction.followup.send("<:Unamurice:1349309283669377064> Ah... those cycle scores don’t quite look right. They must be between 0 and 15. Shall we try again…?", ephemeral=False)
-                return
-
-            # Validate cycle penalties (non-negative)
-            if blue_cycle_penalty < 0 or red_cycle_penalty < 0:
-                await interaction.followup.send("<:Unamurice:1349309283669377064> I-I'm sorry, but penalties can’t be negative… that would twist the flow of battle. Let’s adjust that gently.", ephemeral=False)
-                return
-
-            # Calculate total scores for each team (excluding penalties)
-            blue_total_score = sum(blue_scores)
-            red_total_score = sum(red_scores)
+            data = parse_submission_string(submission_string)
 
             # Create an embed to display the results
             embed = discord.Embed(
                 title="Threads of Fate: Match Summary",
-                color=discord.Color.blue() if blue_total_score < red_total_score else discord.Color.red(),
+                color=discord.Color.blue() if data["total_blue_cycles"] < data["total_red_cycles"] else discord.Color.red(),
                 description="The threads have crossed... and a tale unfolds."
             )
 
             # Add Blue Team field
             embed.add_field(
                 name="Blue Team",
-                value=f"{blue_player_1.display_name} ({blue_player_1_cycle}c) & {blue_player_2.display_name} ({blue_player_2_cycle}c)",
+                value=f"{blue_player_1.display_name} & {blue_player_2.display_name}\n"
+                    f"Cycles: {data['blue_cycles'][0]} + {data['blue_cycles'][1]}\n"
+                    f"Penalty: {data['blue_penalty']}\n"
+                    f"Points: {data['blue_points']}",
                 inline=False
             )
 
             # Add Red Team field
             embed.add_field(
                 name="Red Team",
-                value=f"{red_player_1.display_name} ({red_player_1_cycle}c) & {red_player_2.display_name} ({red_player_2_cycle}c)",
-                inline=False
-            )   
-
-            # Add total scores and cycle penalties
-            embed.add_field(
-                name="Outcome",
-                value=f"Blue Team: {blue_total_score} Cycles (+{blue_cycle_penalty} Penalty)\nRed Team: {red_total_score} Cycles (+{red_cycle_penalty} Penalty)",
+                value=f"{red_player_1.display_name} & {red_player_2.display_name}\n"
+                    f"Cycles: {data['red_cycles'][0]} + {data['red_cycles'][1]}\n"
+                    f"Penalty: {data['red_penalty']}\n"
+                    f"Points: {data['red_points']}",
                 inline=False
             )
 
-            # Add winner (if not a tie)
-            if blue_total_score < red_total_score:
+            if data['total_blue_cycles'] < data['total_red_cycles']:
                 embed.add_field(name="Victor", value="Blue Team — the tide favored them today.", inline=False)
-            elif red_total_score < blue_total_score:
+            elif data['total_red_cycles'] < data['total_blue_cycles']:
                 embed.add_field(name="Victor", value="Red Team — their resolve carved the path.", inline=False)
             else:
                 embed.add_field(name="Outcome", value="A perfect tie... as if destiny itself hesitated.", inline=False)
@@ -96,14 +185,30 @@ class EloCommands(commands.Cog):
             embed.set_footer(text="Threads arranged with care… by Kyasutorisu")
 
             # Create view with buttons
+            match_data = {
+                "blue_team": [...],
+                "red_team": [...],
+                "blue_picks": data["blue_picks"],
+                "red_picks": data["red_picks"],
+                "blue_bans": data["blue_bans"],
+                "red_bans": data["red_bans"],
+                "winner": data["winner"],
+                "elo_gains": {},  # to be filled later
+                "blue_score": data["total_blue_cycles"],
+                "red_score": data["total_red_cycles"],
+                "blue_penalty": data["blue_penalty"],
+                "red_penalty": data["red_penalty"]
+            }
+
             view = UpdateEloView(
                 blue_team=[blue_player_1, blue_player_2],
                 red_team=[red_player_1, red_player_2],
-                blue_scores=blue_scores,
-                red_scores=red_scores,
-                blue_cycle_penalty=blue_cycle_penalty,
-                red_cycle_penalty=red_cycle_penalty,
-                allowed_user_id=interaction.user.id
+                blue_scores=data['blue_cycles'],
+                red_scores=data['red_cycles'],
+                blue_cycle_penalty=data['blue_penalty'],
+                red_cycle_penalty=data['red_penalty'],
+                allowed_user_id=interaction.user.id,
+                match_data=match_data
             )
 
             # Handle duplicate mentions

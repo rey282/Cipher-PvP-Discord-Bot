@@ -12,11 +12,12 @@ from utils.db_utils import (
     save_match_history,
     rollback_last_match,
     distribute_team_elo_change,
-    calculate_team_elo_change 
+    calculate_team_elo_change,
+    update_character_table_stats
 )
 logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
-    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, allowed_user_id):
+    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, allowed_user_id, match_data):
         super().__init__(timeout=None)
         self.blue_team = blue_team
         self.red_team = red_team
@@ -27,6 +28,7 @@ class UpdateEloView(ui.View):
         self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
         self.elo_gains={}
+        self.match_data = match_data
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
@@ -71,7 +73,8 @@ class UpdateEloView(ui.View):
                 blue_total_score=blue_total_score,
                 red_total_score=red_total_score,
                 elo_gains=self.elo_gains,
-                allowed_user_id=interaction.user.id
+                allowed_user_id=interaction.user.id,
+                match_data=self.match_data
             )
             await interaction.followup.send(
                 "The threads of fate have tied these teams... Which side shall be favored by destiny?\n"
@@ -116,6 +119,12 @@ class UpdateEloView(ui.View):
 
         save_elo_data(self.elo_data)
 
+        await asyncio.to_thread(
+            update_character_table_stats,
+            self.match_data,
+            winning_team="blue" if blue_total_score < red_total_score else "red"
+        )
+
         match_data = {
             "date": datetime.now().strftime("%d/%m/%Y"),
             "blue_team": [{"id": str(p.id), "name": p.display_name, "cycles": s} for p, s in zip(self.blue_team, self.blue_scores)],
@@ -125,7 +134,11 @@ class UpdateEloView(ui.View):
             "blue_penalty": self.blue_cycle_penalty,
             "red_penalty": self.red_cycle_penalty,
             "winner": "blue" if blue_total_score < red_total_score else "red" if red_total_score < blue_total_score else "tie",
-            "elo_gains": self.elo_gains
+            "elo_gains": self.elo_gains,
+            "blue_picks": self.match_data["blue_picks"],
+            "red_picks": self.match_data["red_picks"],
+            "blue_bans": self.match_data["blue_bans"],
+            "red_bans": self.match_data["red_bans"]
         }
 
         save_match_history(match_data)
@@ -189,7 +202,7 @@ class UpdateEloView(ui.View):
         self.stop()
 
 class TiebreakerView(ui.View):
-    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, elo_gains, allowed_user_id):
+    def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, elo_gains, allowed_user_id, match_data):
         super().__init__(timeout=300)
         self.blue_team = blue_team
         self.red_team = red_team
@@ -202,6 +215,8 @@ class TiebreakerView(ui.View):
         self.elo_gains = elo_gains
         self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
+        self.match_data = match_data
+
 
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user.id != self.allowed_user_id:
@@ -275,6 +290,8 @@ class TiebreakerView(ui.View):
 
         save_elo_data(self.elo_data)
 
+        await asyncio.to_thread(update_character_table_stats, self.match_data, winning_team="blue" if winner_team == self.blue_team else "red")
+
         match_data = {
             "date": datetime.now().strftime("%d/%m/%Y"),
             "blue_team": [
@@ -290,7 +307,11 @@ class TiebreakerView(ui.View):
             "blue_penalty": self.blue_cycle_penalty,
             "red_penalty": self.red_cycle_penalty,
             "winner": "blue" if winner_team == self.blue_team else "red",
-            "elo_gains": self.elo_gains
+            "elo_gains": self.elo_gains,
+            "blue_picks": self.match_data["blue_picks"],
+            "red_picks": self.match_data["red_picks"],
+            "blue_bans": self.match_data["blue_bans"],
+            "red_bans": self.match_data["red_bans"]
         }
 
         save_match_history(match_data)

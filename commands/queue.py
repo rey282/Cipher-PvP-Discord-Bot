@@ -36,7 +36,7 @@ class MatchmakingQueue(commands.Cog):
         await asyncio.sleep(afk_timeout)
 
         if user in self.queue:
-            if user.voice is None and (not user.last_message_at or (discord.utils.utcnow() - user.last_message_at).total_seconds() > afk_timeout):
+            if user.voice is None and (not user.last_message or (discord.utils.utcnow() - user.last_message.created_at).total_seconds() > afk_timeout)::
                 await interaction.channel.send(
                     f"**{user.display_name}** ,I’m afraid your thread has been gently unraveled from the queue. You’ve drifted away from the voice and text realms for too long..."
                 )
