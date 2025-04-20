@@ -1,6 +1,7 @@
 import discord
 import asyncpg
 import time
+from datetime import date
 from discord import app_commands, Interaction, Embed
 from discord.ext import commands
 from typing import List
@@ -177,6 +178,13 @@ class UnitInfo(commands.Cog):
         debut_date = str(row.get("debut_date", "2025-04-19"))
         total_tracked_matches = await self.get_total_tracked_matches(debut_date)
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
+
+        if debut_date and debut_date > date.today():
+        await interaction.followup.send(
+            f"O-oh... **{row['name']}** hasn't debuted yet... W-we should wait until their grand entrance!",
+            ephemeral=True
+        )
+        return
 
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
