@@ -130,7 +130,7 @@ class UnitInfo(commands.Cog):
                     "appearancerate": "appearance_count"
                 }
                 column = column_map[mode]
-                return await conn.fetch(sql.SQL(f"""
+                return await conn.fetch(f"""
                     SELECT name,
                         {column}::FLOAT / NULLIF((
                             SELECT COUNT(*) FROM matches
@@ -140,7 +140,7 @@ class UnitInfo(commands.Cog):
                     WHERE {column} > 0
                     ORDER BY rate DESC
                     LIMIT 10
-                """).as_string(conn))
+                """)
         
             elif mode == "loserate":
                 return await conn.fetch("""
