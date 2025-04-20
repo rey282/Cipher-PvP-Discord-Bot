@@ -187,8 +187,8 @@ class UnitInfo(commands.Cog):
                 ephemeral=True
             )
             return
-        total_tracked_matches = await self.get_total_tracked_matches(debut_date)
-
+        total_tracked_matches = await self.get_total_tracked_matches(debut_date.isoformat())
+        
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
             color=0xB197FC
