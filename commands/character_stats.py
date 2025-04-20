@@ -135,7 +135,7 @@ class UnitInfo(commands.Cog):
                     SELECT name,
                         {column}::FLOAT / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date::DATE
+                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
                         ), 0) AS rate
                     FROM characters
                     WHERE {column} > 0
