@@ -100,10 +100,13 @@ class UnitInfo(commands.Cog):
             print(f"[Autocomplete Error] {e}")
             return []
 
-    async def get_total_tracked_matches(self):
+    async def get_total_tracked_matches(self, debut_date: str):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
-            return await conn.fetchval("SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE")
+            return await conn.fetchval("""
+                SELECT COUNT(*) FROM matches 
+                WHERE has_character_data = TRUE AND timestamp >= $1
+            """, debut_date)
 
     async def fetch_stats_data(self, mode: str):
         pool = await self.get_pool()
@@ -118,24 +121,27 @@ class UnitInfo(commands.Cog):
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
-            elif mode == "pickrate":
-                return await conn.fetch("""
+            elif mode in ["pickrate", "banrate", "prebanrate", "jokerrate", "appearancerate"]:
+                column_map = {
+                    "pickrate": "pick_count",
+                    "banrate": "ban_count",
+                    "prebanrate": "preban_count",
+                    "jokerrate": "joker_count",
+                    "appearancerate": "appearance_count"
+                }
+                column = column_map[mode]
+                return await conn.fetch(sql.SQL(f"""
                     SELECT name,
-                        pick_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
+                        {column}::FLOAT / NULLIF((
+                            SELECT COUNT(*) FROM matches
+                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
+                        ), 0) AS rate
                     FROM characters
-                    WHERE pick_count > 0
+                    WHERE {column} > 0
                     ORDER BY rate DESC
                     LIMIT 10
-                """)
-            elif mode == "banrate":
-                return await conn.fetch("""
-                    SELECT name,
-                        ban_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
-                    FROM characters
-                    WHERE ban_count > 0
-                    ORDER BY rate DESC
-                    LIMIT 10
-                """)
+                """).as_string(conn))
+        
             elif mode == "loserate":
                 return await conn.fetch("""
                     SELECT name,
@@ -143,34 +149,6 @@ class UnitInfo(commands.Cog):
                         NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS rate
                     FROM characters
                     WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) > 0
-                    ORDER BY rate DESC
-                    LIMIT 10
-                """)
-            elif mode == "prebanrate":
-                return await conn.fetch("""
-                    SELECT name,
-                        preban_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
-                    FROM characters
-                    WHERE preban_count > 0
-                    ORDER BY rate DESC
-                    LIMIT 10
-                """)
-            elif mode == "jokerrate":
-                return await conn.fetch("""
-                    SELECT name,
-                        joker_count::FLOAT / NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
-                    FROM characters
-                    WHERE joker_count > 0
-                    ORDER BY rate DESC
-                    LIMIT 10
-                """)
-            elif mode == "appearancerate":
-                return await conn.fetch("""
-                    SELECT name,
-                        appearance_count::FLOAT /
-                        NULLIF((SELECT COUNT(*) FROM matches WHERE has_character_data = TRUE), 0) AS rate
-                    FROM characters
-                    WHERE appearance_count > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
@@ -196,7 +174,8 @@ class UnitInfo(commands.Cog):
         preban = row.get("preban_count", 0)
         joker = row.get("joker_count", 0)
         appearance = row.get("appearance_count", 0)
-        total_tracked_matches = await self.get_total_tracked_matches()
+        debut_date = row.get("debut_date", "2025-04-19")
+        total_tracked_matches = await self.get_total_tracked_matches(debut_date)
         total_wins = sum(row.get(f"e{i}_wins", 0) for i in range(7))
 
         embed = Embed(
