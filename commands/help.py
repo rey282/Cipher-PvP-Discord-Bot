@@ -78,6 +78,16 @@ class HelpCommand(commands.Cog):
             value="Peek at those waiting in the thread.",
             inline=False
         )
+        embed.add_field(
+            name="/stats",
+            value="Here are the top 10 units based on their win, pick, and ban rates! Let's see who shines the brightest!",
+            inline=False
+        )
+        embed.add_field(
+            name="/unit-info",
+            value="Let's explore the pick, ban, and win rates, as well as the Eidolon breakdown for your chosen unit!",
+            inline=False
+        )
 
         embed.set_footer(text="Handled with care by Kyasutorisu")
 

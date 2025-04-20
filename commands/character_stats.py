@@ -34,7 +34,7 @@ class StatsView(discord.ui.View):
                 value=f"{self.mode.title().replace('rate', ' Rate')}: {rate}",
                 inline=False
             )
-        embed.set_footer(text="Use the buttons below to switch views.")
+        embed.set_footer(text="Handled with love by Kyasutorisu")
         return embed
 
 
@@ -133,7 +133,7 @@ class UnitInfo(commands.Cog):
                     LIMIT 10
                 """)
 
-    @app_commands.command(name="unit-info", description="Show pick/ban/win rate and eidolon stats for a unit.")
+    @app_commands.command(name="unit-info", description="Let's explore the pick, ban, and win rates, as well as the Eidolon breakdown for your chosen unit!")
     @app_commands.describe(unit="The unit to display.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.autocomplete(unit=unit_autocomplete)
@@ -175,7 +175,7 @@ class UnitInfo(commands.Cog):
         embed.set_footer(text="Handled with care by Kyasutorisu")
         await interaction.followup.send(embed=embed)
 
-    @app_commands.command(name="stats", description="Show top 10 characters by win, pick, or ban rate.")
+    @app_commands.command(name="stats", description="Here are the top 10 units based on their win, pick, and ban rates! Let's see who shines the brightest!")
     @app_commands.guilds(GUILD_ID)
     async def stats(self, interaction: Interaction):
         await interaction.response.defer()
