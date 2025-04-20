@@ -203,7 +203,7 @@ class UnitInfo(commands.Cog):
             title=f"Pick/Ban Data for {row['name']}",
             color=0xB197FC
         )
-        embed.set_image(url=row["image_url"])
+        embed.set_thumbnail(url=row["image_url"])
         embed.add_field(name="Pick Rate", value=percent(pick, total_tracked_matches), inline=True)
         embed.add_field(name="Ban Rate", value=percent(ban, total_tracked_matches), inline=True)
         embed.add_field(name="Win Rate", value=percent(total_wins, pick), inline=True)
