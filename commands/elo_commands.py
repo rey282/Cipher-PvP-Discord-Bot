@@ -69,9 +69,9 @@ def parse_submission_string(submission: str):
     index += 2
 
     blue_cycle_penalty = int(submission[index])
-    index += 1
+    index += 2
     red_cycle_penalty = int(submission[index])
-    index += 1
+    index += 2
 
     blue_time_penalty = int(submission[index:index+2])
     index += 2
@@ -82,9 +82,9 @@ def parse_submission_string(submission: str):
     red_penalty = red_cycle_penalty + red_time_penalty
 
     blue_points = int(submission[index])
-    index += 1
+    index += 2
     red_points = int(submission[index])
-    index += 1
+    index += 2
 
     side_selector = submission[index]  # 'b' or 'r'
     index += 1
