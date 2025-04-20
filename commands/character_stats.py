@@ -183,12 +183,12 @@ class UnitInfo(commands.Cog):
 
         if debut_date > date.today():
             await interaction.followup.send(
-                f"I-I’m sorry! {row['name']} hasn’t debuted yet... Please check back after {debut_date.strftime('%B %d, %Y')}! 🫣",
+                f"I-I’m sorry! {row['name']} hasn’t debuted yet... Please check back after {debut_date.strftime('%B %d, %Y')}!",
                 ephemeral=True
             )
             return
         total_tracked_matches = await self.get_total_tracked_matches(debut_date.isoformat())
-        
+
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
             color=0xB197FC
