@@ -201,7 +201,7 @@ class UnitInfo(commands.Cog):
 
         embed = Embed(
             title=f"Pick/Ban Data for {row['name']}",
-            color=interaction.user.color if interaction.user.color else 0xB197FC
+            color=0xB197FC
         )
         embed.set_thumbnail(url=row["image_url"])
         embed.add_field(name="Pick Rate", value=percent(pick, total_tracked_matches), inline=True)
