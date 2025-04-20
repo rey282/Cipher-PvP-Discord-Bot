@@ -132,13 +132,14 @@ class UnitInfo(commands.Cog):
                 }
                 column = column_map[mode]
                 return await conn.fetch(f"""
-                    SELECT name,
-                        {column}::FLOAT / NULLIF((
-                            SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
+                    SELECT c.name,
+                        c.{column}::FLOAT / NULLIF((
+                            SELECT COUNT(*) FROM matches m
+                            WHERE m.has_character_data = TRUE
+                            AND m.timestamp >= c.debut_date
                         ), 0) AS rate
-                    FROM characters
-                    WHERE {column} > 0
+                    FROM characters c
+                    WHERE c.{column} > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
