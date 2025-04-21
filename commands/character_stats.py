@@ -56,7 +56,7 @@ class StatsButton(discord.ui.Button):
         await interaction.response.defer()
         new_data = await view.cog.fetch_stats_data(mode=self.custom_id)
         new_view = StatsView(view.cog, self.custom_id, new_data, user_id=view.user_id)
-        await interaction.response.edit_message(embed=new_view.get_embed(), view=new_view)
+        await interaction.message.edit(embed=new_view.get_embed(), view=new_view)
 
 
 class UnitInfo(commands.Cog):
