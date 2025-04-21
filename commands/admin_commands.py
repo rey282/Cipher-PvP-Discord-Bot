@@ -313,7 +313,7 @@ class AdminCommands(commands.Cog):
         embed.add_field(name="0 Prebans", value=row['preban_0'] or 0, inline=False)
         embed.add_field(name="1 Preban", value=row['preban_1'] or 0, inline=False)
         embed.add_field(name="2 Prebans", value=row['preban_2'] or 0, inline=False)
-        embed.add_field(name="3 Prebans + 0 Jokers", value=row['preban_3_joker_0'] or 0, inline=False)
+        embed.add_field(name="3 Prebans", value=row['preban_3_joker_0'] or 0, inline=False)
         embed.add_field(name="3 Prebans + 1 Joker", value=row['preban_3_joker_1'] or 0, inline=False)
         embed.add_field(name="3 Prebans + 2 Jokers", value=row['preban_3_joker_2'] or 0, inline=False)
         embed.add_field(name="3 Prebans + 3 Jokers", value=row['preban_3_joker_3'] or 0, inline=False)
