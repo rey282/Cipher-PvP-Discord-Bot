@@ -7,7 +7,7 @@ from discord.ext import commands, tasks
 from discord import Interaction
 from discord.app_commands import AppCommandError
 from utils.rank_utils import update_rank_role, get_rank
-from utils.db_utils import load_elo_data, save_elo_data
+from utils.db_utils import load_elo_data, save_elo_data, get_match_distribution
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -45,36 +45,6 @@ class ResetConfirmModal(discord.ui.Modal, title="Are you sure you wish to reset 
             await interaction.response.send_message("It’s done… All player stats have been reset. A new season begins — may your journey be filled with grace.")
         except Exception as e:
             await interaction.response.send_message(f"The thread frayed… I couldn’t reset the ratings: {str(e)}. Forgive me. We can try again… when fate allows.", ephemeral=True)
-
-async def get_match_distribution(self):
-    pool = await self.get_pool()
-    async with pool.acquire() as conn:
-        return await conn.fetch("""
-            SELECT 
-                COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 0) AS preban_0,
-                COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 1) AS preban_1,
-                COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 2) AS preban_2,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 0
-                ) AS preban_3_joker_0,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 1
-                ) AS preban_3_joker_1,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 2
-                ) AS preban_3_joker_2,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 3
-                ) AS preban_3_joker_3,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 4
-                ) AS preban_3_joker_4,
-                COUNT(*) FILTER (
-                    WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) >= 5
-                ) AS preban_3_joker_5plus
-            FROM matches
-            WHERE has_character_data = TRUE
-        """)
 
 
 class AdminCommands(commands.Cog):
@@ -321,7 +291,7 @@ class AdminCommands(commands.Cog):
             except Exception as inner:
                 print(f"❌ Could not send error message: {inner}")
 
-    @app_commands.command(name="match-info", description="Admin only: Show detailed match stats by preban and joker count.")
+    @app_commands.command(name="match-info", description="Show detailed match stats by preban and joker count.")
     @app_commands.guilds(GUILD_ID)
     async def match_info(self, interaction: Interaction):
         required_role = "Stonehearts" 
@@ -338,7 +308,7 @@ class AdminCommands(commands.Cog):
         await interaction.response.defer()
         row = (await self.get_match_distribution())[0]
 
-        embed = Embed(title="Match Breakdown: Prebans + Jokers", color=0xFCB1B1)
+        embed = Embed(title="Match Breakdown: The Weaving of Prebans + Jokers"", color=0xFCB1B1)
         embed.add_field(name="0 Prebans", value=row['preban_0'] or 0, inline=False)
         embed.add_field(name="1 Preban", value=row['preban_1'] or 0, inline=False)
         embed.add_field(name="2 Prebans", value=row['preban_2'] or 0, inline=False)
@@ -348,7 +318,7 @@ class AdminCommands(commands.Cog):
         embed.add_field(name="3 Prebans + 3 Jokers", value=row['preban_3_joker_3'] or 0, inline=False)
         embed.add_field(name="3 Prebans + 4 Jokers", value=row['preban_3_joker_4'] or 0, inline=False)
         embed.add_field(name="3 Prebans + 5+ Jokers", value=row['preban_3_joker_5plus'] or 0, inline=False)
-        embed.set_footer(text="Kyasutorisu Admin Stats Report ✨")
+        embed.set_footer(text="Kyasutorisu Admin Stats Report")
         await interaction.followup.send(embed=embed)
 
 

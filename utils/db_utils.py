@@ -408,3 +408,35 @@ def update_character_table_stats(match_data, winning_team: str):
             cursor.execute("UPDATE characters SET appearance_count = appearance_count + 1 WHERE code = %s", (code,))
 
         conn.commit()
+
+async def get_match_distribution(self):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 0) AS preban_0,
+                    COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 1) AS preban_1,
+                    COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 2) AS preban_2,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 0
+                    ) AS preban_3_joker_0,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 1
+                    ) AS preban_3_joker_1,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 2
+                    ) AS preban_3_joker_2,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 3
+                    ) AS preban_3_joker_3,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) = 4
+                    ) AS preban_3_joker_4,
+                    COUNT(*) FILTER (
+                        WHERE jsonb_array_length(raw_data->'prebans') = 3 AND COALESCE(jsonb_array_length(raw_data->'jokers'), 0) >= 5
+                    ) AS preban_3_joker_5plus
+                FROM matches
+                WHERE has_character_data = TRUE
+            """)
+            return cur.fetchone()
+
