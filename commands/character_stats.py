@@ -54,7 +54,7 @@ class StatsButton(discord.ui.Button):
             await interaction.response.send_message("A-ack, it seems like you can’t interact with this menu... P-please, use the appropriate command yourself to unlock the threads of fate!", ephemeral=True)
             return
         new_data = await view.cog.fetch_stats_data(mode=self.custom_id)
-        new_view = StatsView(view.cog, self.custom_id, new_data)
+        new_view = StatsView(view.cog, self.custom_id, new_data, user_id=view.user_id)
         await interaction.response.edit_message(embed=new_view.get_embed(), view=new_view)
 
 
