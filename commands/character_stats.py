@@ -14,7 +14,7 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 
 class StatsView(discord.ui.View):
-    def __init__(self, cog, mode, data):
+    def __init__(self, cog, mode, data, user_id)):
         super().__init__(timeout=60)
         self.cog = cog
         self.mode = mode
@@ -271,7 +271,7 @@ class UnitInfo(commands.Cog):
     async def stats(self, interaction: Interaction):
         await interaction.response.defer()
         data = await self.fetch_stats_data("winrate")
-        view = StatsView(self, "winrate", data)
+        view = StatsView(self, "winrate", data, user_id=interaction.user.id)
         await interaction.followup.send(embed=view.get_embed(), view=view)
 
 
