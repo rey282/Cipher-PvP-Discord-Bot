@@ -203,18 +203,6 @@ class UpdateEloView(ui.View):
     async def cancel(self, interaction: Interaction, button: ui.Button):
         await interaction.response.send_message("❌ Match update canceled.", ephemeral=False)
         self.stop()
-        
-    async def on_timeout(self):
-        for item in self.children:
-            item.disabled = True
-        try:
-            await self.message.edit(view=self)
-            await self.message.channel.send(
-                f"<@{self.allowed_user_id}>, the moment to choose has passed... Please `/submit-match` again if you still seek clarity.",
-                delete_after=10
-            )
-        except Exception:
-            pass
 
 class TiebreakerView(ui.View):
     def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, elo_gains, allowed_user_id, match_data):
@@ -401,19 +389,6 @@ class TiebreakerView(ui.View):
                 )
         
         self.stop()
-
-    async def on_timeout(self):
-        for item in self.children:
-            item.disabled = True
-        try:
-            if self.message:
-                await self.message.edit(view=self)
-                await self.message.channel.send(
-                    f"<@{self.allowed_user_id}>, the moment to choose has passed... Please `/submit-match` again if you still seek clarity.",
-                    delete_after=10
-                )
-        except discord.NotFound:
-            pass
 
 class ConfirmRollbackView(discord.ui.View):
     def __init__(self):

@@ -239,8 +239,8 @@ class EloCommands(commands.Cog):
             message_content = f"{user_mentions}\nHave the threads been woven as intended...? If something feels off, I shall mend it with care."
 
             # Send the embed with buttons
-            message = await interaction.followup.send(content=message_content, embed=embed, view=view)
-            view.message = message
+            await interaction.followup.send(content=message_content, embed=embed, view=view)
+            
 
         except Exception as e:
             print(f"A quiet fracture in update-elo command: {e}")
