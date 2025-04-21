@@ -2,6 +2,7 @@ import discord
 import os
 import json
 import asyncio
+from discord import Embed
 from discord import app_commands, ui
 from discord.ext import commands, tasks
 from discord import Interaction
