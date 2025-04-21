@@ -166,9 +166,8 @@ class UnitInfo(commands.Cog):
                     SELECT name,
                         preban_count::FLOAT / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE
-                            AND timestamp >= characters.debut_date::DATE
-                            AND prebans IS NOT NULL AND prebans != ''
+                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
+                            AND jsonb_array_length(raw_data->'prebans') > 0
                         ), 0) AS rate
                     FROM characters
                     WHERE preban_count > 0
@@ -181,9 +180,8 @@ class UnitInfo(commands.Cog):
                     SELECT name,
                         joker_count::FLOAT / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE
-                            AND timestamp >= characters.debut_date::DATE
-                            AND jokers IS NOT NULL AND jokers != ''
+                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
+                            AND jsonb_array_length(raw_data->'jokers') > 0
                         ), 0) AS rate
                     FROM characters
                     WHERE joker_count > 0
