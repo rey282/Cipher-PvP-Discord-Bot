@@ -118,7 +118,7 @@ class UnitInfo(commands.Cog):
                         (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
                         NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0) AS rate
                     FROM characters
-                    WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) > 0
+                    WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
@@ -149,12 +149,12 @@ class UnitInfo(commands.Cog):
                         1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
                         NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS rate
                     FROM characters
-                    WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) > 0
+                    WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
 
-    @app_commands.command(name="unit-info", description="Let's explore the pick, ban, and win rates, as well as the Eidolon breakdown for your chosen unit!")
+    @app_commands.command(name="unit-info", description="Let's explore this unit info.")
     @app_commands.describe(unit="The unit to display.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.autocomplete(unit=unit_autocomplete)
@@ -191,7 +191,7 @@ class UnitInfo(commands.Cog):
 
 
         embed = Embed(
-            title=f"Pick/Ban Data for {row['name']}",
+            title=f"Unit Info for {row['name']}",
             color=0xB197FC
         )
         embed.set_thumbnail(url=row["image_url"])
