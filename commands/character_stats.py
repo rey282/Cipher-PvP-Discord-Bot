@@ -14,7 +14,7 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 
 class StatsView(discord.ui.View):
-    def __init__(self, cog, mode, data, user_id)):
+    def __init__(self, cog, mode, data, user_id):
         super().__init__(timeout=60)
         self.cog = cog
         self.mode = mode
