@@ -409,7 +409,7 @@ def update_character_table_stats(match_data, winning_team: str):
 
         conn.commit()
 
-async def get_match_distribution(self):
+def get_match_distribution():
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
