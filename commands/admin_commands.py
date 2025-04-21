@@ -306,7 +306,7 @@ class AdminCommands(commands.Cog):
             return
 
         await interaction.response.defer()
-        row = await get_match_distribution() 
+        row = get_match_distribution() 
 
         embed = Embed(title="Match Breakdown: The Weaving of Prebans + Jokers", color=0xFCB1B1)
         embed.add_field(name="0 Prebans", value=row['preban_0'] or 0, inline=False)
