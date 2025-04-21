@@ -68,6 +68,14 @@ def parse_submission_string(submission: str):
     red_second = int(submission[index:index+2])
     index += 2
 
+    for name, value in zip(["blue_first", "blue_second", "red_first", "red_second"],
+                           [blue_first, blue_second, red_first, red_second]):
+        if value < 0 or value > 15:
+            raise ValueError(
+                f"U-Um… `{name}` was `{value}`, but only 0 to 15 cycles are allowed! "
+                "I’m really sorry… could you double-check your code?"
+            )
+
     blue_cycle_penalty = int(submission[index:index+2])
     index += 2
     red_cycle_penalty = int(submission[index:index+2])
@@ -145,7 +153,11 @@ class EloCommands(commands.Cog):
             if (blue_player_1 in [red_player_1, red_player_2]) or (blue_player_2 in [red_player_1, red_player_2]):
                 await interaction.followup.send("<:Unamurice:1349309283669377064> U-Um… I think you might’ve listed the same soul on both teams... I’m sorry, but each thread must belong to just one side.", ephemeral=False)
                 return
-            
+            try:
+                data = parse_submission_string(submission_string)
+            except ValueError as e:
+                await interaction.followup.send(f"{e}", ephemeral=True)
+                return
             data = parse_submission_string(submission_string)
 
             # Create an embed to display the results
@@ -227,7 +239,8 @@ class EloCommands(commands.Cog):
             message_content = f"{user_mentions}\nHave the threads been woven as intended...? If something feels off, I shall mend it with care."
 
             # Send the embed with buttons
-            await interaction.followup.send(content=message_content, embed=embed, view=view)
+            message = await interaction.followup.send(content=message_content, embed=embed, view=view)
+            view.message = message
 
         except Exception as e:
             print(f"A quiet fracture in update-elo command: {e}")
