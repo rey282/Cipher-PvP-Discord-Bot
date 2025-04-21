@@ -109,6 +109,26 @@ class UnitInfo(commands.Cog):
                 WHERE has_character_data = TRUE AND timestamp::DATE >= $1
             """, debut_date)
 
+    async def get_total_preban_matches(self, debut_date):
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            return await conn.fetchval("""
+                SELECT COUNT(*) FROM matches
+                WHERE has_character_data = TRUE
+                AND timestamp::DATE >= $1
+                AND prebans IS NOT NULL AND prebans != ''
+            """, debut_date)
+
+    async def get_total_joker_matches(self, debut_date):
+        pool = await self.get_pool()
+        async with pool.acquire() as conn:
+            return await conn.fetchval("""
+                SELECT COUNT(*) FROM matches
+                WHERE has_character_data = TRUE
+                AND timestamp::DATE >= $1
+                AND jokers IS NOT NULL AND jokers != ''
+            """, debut_date)
+
     async def fetch_stats_data(self, mode: str):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
@@ -122,12 +142,10 @@ class UnitInfo(commands.Cog):
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
-            elif mode in ["pickrate", "banrate", "prebanrate", "jokerrate", "appearancerate"]:
+            elif mode in ["pickrate", "banrate", "appearancerate"]:
                 column_map = {
                     "pickrate": "pick_count",
                     "banrate": "ban_count",
-                    "prebanrate": "preban_count",
-                    "jokerrate": "joker_count",
                     "appearancerate": "appearance_count"
                 }
                 column = column_map[mode]
@@ -139,6 +157,36 @@ class UnitInfo(commands.Cog):
                         ), 0) AS rate
                     FROM characters
                     WHERE {column} > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
+
+            elif mode == "prebanrate":
+                return await conn.fetch("""
+                    SELECT name,
+                        preban_count::FLOAT / NULLIF((
+                            SELECT COUNT(*) FROM matches
+                            WHERE has_character_data = TRUE
+                            AND timestamp >= characters.debut_date::DATE
+                            AND prebans IS NOT NULL AND prebans != ''
+                        ), 0) AS rate
+                    FROM characters
+                    WHERE preban_count > 0
+                    ORDER BY rate DESC
+                    LIMIT 10
+                """)
+
+            elif mode == "jokerrate":
+                return await conn.fetch("""
+                    SELECT name,
+                        joker_count::FLOAT / NULLIF((
+                            SELECT COUNT(*) FROM matches
+                            WHERE has_character_data = TRUE
+                            AND timestamp >= characters.debut_date::DATE
+                            AND jokers IS NOT NULL AND jokers != ''
+                        ), 0) AS rate
+                    FROM characters
+                    WHERE joker_count > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
@@ -188,6 +236,8 @@ class UnitInfo(commands.Cog):
             )
             return
         total_tracked_matches = await self.get_total_tracked_matches(debut_date)
+        total_preban_matches = await self.get_total_preban_matches(debut_date)
+        total_joker_matches = await self.get_total_joker_matches(debut_date)
 
 
         embed = Embed(
@@ -198,8 +248,8 @@ class UnitInfo(commands.Cog):
         embed.add_field(name="Pick Rate", value=percent(pick, total_tracked_matches), inline=True)
         embed.add_field(name="Ban Rate", value=percent(ban, total_tracked_matches), inline=True)
         embed.add_field(name="Win Rate", value=percent(total_wins, pick), inline=True)
-        embed.add_field(name="Preban Rate", value=percent(preban, total_tracked_matches), inline=True)
-        embed.add_field(name="Joker Rate", value=percent(joker, total_tracked_matches), inline=True)
+        embed.add_field(name="Preban Rate", value=percent(preban, total_preban_matches), inline=True)
+        embed.add_field(name="Joker Rate", value=percent(joker, total_joker_matches), inline=True)
         embed.add_field(name="Appearance Rate", value=percent(appearance, total_tracked_matches), inline=True)
         embed.add_field(name="\u200b", value="\u200b", inline=False)
 
