@@ -271,7 +271,7 @@ class UnitInfo(commands.Cog):
     async def stats(self, interaction: Interaction):
         await interaction.response.defer()
         data = await self.fetch_stats_data("winrate")
-        view = StatsView(self, "winrate", data, user_id=interaction.user.id)
+        view = StatsView(self, "winrate", data)
         await interaction.followup.send(embed=view.get_embed(), view=view)
 
 
