@@ -19,6 +19,7 @@ class StatsView(discord.ui.View):
         self.cog = cog
         self.mode = mode
         self.data = data
+        self.user_id = user_id
         self.add_item(StatsButton("Win Rate", "winrate", mode == "winrate"))
         self.add_item(StatsButton("Pick Rate", "pickrate", mode == "pickrate"))
         self.add_item(StatsButton("Ban Rate", "banrate", mode == "banrate"))
@@ -49,6 +50,9 @@ class StatsButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view: StatsView = self.view
+        if interaction.user.id != view.user_id:
+            await interaction.response.send_message("A-ack, it seems like you can’t interact with this menu... P-please, use the appropriate command yourself to unlock the threads of fate!", ephemeral=True)
+            return
         new_data = await view.cog.fetch_stats_data(mode=self.custom_id)
         new_view = StatsView(view.cog, self.custom_id, new_data)
         await interaction.response.edit_message(embed=new_view.get_embed(), view=new_view)
@@ -267,7 +271,7 @@ class UnitInfo(commands.Cog):
     async def stats(self, interaction: Interaction):
         await interaction.response.defer()
         data = await self.fetch_stats_data("winrate")
-        view = StatsView(self, "winrate", data)
+        view = StatsView(self, "winrate", data, user_id=interaction.user.id)
         await interaction.followup.send(embed=view.get_embed(), view=view)
 
 

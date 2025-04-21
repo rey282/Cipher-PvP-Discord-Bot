@@ -64,6 +64,17 @@ class MatchHistoryView(ui.View):
         self.user = user
         self.current_index = 0
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message(
+                "Only the original thread-weaver may flip through these echoes...",
+                ephemeral=True
+            )
+            return False
+        return True
+
+    
+
     async def send_initial_message(self, interaction):
         embed = self.create_embed()
         await interaction.followup.send(embed=embed, view=self)
@@ -163,7 +174,14 @@ class MatchHistoryView(ui.View):
             await interaction.followup.send("The moment has slipped through time’s fingers... I can no longer alter that message.\nShall we begin anew?", ephemeral=True)
 
 
-    async def on_timeout(self):
-        for item in self.children:
-            item.disabled = True
-        await self.message.edit(view=self)
+        async def on_timeout(self):
+            for item in self.children:
+                item.disabled = True
+            await self.message.edit(view=self)
+            try:
+                await self.message.channel.send(
+                    f"{self.user.mention}, the thread has faded... Use `/match-history` again to revisit.",
+                    delete_after=10
+                )
+            except Exception:
+                pass

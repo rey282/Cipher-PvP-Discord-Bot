@@ -18,7 +18,7 @@ from utils.db_utils import (
 logging.basicConfig(level=logging.DEBUG)
 class UpdateEloView(ui.View):
     def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, allowed_user_id, match_data):
-        super().__init__(timeout=None)
+        super().__init__(timeout=300)
         self.blue_team = blue_team
         self.red_team = red_team
         self.blue_scores = blue_scores
@@ -76,11 +76,12 @@ class UpdateEloView(ui.View):
                 allowed_user_id=interaction.user.id,
                 match_data=self.match_data
             )
-            await interaction.followup.send(
+            message = await interaction.followup.send(
                 "The threads of fate have tied these teams... Which side shall be favored by destiny?\n"
                 "Please, choose with care, and fate will reveal the victor.",
                 view=tiebreaker_view
             )
+            tiebreaker_view.message = message
             return
 
         processed_ids = set()
@@ -202,6 +203,18 @@ class UpdateEloView(ui.View):
     async def cancel(self, interaction: Interaction, button: ui.Button):
         await interaction.response.send_message("❌ Match update canceled.", ephemeral=False)
         self.stop()
+        
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        try:
+            await self.message.edit(view=self)
+            await self.message.channel.send(
+                f"<@{self.allowed_user_id}>, the moment to choose has passed... Please `/submit-match` again if you still seek clarity.",
+                delete_after=10
+            )
+        except Exception:
+            pass
 
 class TiebreakerView(ui.View):
     def __init__(self, blue_team, red_team, blue_scores, red_scores, blue_cycle_penalty, red_cycle_penalty, blue_total_score, red_total_score, elo_gains, allowed_user_id, match_data):
@@ -218,6 +231,7 @@ class TiebreakerView(ui.View):
         self.allowed_user_id = allowed_user_id
         self.elo_data = load_elo_data()
         self.match_data = match_data
+        self.message = None
 
 
     async def interaction_check(self, interaction: Interaction) -> bool:
@@ -388,9 +402,22 @@ class TiebreakerView(ui.View):
         
         self.stop()
 
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        try:
+            if self.message:
+                await self.message.edit(view=self)
+                await self.message.channel.send(
+                    f"<@{self.allowed_user_id}>, the moment to choose has passed... Please `/submit-match` again if you still seek clarity.",
+                    delete_after=10
+                )
+        except discord.NotFound:
+            pass
+
 class ConfirmRollbackView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None)  # 5 minute timeout
+        super().__init__(timeout=None)
         self.confirmation_active = False
         self.message = None
         
