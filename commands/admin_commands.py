@@ -291,7 +291,7 @@ class AdminCommands(commands.Cog):
             except Exception as inner:
                 print(f"❌ Could not send error message: {inner}")
 
-    @app_commands.command(name="match-info", description="Show detailed match stats by preban and joker count.")
+    @app_commands.command(name="stats-match", description="Show detailed match stats by preban and joker count.")
     @app_commands.guilds(GUILD_ID)
     async def match_info(self, interaction: Interaction):
         required_role = "Stonehearts" 
