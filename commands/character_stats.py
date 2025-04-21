@@ -116,7 +116,7 @@ class UnitInfo(commands.Cog):
                 SELECT COUNT(*) FROM matches
                 WHERE has_character_data = TRUE
                 AND timestamp::DATE >= $1
-                AND prebans IS NOT NULL AND prebans != ''
+                AND jsonb_array_length(raw_data->'prebans') > 0
             """, debut_date)
 
     async def get_total_joker_matches(self, debut_date):
@@ -126,7 +126,7 @@ class UnitInfo(commands.Cog):
                 SELECT COUNT(*) FROM matches
                 WHERE has_character_data = TRUE
                 AND timestamp::DATE >= $1
-                AND jokers IS NOT NULL AND jokers != ''
+                AND jsonb_array_length(raw_data->'jokers') > 0
             """, debut_date)
 
     async def fetch_stats_data(self, mode: str):
