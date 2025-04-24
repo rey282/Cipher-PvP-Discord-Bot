@@ -12,18 +12,25 @@ class Tournament(commands.Cog):
     # --- Admin Command to Submit Tournament ---
     @app_commands.command(name="submit-tournament", description="Submit a finished tournament to the archive.")
     @app_commands.describe(
-        name="Name of the tournament",
-        winners="The champion(s) of this tournament"
+        name="The name of the tournament",
+        winner_1="First champion",
+        winner_2="Second champion (optional)",
+        winner_3="Third champion (optional)",
+        winner_4="Fourth champion (optional)",
+        winner_5="Fifth champion (optional)",
     )
     async def submit_tournament(
         self,
         interaction: Interaction,
         name: str,
-        winners: List[discord.Member] 
+        winner_1: discord.Member,
+        winner_2: Optional[discord.Member] = None,
+        winner_3: Optional[discord.Member] = None,
+        winner_4: Optional[discord.Member] = None,
+        winner_5: Optional[discord.Member] = None,
     ):
         required_role = "Organizer"
 
-        # Check permission
         if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
             await interaction.response.send_message(
                 "I-I’m afraid only tournament organizers can submit the results... Please make sure you have the right permissions to proceed!",
@@ -31,10 +38,14 @@ class Tournament(commands.Cog):
             )
             return
 
-        # Build winner string from mentions or display names
-        winner_string = ", ".join([winner.display_name for winner in winners])
+        winners = [winner_1]
+        if winner_2: winners.append(winner_2)
+        if winner_3: winners.append(winner_3)
+        if winner_4: winners.append(winner_4)
+        if winner_5: winners.append(winner_5)
 
-        # Insert into database
+        winner_string = ", ".join(w.display_name for w in winners)
+
         await self.bot.db.execute(
             "INSERT INTO tournaments (name, winner, timestamp) VALUES ($1, $2, $3)",
             name,
@@ -42,10 +53,7 @@ class Tournament(commands.Cog):
             datetime.now()
         )
 
-        await interaction.response.send_message(
-            f"📜 Tournament **{name}** with winner(s) **{winner_string}** has been recorded in the archive!",
-            ephemeral=False
-        )
+        await interaction.response.send_message(f"**{name}** has been recorded!\nWinners: {winner_string}")
 
     # --- Public Command to View Tournament History ---
     @app_commands.command(name="tournament-winner", description="view the glorious archive of tournament champions...")
