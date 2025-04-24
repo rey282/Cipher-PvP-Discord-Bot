@@ -101,7 +101,7 @@ class Tournament(commands.Cog):
             title="📜 Tournament Archive",
             color=discord.Color.gold(),
             description="\n".join(
-                f"**{r['name']}** – 🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
+                f"**{r['name']}**\n🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
                 for r in page_records
             )
         )
