@@ -25,7 +25,7 @@ class Tournament(commands.Cog):
 
 
     # --- Admin Command to Submit Tournament ---
-    @app_commands.command(name="submit-tournament", description="Submit a finished tournament to the archive.")
+    @app_commands.command(name="tournament-submit", description="Submit a finished tournament to the archive.")
     @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         name="The name of the tournament",
