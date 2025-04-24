@@ -74,7 +74,7 @@ class Tournament(commands.Cog):
         await interaction.response.send_message(f"**{name}** has been recorded!\nWinners: {winner_string}")
 
     # --- Public Command to View Tournament History ---
-    @app_commands.command(name="tournament-winner", description="view the glorious archive of tournament champions...")
+    @app_commands.command(name="tournament-archive", description="View the glorious archive of tournament champions...")
     @app_commands.guilds(GUILD_ID)
     async def tournament_winner(self, interaction: Interaction):
         await self.send_page(interaction, page=1)

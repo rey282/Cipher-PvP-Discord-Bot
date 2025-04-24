@@ -88,6 +88,11 @@ class HelpCommand(commands.Cog):
             value="Let's explore the pick, ban, and win rates, as well as the Eidolon breakdown for your chosen unit!",
             inline=False
         )
+        embed.add_field(
+            name="/tournament-archive",
+            value="View the glorious archive of tournament champions...",
+            inline=False
+        )
 
         embed.set_footer(text="Handled with care by Kyasutorisu")
 
