@@ -107,9 +107,7 @@ class Tournament(commands.Cog):
         )
         embed.set_footer(text=f"Page {page} of {total_pages} — preserved with care")
 
-        view = None
-        if total_pages > 1:
-            view = TournamentPagination(self, page, total_pages)
+        view = TournamentPagination(self, page, total_pages) if total_pages > 1 else None
 
         if view:
             await interaction.response.send_message(embed=embed, view=view)
