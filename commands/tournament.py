@@ -3,6 +3,7 @@ from discord import app_commands, Interaction
 from discord.ext import commands
 from datetime import datetime
 from typing import Optional
+from typing import List
 
 class Tournament(commands.Cog):
     def __init__(self, bot):
@@ -18,7 +19,7 @@ class Tournament(commands.Cog):
         self,
         interaction: Interaction,
         name: str,
-        winners: list[discord.Member] 
+        winners: List[discord.Member] 
     ):
         required_role = "Organizer"
 
