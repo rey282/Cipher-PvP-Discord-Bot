@@ -83,6 +83,13 @@ class Tournament(commands.Cog):
         pool = await self.get_db_pool()
         async with pool.acquire() as conn:
             records = await conn.fetch("SELECT * FROM tournaments ORDER BY timestamp DESC")
+
+        if not records:
+        await interaction.response.send_message(
+            "The tournament archive is currently empty...\nNo brave champions have yet etched their names into history.",
+            ephemeral=False
+        )
+        return
         
         per_page = 10
         total_pages = (len(records) + per_page - 1) // per_page
@@ -104,7 +111,10 @@ class Tournament(commands.Cog):
         if total_pages > 1:
             view = TournamentPagination(self, page, total_pages)
 
-        await interaction.response.send_message(embed=embed, view=view)
+        if view:
+            await interaction.response.send_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=embed)
 
 class TournamentPagination(discord.ui.View):
     def __init__(self, cog: Tournament, current_page: int, total_pages: int):
