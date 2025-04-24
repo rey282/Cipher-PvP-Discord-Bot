@@ -1,5 +1,7 @@
 import discord
 import os
+import asyncpg
+import psycopg2
 from discord import app_commands, Interaction
 from discord.ext import commands
 from datetime import datetime
@@ -9,11 +11,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class Tournament(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    async def get_db_pool(self):
+        if not hasattr(self.bot, "db_pool"):
+            self.bot.db_pool = await asyncpg.create_pool(DATABASE_URL)
+        return self.bot.db_pool
+
 
     # --- Admin Command to Submit Tournament ---
     @app_commands.command(name="submit-tournament", description="Submit a finished tournament to the archive.")
@@ -53,12 +62,14 @@ class Tournament(commands.Cog):
 
         winner_string = ", ".join(w.display_name for w in winners)
 
-        await self.bot.db.execute(
-            "INSERT INTO tournaments (name, winner, timestamp) VALUES ($1, $2, $3)",
-            name,
-            winner_string,
-            datetime.now()
-        )
+        pool = await self.get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO tournaments (name, winner, timestamp) VALUES ($1, $2, $3)",
+                name,
+                winner_string,
+                datetime.now()
+            )
 
         await interaction.response.send_message(f"**{name}** has been recorded!\nWinners: {winner_string}")
 
@@ -69,8 +80,9 @@ class Tournament(commands.Cog):
         await self.send_page(interaction, page=1)
 
     async def send_page(self, interaction, page: int):
-        async with self.bot.db_pool.acquire() as conn:
-            records = await conn.fetch("SELECT * FROM tournament_winners ORDER BY timestamp DESC")
+        pool = await self.get_db_pool()
+        async with pool.acquire() as conn:
+            records = await conn.fetch("SELECT * FROM tournaments ORDER BY timestamp DESC")
         
         per_page = 10
         total_pages = (len(records) + per_page - 1) // per_page
