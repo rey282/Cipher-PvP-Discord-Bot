@@ -1,9 +1,15 @@
 import discord
+import os
 from discord import app_commands, Interaction
 from discord.ext import commands
 from datetime import datetime
 from typing import Optional
 from typing import List
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 class Tournament(commands.Cog):
     def __init__(self, bot):
@@ -11,6 +17,7 @@ class Tournament(commands.Cog):
 
     # --- Admin Command to Submit Tournament ---
     @app_commands.command(name="submit-tournament", description="Submit a finished tournament to the archive.")
+    @app_commands.guilds(GUILD_ID)
     @app_commands.describe(
         name="The name of the tournament",
         winner_1="First champion",
@@ -57,6 +64,7 @@ class Tournament(commands.Cog):
 
     # --- Public Command to View Tournament History ---
     @app_commands.command(name="tournament-winner", description="view the glorious archive of tournament champions...")
+    @app_commands.guilds(GUILD_ID)
     async def tournament_winner(self, interaction: Interaction):
         await self.send_page(interaction, page=1)
 
