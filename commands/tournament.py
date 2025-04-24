@@ -85,11 +85,11 @@ class Tournament(commands.Cog):
             records = await conn.fetch("SELECT * FROM tournaments ORDER BY timestamp DESC")
 
         if not records:
-        await interaction.response.send_message(
-            "The tournament archive is currently empty...\nNo brave champions have yet etched their names into history.",
-            ephemeral=False
-        )
-        return
+            await interaction.response.send_message(
+                "The tournament archive is currently empty...\nNo brave champions have yet etched their names into history.",
+                ephemeral=False
+            )
+            return
         
         per_page = 10
         total_pages = (len(records) + per_page - 1) // per_page
