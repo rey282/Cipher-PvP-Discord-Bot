@@ -100,7 +100,7 @@ class Tournament(commands.Cog):
         embed = discord.Embed(
             title="📜 Tournament Archive",
             color=discord.Color.gold(),
-            description="\n".join(
+            description="\n\n".join(
                 f"**{r['name']}**\n🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
                 for r in page_records
             )
