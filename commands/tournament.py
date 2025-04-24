@@ -101,8 +101,8 @@ class Tournament(commands.Cog):
             title="📜 Tournament Archive",
             color=discord.Color.gold(),
             description="\n".join(
-                f"**{start + i + 1}. {r['name']}** — 🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
-                for i, r in enumerate(page_records)
+                f"**{r['name']}** – 🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
+                for r in page_records
             )
         )
         embed.set_footer(text=f"Page {page} of {total_pages} — preserved with care")
