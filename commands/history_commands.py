@@ -52,20 +52,21 @@ class HistoryCommands(commands.Cog):
         )
         user_matches = user_matches[:15]  # Limit to 15 most recent matches
             
-        view = MatchHistoryView(user_matches, target_user)
+        view = MatchHistoryView(user_matches, target_user, invoker_id=interaction.user.id)
         await view.send_initial_message(interaction)
 async def setup(bot):
     await bot.add_cog(HistoryCommands(bot))
 
 class MatchHistoryView(ui.View):
-    def __init__(self, matches, user):
+    def __init__(self, matches, user, invoker_id: int):
         super().__init__(timeout=60)
         self.matches = matches
         self.user = user
+        self.invoker_id = invoker_id
         self.current_index = 0
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.user.id:
+        if interaction.user.id != self.invoker_id:
             await interaction.response.send_message(
                 "Only the original thread-weaver may flip through these echoes...",
                 ephemeral=True
