@@ -17,7 +17,7 @@ def get_rank(elo_score, player_id=None, elo_data=None):
     elif 500 <= elo_score < 650:
         return "Genius Scholar"
     elif 650 <= elo_score < 800:
-        return "Arbitor General"
+        return "Arbiter-Generals"
     elif 800 <= elo_score < 900:
         return "Emanator"
     else:
@@ -46,7 +46,7 @@ async def update_rank_role(
 
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
-        "Arbitor General", "Emanator", "Aeon", "Akivili"
+        "Arbiter-Generals", "Emanator", "Aeon", "Akivili"
     ]
 
     try:
