@@ -150,5 +150,21 @@ class MatchmakingQueue(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="clearqueue", description="Gently unravel all threads from the queue.")
+    @app_commands.guilds(GUILD_ID)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def clear_queue(self, interaction: Interaction):
+        self.queue.clear()
+        for task in self.voice_channel_monitor.values():
+            task.cancel()
+        self.voice_channel_monitor.clear()
+        for task in self.afk_monitor.values():
+            task.cancel()
+        self.afk_monitor.clear()
+        if self.queue_inactivity_monitor:
+            self.queue_inactivity_monitor.cancel()
+            self.queue_inactivity_monitor = None
+        await interaction.response.send_message("The threads of fate have been gently unraveled. The queue is now empty.", ephemeral=False)
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(MatchmakingQueue(bot))
