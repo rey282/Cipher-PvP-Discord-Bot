@@ -130,7 +130,7 @@ class AdminCommands(commands.Cog):
                 name=f"{rank}. {name}",
                 value=(
                     f"✦ ELO Woven: {int(data.get('elo', 200))}\n"
-                    f"✦ Win Rate: {data.get('win_rate', 0.0) * 100:.1f}%\n"
+                    f"✦ Win Rate: {data.get('win_rate', 0.0) * 100:.0f}%\n"
                     f"✦ Trials Faced: {data.get('games_played', 0)}\n"
                     f"✦ Cipher Points: {data.get('points', 0)}"
                 ),
