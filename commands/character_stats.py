@@ -34,12 +34,19 @@ class StatsView(discord.ui.View):
             color=0xB197FC
         )
         for i, row in enumerate(self.data, start=1):
-            rate = f"{round(row['rate'] * 100)}%" if row['rate'] is not None else "0%"
+            # For win/lose rates, we'll add the raw rate in parentheses
+            if self.mode in ["winrate", "loserate"]:
+                weighted_rate = f"{round(row['rate'] * 100)}%"
+                raw_rate = f"{round(row['base_rate'] * 100)}%" if 'base_rate' in row else "N/A"
+                rate_value = f"{weighted_rate} (Raw: {raw_rate})"
+            else:
+                rate_value = f"{round(row['rate'] * 100)}%"
+            
             embed.add_field(
                 name=f"{i}. {row['name']}",
-                value=f"{self.mode.title().replace('rate', ' Rate')}: {rate}",
+                value=f"{self.mode.title().replace('rate', ' Rate')}: {rate_value}",
                 inline=False
-            )
+
         embed.set_footer(text="Handled with love by Kyasutorisu")
         return embed
 
@@ -140,8 +147,15 @@ class UnitInfo(commands.Cog):
             if mode == "winrate":
                 return await conn.fetch("""
                     SELECT name,
+                        -- Base win rate
                         (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0) AS rate
+                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0) AS base_rate,
+                        
+                        -- Weighted win rate using exponential decay formula
+                        ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
+                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) *
+                        (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
+                        
                     FROM characters
                     WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
@@ -197,8 +211,15 @@ class UnitInfo(commands.Cog):
             elif mode == "loserate":
                 return await conn.fetch("""
                     SELECT name,
+                        -- Base lose rate (1 - win rate)
                         1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS rate
+                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS base_rate,
+                        
+                        -- Weighted lose rate
+                        (1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
+                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0))) *
+                        (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
+                        
                     FROM characters
                     WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
