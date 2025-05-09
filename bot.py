@@ -61,12 +61,13 @@ async def get_match_modes():
         
         total_players = len(elo_gains)
 
-        if total_players == 2:
-            mode_count["1v1"] += 1
-        elif total_players == 3:
-            mode_count["1v2"] += 1
-        elif total_players == 4:
-            mode_count["2v2"] += 1
+        match total_players:
+            case 2:
+                mode_count["1v1"] += 1
+            case 3:
+                mode_count["1v2"] += 1
+            case 4:
+                mode_count["2v2"] += 1
 
     return mode_count
 
