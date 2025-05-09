@@ -46,6 +46,7 @@ class StatsView(discord.ui.View):
                 name=f"{i}. {row['name']}",
                 value=f"{self.mode.title().replace('rate', ' Rate')}: {rate_value}",
                 inline=False
+            )
 
         embed.set_footer(text="Handled with love by Kyasutorisu")
         return embed
