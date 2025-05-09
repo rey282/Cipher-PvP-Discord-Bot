@@ -51,13 +51,12 @@ async def get_member_counts():
 
 async def get_match_modes():
     conn = await get_db_connection()
-    result = await conn.fetch('SELECT raw_data, elo_gains FROM matches')  
+    result = await conn.fetch('SELECT elo_gains FROM matches')  
     await conn.close()
 
     mode_count = {"1v1": 0, "1v2": 0, "2v2": 0}
 
     for match in result:
-        raw_data = json.loads(match['raw_data'])
         elo_gains = json.loads(match['elo_gains'])  
         
         total_players = len(elo_gains)
