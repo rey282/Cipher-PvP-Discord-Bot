@@ -38,7 +38,7 @@ class StatsView(discord.ui.View):
             if self.mode in ["winrate", "loserate"]:
                 weighted_rate = f"{round(row['rate'] * 100)}%"
                 raw_rate = f"{round(row['base_rate'] * 100)}%" if 'base_rate' in row else "N/A"
-                rate_value = f"{weighted_rate} (Raw: {raw_rate})"
+                rate_value = f"{raw_rate} (Weighted Rate: {weighted_rate})"
             else:
                 rate_value = f"{round(row['rate'] * 100)}%"
             
