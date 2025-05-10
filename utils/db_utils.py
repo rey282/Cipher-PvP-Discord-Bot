@@ -5,19 +5,40 @@ from psycopg2.extras import RealDictCursor
 from psycopg2 import sql
 from dotenv import load_dotenv
 from datetime import datetime
+from contextlib import contextmanager
 
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-
+@contextmanager
 def get_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    """Context manager for database connections to ensure proper closing."""
+    conn = None
+    try:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        yield conn
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+@contextmanager
+def get_cursor(commit=False):
+    """Context manager for database cursors with optional commit."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            yield cursor
+            if commit:
+                conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def initialize_db():
-    with get_connection() as conn:
-        cursor = conn.cursor()
+    with get_cursor(commit=True) as cursor:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS players (
                 discord_id TEXT PRIMARY KEY,
@@ -42,12 +63,10 @@ def initialize_db():
                 has_character_data BOOLEAN DEFAULT FALSE
             )
         ''')
-        conn.commit()
 
 
 def load_elo_data():
-    with get_connection() as conn:
-        cursor = conn.cursor()
+    with get_cursor() as cursor:
         cursor.execute("SELECT * FROM players")
         rows = cursor.fetchall()
         return {
@@ -67,8 +86,7 @@ def load_elo_data():
 
 
 def save_elo_data(data):
-    with get_connection() as conn:
-        cursor = conn.cursor()
+    with get_cursor(commit=True) as cursor:
         for discord_id, stats in data.items():
             cursor.execute('''
                 INSERT INTO players (discord_id, nickname, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
@@ -97,23 +115,18 @@ def save_elo_data(data):
                 stats.get("color", 0xB197FC),
                 stats.get("banner_url", None)
             ))
-        conn.commit()
 
 
 def load_match_history():
-    with get_connection() as conn:
-        cursor = conn.cursor()
+    with get_cursor() as cursor:
         cursor.execute("SELECT raw_data FROM matches ORDER BY match_id DESC")
         rows = cursor.fetchall()
         return [json.loads(row['raw_data']) if isinstance(row['raw_data'], str) else row['raw_data'] for row in rows]
 
 
-
 def save_match_history(match_data):
     with get_connection() as conn:
         cursor = conn.cursor()
-        raw = match_data.get("raw_data", match_data)
-        has_characters = any(raw.get(k) for k in ["blue_picks", "red_picks", "blue_bans", "red_bans"])
         cursor.execute('''
             INSERT INTO matches (timestamp, elo_gains, raw_data, has_character_data)
             VALUES (%s, %s, %s, %s)
@@ -124,6 +137,7 @@ def save_match_history(match_data):
             True
         ))  
         conn.commit()
+
 
 def initialize_player_data(player_id):
     return {
@@ -247,7 +261,8 @@ def rollback_last_match():
         cursor.execute("DELETE FROM matches WHERE match_id = %s", (match_id,))
         conn.commit()
         return True, "Match rollback successful"
-        
+
+
 def calculate_team_elo_change(
     winner_avg_elo: float,
     loser_avg_elo: float,
@@ -322,10 +337,9 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
 
     return changes
 
-def update_character_table_stats(match_data, winning_team: str):
-    with get_connection() as conn:
-        cursor = conn.cursor()
 
+def update_character_table_stats(match_data, winning_team: str):
+    with get_cursor(commit=True) as cursor:
         all_codes = set()
 
         for team_key in ["blue_picks", "red_picks"]:
@@ -407,12 +421,10 @@ def update_character_table_stats(match_data, winning_team: str):
         for code in all_codes:
             cursor.execute("UPDATE characters SET appearance_count = appearance_count + 1 WHERE code = %s", (code,))
 
-        conn.commit()
 
 def get_match_distribution():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
+    with get_cursor() as cursor: 
+            cursor.execute("""
                 SELECT 
                     COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 0) AS preban_0,
                     COUNT(*) FILTER (WHERE jsonb_array_length(raw_data->'prebans') = 1) AS preban_1,
@@ -438,5 +450,5 @@ def get_match_distribution():
                 FROM matches
                 WHERE has_character_data = TRUE
             """)
-            return cur.fetchone()
+            return cursor.fetchone()
 
