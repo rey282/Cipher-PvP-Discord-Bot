@@ -395,14 +395,14 @@ class MatchmakingCommands(commands.Cog):
                 )
                 embed.add_field(
                     name="Teams Aligned",
-                    value=f"{format_team(team1)} (Avg: {points1:.0f} pts)\n"
-                        f"{format_team(team2)} (Avg: {points2:.0f} pts)",
+                    value=f"{format_team(team1)} (Avg: {points1:.1f} pts)\n"
+                        f"{format_team(team2)} (Avg: {points2:.1f} pts)",
                     inline=False
                 )
                 embed.add_field(
                     name="Result",
                     value="It seems the threads of fate have tied these teams... No pre-bans required for either side.\n\n"
-                        f"*Total point difference: {point_diff:.0f}*",
+                        f"*Total point difference: {point_diff:.1f}*",
                     inline=False
                 )
                 embed.set_footer(text="Handled with care by Kyasutorisu")
@@ -430,8 +430,8 @@ class MatchmakingCommands(commands.Cog):
             
             embed.add_field(
                 name="Teams Alligned",
-                value=f" {format_team(team1)} (Avg: {points1:.0f} pts)\n"
-                    f" {format_team(team2)} (Avg: {points2:.0f} pts)",
+                value=f" {format_team(team1)} (Avg: {points1:.1f} pts)\n"
+                    f" {format_team(team2)} (Avg: {points2:.1f} pts)",
                 inline=False
             )
             
@@ -453,7 +453,7 @@ class MatchmakingCommands(commands.Cog):
 
             embed.add_field(
                 name=f"{format_team(lower_points_team)} receives pre-bans",
-                value="\n".join(ban_info) + f"\n\n*Total point difference: {point_diff:.0f}*",
+                value="\n".join(ban_info) + f"\n\n*Total point difference: {point_diff:.1f}*",
                 inline=False
             )
             embed.set_footer(text="Handled with care by Kyasutorisu")
