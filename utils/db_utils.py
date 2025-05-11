@@ -330,7 +330,7 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
             if gain:  # Winning (gain)
                 excess_multiplier = 0.5  
             else:     # Losing (loss)
-                excess_multiplier = 0.8
+                excess_multiplier = 0.2
             
             tapered_change = 30 + (excess * excess_multiplier)
             individual_change = tapered_change if individual_change > 0 else -tapered_change
