@@ -266,7 +266,7 @@ def rollback_last_match():
 def calculate_team_elo_change(
     winner_avg_elo: float,
     loser_avg_elo: float,
-    base_gain: float = 20,
+    base_gain: float = 35,
     base_loss: float = 20,
     variance_gain: float = 1.5,
     variance_loss: float = 0.65
