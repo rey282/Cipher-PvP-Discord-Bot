@@ -123,22 +123,6 @@ def load_match_history():
         rows = cursor.fetchall()
         return [json.loads(row['raw_data']) if isinstance(row['raw_data'], str) else row['raw_data'] for row in rows]
 
-def get_15c_count(player_id: str):
-    history = load_match_history()
-    count = 0
-    
-    for match in history:
-        # Check blue team
-        for player in match.get('blue_team', []):
-            if str(player['id']) == str(player_id) and player.get('cycles', 0) == 15:
-                count += 1
-        # Check red team
-        for player in match.get('red_team', []):
-            if str(player['id']) == str(player_id) and player.get('cycles', 0) == 15:
-                count += 1
-                
-    return count
-
 def save_match_history(match_data):
     with get_connection() as conn:
         cursor = conn.cursor()
