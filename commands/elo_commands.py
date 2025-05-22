@@ -105,6 +105,20 @@ def parse_submission_string(submission: str):
     total_blue_cycles = blue_first + blue_second + blue_penalty
     total_red_cycles = red_first + red_second + red_penalty
 
+    if total_blue_cycles < total_red_cycles:
+        winner = "blue"
+    elif total_red_cycles < total_blue_cycles:
+        winner = "red"
+    else:
+        # Cycle clear is tied, check points
+        if blue_points > red_points:
+            winner = "blue"
+        elif red_points > blue_points:
+            winner = "red"
+        else:
+            # Both cycle clear and points are tied
+            winner = "tie"
+
     parsed.update({
         "blue_cycles": [blue_first, blue_second],
         "red_cycles": [red_first, red_second],
@@ -112,7 +126,7 @@ def parse_submission_string(submission: str):
         "red_penalty": red_penalty,
         "blue_points": blue_points,
         "red_points": red_points,
-        "winner": "blue" if total_blue_cycles < total_red_cycles else "red" if total_red_cycles < total_blue_cycles else "tie",
+        "winner": winner,
         "prebans": prebans,
         "jokers": jokers,
         "total_blue_cycles": total_blue_cycles,
@@ -192,7 +206,26 @@ class EloCommands(commands.Cog):
             elif data['total_red_cycles'] < data['total_blue_cycles']:
                 embed.add_field(name="Victor", value="Red Team — their resolve carved the path.", inline=False)
             else:
-                embed.add_field(name="Outcome", value="A perfect tie... as if destiny itself hesitated.", inline=False)
+                # Cycle clear is tied, check points
+                if data['blue_points'] > data['red_points']:
+                    embed.add_field(
+                        name="Victor", 
+                        value="Blue Team — though cycles were equal, their superior points broke the tie.", 
+                        inline=False
+                    )
+                elif data['red_points'] > data['blue_points']:
+                    embed.add_field(
+                        name="Victor", 
+                        value="Red Team — though cycles were equal, their superior points broke the tie.", 
+                        inline=False
+                    )
+                else:
+                    # Both cycle clear and points are tied
+                    embed.add_field(
+                        name="Outcome", 
+                        value="A perfect tie in both cycles and points... as if destiny itself hesitated.", 
+                        inline=False
+                    )
 
             embed.set_footer(text="Threads arranged with care… by Kyasutorisu")
 
@@ -211,7 +244,9 @@ class EloCommands(commands.Cog):
                 "blue_penalty": data["blue_penalty"],
                 "red_penalty": data["red_penalty"],
                 "prebans": data.get("prebans", []),
-                "jokers": data.get("jokers", [])
+                "jokers": data.get("jokers", []),
+                "blue_points": data["blue_points"],
+                "red_points": data["red_points"]
             }
 
             view = UpdateEloView(

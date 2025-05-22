@@ -50,6 +50,9 @@ class UpdateEloView(ui.View):
         blue_total_score = sum(self.blue_scores) + self.blue_cycle_penalty
         red_total_score = sum(self.red_scores) + self.red_cycle_penalty
 
+        blue_points = self.match_data.get("blue_points", 0)
+        red_points = self.match_data.get("red_points", 0)
+
         if blue_total_score < red_total_score:
             winner = "Blue Team"
             winner_team = self.blue_team
@@ -63,26 +66,41 @@ class UpdateEloView(ui.View):
             loser_team = self.blue_team
             loser_scores = self.blue_scores
         else:
-            tiebreaker_view = TiebreakerView(
-                blue_team=self.blue_team,
-                red_team=self.red_team,
-                blue_scores=self.blue_scores,
-                red_scores=self.red_scores,
-                blue_cycle_penalty=self.blue_cycle_penalty,
-                red_cycle_penalty=self.red_cycle_penalty,
-                blue_total_score=blue_total_score,
-                red_total_score=red_total_score,
-                elo_gains=self.elo_gains,
-                allowed_user_id=interaction.user.id,
-                match_data=self.match_data
-            )
-            message = await interaction.followup.send(
-                "The threads of fate have tied these teams... Which side shall be favored by destiny?\n"
-                "Please, choose with care, and fate will reveal the victor.",
-                view=tiebreaker_view
-            )
-            tiebreaker_view.message = message
-            return
+            # Cycle clear is tied, check points
+            if blue_points > red_points:
+                winner = "Blue Team"
+                winner_team = self.blue_team
+                winner_scores = self.blue_scores
+                loser_team = self.red_team
+                loser_scores = self.red_scores
+            elif red_points > blue_points:
+                winner = "Red Team"
+                winner_team = self.red_team
+                winner_scores = self.red_scores
+                loser_team = self.blue_team
+                loser_scores = self.blue_scores
+            else:
+                # Both cycle clear and points are tied - show tiebreaker
+                tiebreaker_view = TiebreakerView(
+                    blue_team=self.blue_team,
+                    red_team=self.red_team,
+                    blue_scores=self.blue_scores,
+                    red_scores=self.red_scores,
+                    blue_cycle_penalty=self.blue_cycle_penalty,
+                    red_cycle_penalty=self.red_cycle_penalty,
+                    blue_total_score=blue_total_score,
+                    red_total_score=red_total_score,
+                    elo_gains=self.elo_gains,
+                    allowed_user_id=interaction.user.id,
+                    match_data=self.match_data
+                )
+                message = await interaction.followup.send(
+                    "The threads of fate have tied these teams in both cycles and points...\n"
+                    "Which side shall be favored by destiny? Please, choose with care.",
+                    view=tiebreaker_view
+                )
+                tiebreaker_view.message = message
+                return
 
         processed_ids = set()
         self.elo_gains = {}
