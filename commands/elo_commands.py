@@ -207,13 +207,13 @@ class EloCommands(commands.Cog):
                 embed.add_field(name="Victor", value="Red Team — their resolve carved the path.", inline=False)
             else:
                 # Cycle clear is tied, check points
-                if data['blue_points'] > data['red_points']:
+                if data['blue_points'] < data['red_points']:
                     embed.add_field(
                         name="Victor", 
                         value="Blue Team — though cycles were equal, their superior points broke the tie.", 
                         inline=False
                     )
-                elif data['red_points'] > data['blue_points']:
+                elif data['red_points'] < data['blue_points']:
                     embed.add_field(
                         name="Victor", 
                         value="Red Team — though cycles were equal, their superior points broke the tie.", 

@@ -67,13 +67,13 @@ class UpdateEloView(ui.View):
             loser_scores = self.blue_scores
         else:
             # Cycle clear is tied, check points
-            if blue_points > red_points:
+            if blue_points < red_points:
                 winner = "Blue Team"
                 winner_team = self.blue_team
                 winner_scores = self.blue_scores
                 loser_team = self.red_team
                 loser_scores = self.red_scores
-            elif red_points > blue_points:
+            elif red_points < blue_points:
                 winner = "Red Team"
                 winner_team = self.red_team
                 winner_scores = self.red_scores
