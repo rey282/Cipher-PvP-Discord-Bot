@@ -287,6 +287,7 @@ class MatchmakingCommands(commands.Cog):
         uid = player_data.get("uid", "Not Registered")
         mirror_id = player_data.get("mirror_id", "Not Set")
         points = player_data.get("points", 0)
+
         # Rank based on ELO + leaderboard
         rank = get_rank(elo_score=elo, player_id=player_id, elo_data=elo_data)
         
@@ -312,7 +313,7 @@ class MatchmakingCommands(commands.Cog):
         embed.add_field(
             name="Stats",
             value=f"Win Rate: {win_rate * 100:.0f}%\n"
-                f"Trials Faced: {games_played}\n"
+                f"Trials Faced: {games_played}",
             inline=False
         )
 
