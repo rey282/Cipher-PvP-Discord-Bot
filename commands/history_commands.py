@@ -90,30 +90,34 @@ class MatchHistoryView(ui.View):
         )
         
         # Blue Team
-        blue_players = "\n".join(
-            f"{p['name']} ({p['cycles']}c)" 
-            for p in match['blue_team']
-        )
+        blue_players = []
+        for p in match['blue_team']:
+            elo_change = match.get('elo_gains', {}).get(str(p['id']), 0)
+            change_text = f" ({'+' if elo_change >= 0 else ''}{elo_change:.1f} ELO)" if 'elo_gains' in match else ""
+            blue_players.append(f"{p['name']} ({p['cycles']}c){change_text}")
+        
         embed.add_field(
             name=f"Blue Team ({match['blue_score']} Cycles)",
             value=(
-            f"{blue_players}\n"
-            f"▸ Cycle Penalty: +{match['blue_penalty']}"
-        ),
+                f"{'\n'.join(blue_players)}\n"
+                f"▸ Cycle Penalty: +{match['blue_penalty']}"
+            ),
             inline=False
         )
         
         # Red Team
-        red_players = "\n".join(
-            f"{p['name']} ({p['cycles']}c)" 
-            for p in match['red_team']
-        )
+        red_players = []
+        for p in match['red_team']:
+            elo_change = match.get('elo_gains', {}).get(str(p['id']), 0)
+            change_text = f" ({'+' if elo_change >= 0 else ''}{elo_change:.1f} ELO)" if 'elo_gains' in match else ""
+            red_players.append(f"{p['name']} ({p['cycles']}c){change_text}")
+        
         embed.add_field(
             name=f"Red Team ({match['red_score']} Cycles)",
             value=(
-            f"{red_players}\n"
-            f"▸ Cycle Penalty: +{match['red_penalty']}"
-        ),
+                f"{'\n'.join(red_players)}\n"
+                f"▸ Cycle Penalty: +{match['red_penalty']}"
+            ),
             inline=False
         )
 
