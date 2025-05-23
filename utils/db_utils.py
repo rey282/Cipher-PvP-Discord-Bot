@@ -210,7 +210,7 @@ def rollback_last_match():
                 eid = pick.get("eidolon")
                 print(f"DEBUG: Processing pick: {code} eidolon {eid}")
 
-                if not code or eid is None:\
+                if not code or eid is None:
                     print(f"DEBUG: Skipping pick - missing code or eidolon")
                     continue
 
