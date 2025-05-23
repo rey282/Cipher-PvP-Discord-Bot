@@ -194,7 +194,7 @@ def rollback_last_match():
 
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = team_key.startswith(winner)
+            team_won = team_key.split('_')[0] == winner
 
             for pick in picks:
                 code = pick.get("code")
