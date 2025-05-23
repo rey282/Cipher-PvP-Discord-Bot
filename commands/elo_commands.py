@@ -105,19 +105,24 @@ def parse_submission_string(submission: str):
     total_blue_cycles = blue_first + blue_second + blue_penalty
     total_red_cycles = red_first + red_second + red_penalty
 
+    print(f"DEBUG: Blue Cycles: {total_blue_cycles}, Points: {blue_points}")
+    print(f"DEBUG: Red Cycles: {total_red_cycles}, Points: {red_points}")
+
     if total_blue_cycles < total_red_cycles:
         winner = "blue"
     elif total_red_cycles < total_blue_cycles:
         winner = "red"
     else:
         # Cycle clear is tied, check points
-        if blue_points > red_points:
+        if blue_points < red_points:
             winner = "blue"
-        elif red_points > blue_points:
+        elif red_points < blue_points:
             winner = "red"
         else:
             # Both cycle clear and points are tied
             winner = "tie"
+    
+    print(f"DEBUG: Winner: {winner}")
 
     parsed.update({
         "blue_cycles": [blue_first, blue_second],
