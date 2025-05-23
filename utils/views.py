@@ -152,7 +152,7 @@ class UpdateEloView(ui.View):
             "red_score": red_total_score,
             "blue_penalty": self.blue_cycle_penalty,
             "red_penalty": self.red_cycle_penalty,
-            "winner": "blue" if blue_total_score < red_total_score else "red" if red_total_score < blue_total_score else "tie",
+            "winner": "blue" if winner_team == self.blue_team else "red",
             "elo_gains": self.elo_gains,
             "blue_picks": self.match_data["blue_picks"],
             "red_picks": self.match_data["red_picks"],
