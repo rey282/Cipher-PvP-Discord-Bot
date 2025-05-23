@@ -220,6 +220,7 @@ def rollback_last_match():
                 )
 
                 if team_won:
+                    print(f"DEBUG: Decrementing wins for {code} eidolon {eid}")
                     cursor.execute(
                         sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
                             sql.Identifier(f"e{eid}_wins"),
