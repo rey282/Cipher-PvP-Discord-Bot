@@ -194,7 +194,7 @@ def rollback_last_match():
 
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = team_key.split('_')[0] == winner
+            team_won = (team_key == "blue_picks" and winner == "blue") or (team_key == "red_picks" and winner == "red")
 
             for pick in picks:
                 code = pick.get("code")
@@ -347,7 +347,7 @@ def update_character_table_stats(match_data, winning_team: str):
 
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = team_key.startswith(winning_team)
+            team_won = (team_key == "blue_picks" and winning_team == "blue") or (team_key == "red_picks" and winning_team == "red")
 
             for pick in picks:
                 code = pick["code"]
