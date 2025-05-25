@@ -276,7 +276,7 @@ def calculate_team_elo_change(
     return per_player_gain, per_player_loss
 
 
-def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
+def distribute_team_elo_change(team, per_player_change, elo_data, scores=None, gain=True):
     seen_ids = set()
     changes = {}
 
@@ -297,22 +297,15 @@ def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
         player_data = elo_data[player_id]
         player_elo = original_elos[player_id]
 
-        # Determine teammate's ELO (for 2v2 logic)
-        if len(team) == 2:
-            teammate = team[1 - i]
-            teammate_id = str(teammate.id)
-            teammate_elo = original_elos.get(teammate_id, 200)
+        individual_change = per_player_change
 
-            # Handle rounding imprecision
-            if abs(teammate_elo - player_elo) < 0.01:
-                ratio = 1.0
-            else:
-                ratio = teammate_elo / player_elo if gain else player_elo / teammate_elo
-
-            individual_change = per_player_change * ratio
-        else:
-            individual_change = per_player_change
-
+        if scores is not None:
+            cycle_count = scores[i]
+            if cycle_count = 15:
+                if gain:  
+                    individual_change *= 0.5
+                else:     
+                    individual_change *= 1.5
             
         # Apply ELO adjustment
         new_elo = player_elo + individual_change if gain else player_elo - individual_change

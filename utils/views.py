@@ -130,8 +130,8 @@ class UpdateEloView(ui.View):
         )
 
         # Apply ELO changes
-        winner_elo_changes = distribute_team_elo_change(winner_team, per_player_gain, self.elo_data, gain=True)
-        loser_elo_changes = distribute_team_elo_change(loser_team, per_player_loss, self.elo_data, gain=False)
+        winner_elo_changes = distribute_team_elo_change(winner_team, per_player_gain, self.elo_data, scores=winner_scores if gain else None, gain=True)
+        loser_elo_changes = distribute_team_elo_change(loser_team, per_player_loss, self.elo_data, scores=loser_scores if not gain else None, gain=False)
 
         # Combine for match record
         self.elo_gains = {**winner_elo_changes, **loser_elo_changes}
