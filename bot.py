@@ -72,7 +72,7 @@ async def get_match_modes():
     return mode_count
 
 # Update the games played and member count
-@tasks.loop(minutes=7)
+@tasks.loop(minutes=20)
 async def update_stats():
     games_played = await get_games_played()
     total_members, online_members = await get_member_counts()
