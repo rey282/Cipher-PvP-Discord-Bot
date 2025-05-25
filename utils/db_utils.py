@@ -301,7 +301,7 @@ def distribute_team_elo_change(team, per_player_change, elo_data, scores=None, g
 
         if scores is not None:
             cycle_count = scores[i]
-            if cycle_count = 15:
+            if cycle_count == 15:
                 if gain:  
                     individual_change *= 0.5
                 else:     
