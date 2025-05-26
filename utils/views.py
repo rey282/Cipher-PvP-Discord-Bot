@@ -289,20 +289,15 @@ class TiebreakerView(ui.View):
         avg_winner_elo = sum(winner_elos) / len(winner_elos)
         avg_loser_elo = sum(loser_elos) / len(loser_elos)
 
-        per_player_gain, per_player_loss = calculate_team_elo_change(
-            winner_avg_elo=avg_winner_elo,
-            loser_avg_elo=avg_loser_elo,
+        self.elo_gains = calculate_individual_elo_changes(
+            winning_team=winner_team,
+            losing_team=loser_team,
+            elo_data=self.elo_data,
             base_gain=25,
             base_loss=20,
             variance_gain=1.5,
             variance_loss=0.65
         )
-
-        winner_elo_changes = distribute_team_elo_change(winner_team, per_player_gain, self.elo_data, gain=True)
-        loser_elo_changes = distribute_team_elo_change(loser_team, per_player_loss, self.elo_data, gain=False)
-
-        self.elo_gains = {**winner_elo_changes, **loser_elo_changes}
-
         save_elo_data(self.elo_data)
 
         await asyncio.to_thread(update_character_table_stats, self.match_data, winning_team="blue" if winner_team == self.blue_team else "red")
