@@ -120,22 +120,15 @@ class UpdateEloView(ui.View):
         variance_gain = 1.5
         variance_loss = 0.65
 
-        per_player_gain, per_player_loss = calculate_team_elo_change(
-            winner_avg_elo=avg_winner_elo,
-            loser_avg_elo=avg_loser_elo,
-            base_gain=base_gain,
-            base_loss=base_loss,
-            variance_gain=variance_gain,
-            variance_loss=variance_loss
+        self.elo_gains = calculate_individual_elo_changes(
+            winning_team=winner_team,
+            losing_team=loser_team,
+            elo_data=self.elo_data,
+            base_gain=25,
+            base_loss=20,
+            variance_gain=1.5,
+            variance_loss=0.65
         )
-
-        # Apply ELO changes
-        winner_elo_changes = distribute_team_elo_change(winner_team, per_player_gain, self.elo_data, gain=True)
-        loser_elo_changes = distribute_team_elo_change(loser_team, per_player_loss, self.elo_data, gain=False)
-
-        # Combine for match record
-        self.elo_gains = {**winner_elo_changes, **loser_elo_changes}
-
         save_elo_data(self.elo_data)
 
         await asyncio.to_thread(

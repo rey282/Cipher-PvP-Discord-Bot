@@ -263,83 +263,74 @@ def rollback_last_match():
 
 
 def calculate_team_elo_change(
-    winner_avg_elo: float,
-    loser_avg_elo: float,
+    winning_team: list,
+    losing_team: list,
+    elo_data: dict,
     base_gain: float = 25,
     base_loss: float = 20,
     variance_gain: float = 1.5,
     variance_loss: float = 0.65
-):
-    ratio = loser_avg_elo / winner_avg_elo
-    per_player_gain = base_gain * variance_gain * ratio
-    per_player_loss = base_loss * variance_loss * ratio
-    return per_player_gain, per_player_loss
-
-
-def distribute_team_elo_change(team, per_player_change, elo_data, gain=True):
-    seen_ids = set()
-    changes = {}
-
-    original_elos = {
-        str(player.id): elo_data.get(str(player.id), {"elo": 200})["elo"]
-        for player in team
-    }
-
-    for i, player in enumerate(team):
+) -> dict:
+    # Initialize player data if missing and get current ELOs
+    original_elos = {}
+    for player in winning_team + losing_team:
         player_id = str(player.id)
-        if player_id in seen_ids:
-            continue
-        seen_ids.add(player_id)
-
         if player_id not in elo_data:
             elo_data[player_id] = initialize_player_data(player_id)
-
-        player_data = elo_data[player_id]
+        original_elos[player_id] = elo_data[player_id]["elo"]
+    
+    # Calculate team average ELOs
+    losing_team_avg = sum(original_elos[str(p.id)] for p in losing_team) / len(losing_team)
+    winning_team_avg = sum(original_elos[str(p.id)] for p in winning_team) / len(winning_team)
+    
+    changes = {}
+    
+    # Process winners
+    for player in winning_team:
+        player_id = str(player.id)
         player_elo = original_elos[player_id]
-
-        # Determine teammate's ELO (for 2v2 logic)
-        if len(team) == 2:
-            teammate = team[1 - i]
-            teammate_id = str(teammate.id)
-            teammate_elo = original_elos.get(teammate_id, 200)
-
-            # Handle rounding imprecision
-            if abs(teammate_elo - player_elo) < 0.01:
-                ratio = 1.0
-            else:
-                ratio = teammate_elo / player_elo if gain else player_elo / teammate_elo
-
-            individual_change = per_player_change * ratio
-        else:
-            individual_change = per_player_change
-
-            
-        # Apply ELO adjustment
-        new_elo = player_elo + individual_change if gain else player_elo - individual_change
-        player_data["elo"] = max(100, round(new_elo, 2))
-
+        player_data = elo_data[player_id]
+        
+        # Calculate gain
+        ratio = losing_team_avg / player_elo
+        individual_gain = base_gain * variance_gain * ratio
+        
+        # Apply tapering
+        if individual_gain > 30:
+            excess = individual_gain - 30
+            individual_gain = 30 + (excess * 0.5)
+        
+        # Update stats (using your original win rate calculation)
+        player_data["elo"] = max(100, round(player_elo + individual_gain, 2))
         player_data["games_played"] += 1
         wins = player_data["win_rate"] * (player_data["games_played"] - 1)
-        if gain:
-            wins += 1
+        wins += 1  
         player_data["win_rate"] = wins / player_data["games_played"]
-
-        if abs(individual_change) > 30:
-            excess = abs(individual_change) - 30
-            if gain:  # Winning (gain)
-                excess_multiplier = 0.5  
-            else:     # Losing (loss)
-                excess_multiplier = 0.2
-            
-            tapered_change = 30 + (excess * excess_multiplier)
-            individual_change = tapered_change if individual_change > 0 else -tapered_change
-        final_elo = player_elo + individual_change if gain else player_elo - individual_change
-        player_data["elo"] = max(100, round(final_elo, 2))
-
-        changes[player_id] = round(individual_change if gain else -individual_change, 2)
-
+        changes[player_id] = round(individual_gain, 2)
+    
+    # Process losers
+    for player in losing_team:
+        player_id = str(player.id)
+        player_elo = original_elos[player_id]
+        player_data = elo_data[player_id]
+        
+        # Calculate loss
+        ratio = player_elo / winning_team_avg
+        individual_loss = base_loss * variance_loss * ratio
+        
+        # Apply tapering
+        if individual_loss > 30:
+            excess = individual_loss - 30
+            individual_loss = 30 + (excess * 0.2)
+        
+        # Update stats (using your original win rate calculation)
+        player_data["elo"] = max(100, round(player_elo - individual_loss, 2))
+        player_data["games_played"] += 1
+        wins = player_data["win_rate"] * (player_data["games_played"] - 1)
+        player_data["win_rate"] = wins / player_data["games_played"]
+        changes[player_id] = round(-individual_loss, 2)
+    
     return changes
-
 
 def update_character_table_stats(match_data, winning_team: str):
     with get_cursor(commit=True) as cursor:
