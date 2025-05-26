@@ -11,7 +11,6 @@ from utils.db_utils import (
     load_elo_data, 
     save_match_history,
     rollback_last_match,
-    distribute_team_elo_change,
     calculate_team_elo_change,
     update_character_table_stats
 )
