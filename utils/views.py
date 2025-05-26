@@ -119,7 +119,7 @@ class UpdateEloView(ui.View):
         variance_gain = 1.5
         variance_loss = 0.65
 
-        self.elo_gains = calculate_individual_elo_changes(
+        self.elo_gains = calculate_team_elo_change(
             winning_team=winner_team,
             losing_team=loser_team,
             elo_data=self.elo_data,
@@ -288,7 +288,7 @@ class TiebreakerView(ui.View):
         avg_winner_elo = sum(winner_elos) / len(winner_elos)
         avg_loser_elo = sum(loser_elos) / len(loser_elos)
 
-        self.elo_gains = calculate_individual_elo_changes(
+        self.elo_gains = calculate_team_elo_change(
             winning_team=winner_team,
             losing_team=loser_team,
             elo_data=self.elo_data,
