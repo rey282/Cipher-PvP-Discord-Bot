@@ -3,7 +3,8 @@ from discord import app_commands
 from discord.ext import commands
 import asyncpg
 import os
-
+load_dotenv()
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 class MemberSync(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
