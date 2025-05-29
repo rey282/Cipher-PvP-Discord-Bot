@@ -164,7 +164,8 @@ def rollback_last_match():
         elo_gains = match['elo_gains']
         match_data = match['raw_data'] if isinstance(match['raw_data'], dict) else json.loads(match['raw_data'])
         winner = match_data.get("winner")
-
+        print(f"DEBUG: Full match data: {json.dumps(match_data, indent=2)}")
+        print(f"DEBUG: Winner value: {winner} (type: {type(winner)})")
         # --- Revert ELO Data ---
         elo_data = load_elo_data()
         changes_made = False
@@ -194,12 +195,18 @@ def rollback_last_match():
 
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = (team_key == "blue_picks" and winner == "blue") or (team_key == "red_picks" and winner == "red")
+            team_won = False
+            if team_key == "blue_picks":
+                team_won = winner == "blue"
+                print(f"DEBUG: Blue team won? {team_won} (winner: {winner})")
+            elif team_key == "red_picks":
+                team_won = winner == "red"
+                print(f"DEBUG: Red team won? {team_won} (winner: {winner})")
 
             for pick in picks:
                 code = pick.get("code")
                 eid = pick.get("eidolon")
-
+                print(f"DEBUG: Processing pick: {code} eidolon {eid}")
                 if not code or eid is None:
                     continue
 
@@ -220,6 +227,7 @@ def rollback_last_match():
                 )
 
                 if team_won:
+                    print(f"DEBUG: Decrementing wins for {code} eidolon {eid}")
                     cursor.execute(
                         sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
                             sql.Identifier(f"e{eid}_wins"),
