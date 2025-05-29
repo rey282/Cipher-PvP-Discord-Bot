@@ -14,7 +14,7 @@ class MemberSync(commands.Cog):
         self.pool = await asyncpg.create_pool(dsn=os.getenv("DATABASE_URL"))
 
     @app_commands.command(name="syncallmembers", description="Sync all guild members to the database")
-    @app_commands.checks.has_permissions(administrator=True)  # only admins can run
+    @app_commands.guilds(GUILD_ID)
     async def syncallmembers(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
