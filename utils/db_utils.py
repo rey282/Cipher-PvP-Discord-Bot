@@ -195,18 +195,12 @@ def rollback_last_match():
 
         for team_key in ["blue_picks", "red_picks"]:
             picks = match_data.get(team_key, [])
-            team_won = False
-            if team_key == "blue_picks":
-                team_won = winner == "blue"
-                print(f"DEBUG: Blue team won? {team_won} (winner: {winner})")
-            elif team_key == "red_picks":
-                team_won = winner == "red"
-                print(f"DEBUG: Red team won? {team_won} (winner: {winner})")
+            team_won = (team_key == "blue_picks" and winner == "blue") or (team_key == "red_picks" and winner == "red")
 
             for pick in picks:
                 code = pick.get("code")
                 eid = pick.get("eidolon")
-                print(f"DEBUG: Processing pick: {code} eidolon {eid}")
+
                 if not code or eid is None:
                     continue
 
@@ -227,7 +221,6 @@ def rollback_last_match():
                 )
 
                 if team_won:
-                    print(f"DEBUG: Decrementing wins for {code} eidolon {eid}")
                     cursor.execute(
                         sql.SQL("UPDATE characters SET {} = GREATEST({} - 1, 0) WHERE code = %s").format(
                             sql.Identifier(f"e{eid}_wins"),
