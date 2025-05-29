@@ -164,8 +164,6 @@ def rollback_last_match():
         elo_gains = match['elo_gains']
         match_data = match['raw_data'] if isinstance(match['raw_data'], dict) else json.loads(match['raw_data'])
         winner = match_data.get("winner")
-        print(f"DEBUG: Full match data: {json.dumps(match_data, indent=2)}")
-        print(f"DEBUG: Winner value: {winner} (type: {type(winner)})")
         # --- Revert ELO Data ---
         elo_data = load_elo_data()
         changes_made = False
