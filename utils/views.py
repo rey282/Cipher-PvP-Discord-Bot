@@ -133,7 +133,7 @@ class UpdateEloView(ui.View):
         await asyncio.to_thread(
             update_character_table_stats,
             self.match_data,
-            winning_team="blue" if blue_total_score < red_total_score else "red"
+            winning_team=self.match_data["winner"]
         )
 
         match_data = {
@@ -299,7 +299,11 @@ class TiebreakerView(ui.View):
         )
         save_elo_data(self.elo_data)
 
-        await asyncio.to_thread(update_character_table_stats, self.match_data, winning_team="blue" if winner_team == self.blue_team else "red")
+        await asyncio.to_thread(
+            update_character_table_stats,
+            self.match_data,
+            winning_team=self.match_data["winner"]
+        )
 
         match_data = {
             "date": datetime.now().strftime("%d/%m/%Y"),
