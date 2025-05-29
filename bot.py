@@ -113,7 +113,8 @@ async def on_ready():
         "commands.help",
         "commands.queue",
         "commands.character_stats",
-        "commands.tournament"
+        "commands.tournament",
+        "commands.username"
     ]
     
     for ext in extensions:
