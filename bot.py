@@ -114,7 +114,6 @@ async def on_ready():
         "commands.queue",
         "commands.character_stats",
         "commands.tournament",
-        "commands.username"
     ]
     
     for ext in extensions:
@@ -136,6 +135,25 @@ async def on_ready():
             print(f"- /{cmd.name}")
     except Exception as e:
         print(f"Error syncing guild commands: {e}")
+
+@client.event
+async def on_member_join(member: discord.Member):
+    discord_id = str(member.id)
+    username = str(member)
+    conn = await get_db_connection()
+    try:
+        await conn.execute(
+            """
+            INSERT INTO discord_usernames (discord_id, username)
+            VALUES ($1, $2)
+            ON CONFLICT (discord_id) DO UPDATE SET username = EXCLUDED.username
+            """,
+            discord_id,
+            username,
+        )
+        print(f"Synced new member: {username} ({discord_id})")
+    finally:
+        await conn.close()
 
 # Run the bot
 client.run(TOKEN)
