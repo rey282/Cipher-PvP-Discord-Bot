@@ -1,7 +1,7 @@
 import discord
 from discord.utils import get
 
-def is_akivili_now(player_id: str, elo_data: dict) -> bool:
+def is_CipherChampion_now(player_id: str, elo_data: dict) -> bool:
     top_players = sorted(
         elo_data.items(),
         key=lambda x: x[1].get("elo", 200),
@@ -39,14 +39,14 @@ async def update_rank_role(
     )
     new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
 
-    was_akivili = "Akivili" in [r.name for r in member.roles]
+    was_CipherChampion = "Cipher Champion" in [r.name for r in member.roles]
 
-    if new_rank == "Aeon" and is_akivili_now(str(member.id), elo_data):
-        new_rank = "Akivili"
+    if new_rank == "Aeon" and is_CipherChampion_now(str(member.id), elo_data):
+        new_rank = "Cipher Champion"
 
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
-        "Arbiter-Generals", "Emanator", "Aeon", "Akivili"
+        "Arbiter-Generals", "Emanator", "Aeon", "Cipher Champion"
     ]
 
     try:
@@ -83,35 +83,35 @@ async def update_rank_role(
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
 
-    if new_rank == "Akivili":
-        top_akivilis = sorted(
+    if new_rank == "Cipher Champion":
+        top_CipherChampions = sorted(
             [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1000],
             key=lambda x: x[1].get("elo", 200),
             reverse=True
         )[:3]
 
-        top_akivili_ids = [pid for pid, _ in top_akivilis]
+        top_CipherChampion_ids = [pid for pid, _ in top_CipherChampions]
         for pid, _ in elo_data.items():
-            if pid not in top_akivili_ids:
+            if pid not in top_CipherChampion_ids:
                 user = guild.get_member(int(pid))
-                if user and any(role.name == "Akivili" for role in user.roles):
-                    akivili_role = get(guild.roles, name="Akivili")
-                    if akivili_role:
+                if user and any(role.name == "Cipher Champion" for role in user.roles):
+                    CipherChampion_role = get(guild.roles, name="Cipher Champion")
+                    if CipherChampion_role:
                         try:
-                            await user.remove_roles(akivili_role)
+                            await user.remove_roles(CipherChampion_role)
                             if channel and announce_demotions:
                                 await channel.send(
-                                    f"{user.mention} has stepped down from **Akivili**.\n"
+                                    f"{user.mention} has stepped down from **Cipher Champion**.\n"
                                     f"Even the fates must bow to the ever-changing threads…"
                                 )
                         except Exception as e:
-                            print(f"❌ Failed to remove Akivili role from {user.display_name}: {e}")
+                            print(f"❌ Failed to remove Cipher Champion role from {user.display_name}: {e}")
 
     if channel:
         try:
-            if new_rank == "Akivili" and old_rank != "Akivili":
+            if new_rank == "Cipher Champion" and old_rank != "Cipher Champion":
                 await channel.send(
-                    f"{member.mention} has ascended as the **Akivili**, Weaver of Fates!\n"
+                    f"{member.mention} has ascended as the **Cipher Champion**, Weaver of Fates!\n"
                     f"The loom bows to their threads — all destinies now orbit their will."
                 )
             elif new_index > old_index:
@@ -121,11 +121,11 @@ async def update_rank_role(
                 )
             elif announce_demotions and (
                 new_index < old_index or
-                (was_akivili and new_rank != "Akivili")
+                (was_CipherChampion and new_rank != "Cipher Champion")
             ):
-                if old_rank == "Akivili" and new_rank != "Akivili":
+                if old_rank == "Cipher Champion" and new_rank != "Cipher Champion":
                     await channel.send(
-                        f"{member.mention} has stepped down from **Akivili**.\n"
+                        f"{member.mention} has stepped down from **Cipher Champion**.\n"
                         f"Even the fates must bow to the ever-changing threads…"
                     )
                 else:
