@@ -129,13 +129,16 @@ def save_match_history(match_data):
         cursor.execute('''
             INSERT INTO matches (timestamp, elo_gains, raw_data, has_character_data)
             VALUES (%s, %s, %s, %s)
+            RETURNING match_id
         ''', (
             datetime.now().isoformat(),
             json.dumps(match_data.get("elo_gains", {})),
             json.dumps(match_data) ,
             True
         ))  
+        match_id = cursor.fetchone()[0]
         conn.commit()
+        return match_id
 
 
 def initialize_player_data(player_id):
@@ -154,7 +157,7 @@ def initialize_player_data(player_id):
 def rollback_last_match():
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT match_id, elo_gains, raw_data FROM matches ORDER BY match_id DESC LIMIT 1")
+        cursor.execute("SELECT match_id, elo_gains, raw_data FROM matches WHERE match_id = %s", (match_id,))
         match = cursor.fetchone()
 
         if not match:
