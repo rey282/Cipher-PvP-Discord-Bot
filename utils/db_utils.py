@@ -154,7 +154,7 @@ def initialize_player_data(player_id):
     }
 
 
-def rollback_last_match():
+def rollback_match(match_id):
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT match_id, elo_gains, raw_data FROM matches WHERE match_id = %s", (match_id,))

@@ -10,7 +10,7 @@ from utils.db_utils import (
     save_elo_data, 
     load_elo_data, 
     save_match_history,
-    rollback_last_match,
+    rollback_match,
     calculate_team_elo_change,
     update_character_table_stats
 )
@@ -187,7 +187,7 @@ class UpdateEloView(ui.View):
 
         match_id = save_match_history(match_data)
         confirm_view = ConfirmRollbackView(match_id=match_id)
-        
+
         await interaction.followup.send(embed=embed, view=confirm_view)
 
         await asyncio.sleep(1)
