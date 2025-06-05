@@ -185,7 +185,9 @@ class UpdateEloView(ui.View):
             inline=False
         )
 
-        confirm_view = ConfirmRollbackView()
+        match_id = save_match_history(match_data)
+        confirm_view = ConfirmRollbackView(match_id=match_id)
+        
         await interaction.followup.send(embed=embed, view=confirm_view)
 
         await asyncio.sleep(1)
@@ -371,7 +373,9 @@ class TiebreakerView(ui.View):
             inline=False
         )
 
-        confirm_view = ConfirmRollbackView()
+        match_id = save_match_history(match_data)
+        confirm_view = ConfirmRollbackView(match_id=match_id)
+
         if interaction.response.is_done():
             await interaction.followup.send(embed=embed, view=confirm_view)
         else:
@@ -400,16 +404,17 @@ class TiebreakerView(ui.View):
         self.stop()
 
 class ConfirmRollbackView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, match_id: int):
         super().__init__(timeout=None)
+        self.match_id = match_id  # ✅ Store match ID for targeted rollback
         self.confirmation_active = False
         self.message = None
-        
+
     @discord.ui.button(label="⚠️ Undo Match", style=discord.ButtonStyle.red)
     async def undo_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         required_role = "Stonehearts" 
-    
-        # If the user is not an admin and does not have the required role
+
+        # 🔐 Permission check
         if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
             await interaction.response.send_message(
                 "Oh… I’m afraid only administrators can undo matches. I apologize for the inconvenience.",
@@ -418,21 +423,25 @@ class ConfirmRollbackView(discord.ui.View):
             return
 
         if self.confirmation_active:
-            await interaction.response.send_message("Oh, it seems a confirmation is already pending... Please give it a moment, and then you may proceed.", ephemeral=True)
+            await interaction.response.send_message(
+                "Oh, it seems a confirmation is already pending... Please give it a moment, and then you may proceed.",
+                ephemeral=True
+            )
             return
 
         self.confirmation_active = True
-        confirm_view = ConfirmUndoView(parent_view=self)
+        # ✅ Pass match_id to ConfirmUndoView
+        confirm_view = ConfirmUndoView(parent_view=self, match_id=self.match_id)
 
         try:
-            # Manually disable all buttons in this view before opening confirmation
+            # Disable all buttons in this view
             for item in self.children:
                 item.disabled = True
             await interaction.message.edit(view=self)
 
-            # Immediate response is crucial
+            # Show confirmation prompt
             await interaction.response.send_message(
-                "⚠️ This action will permanently revert the last match... Are you sure you wish to proceed? Please confirm.",
+                "⚠️ This action will permanently revert the match you just submitted... Are you sure?",
                 view=confirm_view,
                 ephemeral=True
             )
@@ -442,12 +451,14 @@ class ConfirmRollbackView(discord.ui.View):
             logging.error(f"Initial response failed: {e}")
             raise
 
+
 class ConfirmUndoView(discord.ui.View):
-    def __init__(self, parent_view: discord.ui.View):
+    def __init__(self, parent_view: discord.ui.View, match_id: int):
         super().__init__(timeout=300)
         self.parent_view = parent_view
+        self.match_id = match_id
         self.message = None
-        
+
     @discord.ui.button(label="CONFIRM UNDO", style=discord.ButtonStyle.danger)
     async def confirm_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.response.is_done():
@@ -456,11 +467,11 @@ class ConfirmUndoView(discord.ui.View):
             except discord.NotFound:
                 print("Interaction expired or already acknowledged.")
                 return
-        
+
         try:
-            # Perform the actual rollback
-            success, message = rollback_last_match()
-            
+            # ✅ Perform rollback of the specific match
+            success, message = rollback_match(self.match_id)
+
             # Disable all buttons in this view
             for item in self.children:
                 item.disabled = True
@@ -468,7 +479,7 @@ class ConfirmUndoView(discord.ui.View):
             # Disable all buttons in parent_view manually
             for item in self.parent_view.children:
                 item.disabled = True
-            
+
             # Update messages
             try:
                 await interaction.edit_original_response(
@@ -479,19 +490,20 @@ class ConfirmUndoView(discord.ui.View):
                     await self.parent_view.message.edit(view=self.parent_view)
 
                 await interaction.channel.send(
-                    f"✅ {interaction.user.mention} has gracefully undone the last match. Fate has been restored."
-                    if success else f"❌ {interaction.user.mention} tried to reverse the match, but unfortunately, it failed: `{message}`\nI’m really sorry, but we’ll give it another go soon!"
-                )               
+                    f"✅ {interaction.user.mention} has gracefully undone the match. Fate has been restored."
+                    if success else f"❌ {interaction.user.mention} tried to reverse the match, but it failed: `{message}`"
+                )
+
                 try:
                     await interaction.delete_original_response()
                 except discord.NotFound:
                     pass
             except discord.NotFound:
-                pass 
-                
+                pass
+
         except Exception as e:
             logging.error(f"Rollback failed: {e}")
-            await interaction.followup.send("❌ Oh, I’m truly sorry… something went wrong while trying to undo the match. Please allow me to try again shortly.", ephemeral=True)
+            await interaction.followup.send("❌ Something went wrong while trying to undo the match. Please try again shortly.", ephemeral=True)
         finally:
             self.parent_view.confirmation_active = False
 
