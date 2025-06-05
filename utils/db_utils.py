@@ -133,10 +133,10 @@ def save_match_history(match_data):
         ''', (
             datetime.now().isoformat(),
             json.dumps(match_data.get("elo_gains", {})),
-            json.dumps(match_data) ,
+            json.dumps(match_data),
             True
         ))  
-        match_id = cursor.fetchone()[0]
+        match_id = cursor.fetchone()['match_id']
         conn.commit()
         return match_id
 
