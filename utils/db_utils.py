@@ -287,8 +287,17 @@ def calculate_team_elo_change(
     
     changes = {}
     
+    def unique_players(players):
+        seen = set()
+        unique = []
+        for p in players:
+            if p.id not in seen:
+                unique.append(p)
+                seen.add(p.id)
+        return unique
+
     # Process winners
-    for player in winning_team:
+    for player in unique_players(winning_team):
         player_id = str(player.id)
         player_elo = original_elos[player_id]
         player_data = elo_data[player_id]
@@ -311,7 +320,7 @@ def calculate_team_elo_change(
         changes[player_id] = round(individual_gain, 2)
     
     # Process losers
-    for player in losing_team:
+    for player in unique_players(losing_team):
         player_id = str(player.id)
         player_elo = original_elos[player_id]
         player_data = elo_data[player_id]
