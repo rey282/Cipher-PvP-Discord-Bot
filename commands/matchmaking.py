@@ -290,7 +290,10 @@ class MatchmakingCommands(commands.Cog):
 
         # Rank based on ELO + leaderboard
         rank = get_rank(elo_score=elo, player_id=player_id, elo_data=elo_data)
-        
+
+        if rank == "Aeon" and is_CipherChampion_now(player_id, elo_data):
+            rank = "Cipher Champion"
+            
         # Create embed with new layout
         banner_url = player_data.get("banner_url")
         color = elo_data.get(player_id, {}).get("color", 0xB197FC)

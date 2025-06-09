@@ -154,7 +154,6 @@ class UpdateEloView(ui.View):
             "jokers": self.match_data.get("jokers", [])
         }
 
-        save_match_history(match_data)
         self.elo_data = load_elo_data()
 
         embed = discord.Embed(
@@ -186,6 +185,7 @@ class UpdateEloView(ui.View):
         )
 
         match_id = save_match_history(match_data)
+        logging.info(f"Match {match_id} saved successfully for winner: {match_data['winner']}")
         confirm_view = ConfirmRollbackView(match_id=match_id)
 
         await interaction.followup.send(embed=embed, view=confirm_view)
@@ -331,7 +331,6 @@ class TiebreakerView(ui.View):
             "jokers": self.match_data.get("jokers", [])
         }
 
-        save_match_history(match_data)
         self.elo_data = load_elo_data()
 
         embed = Embed(
@@ -374,6 +373,7 @@ class TiebreakerView(ui.View):
         )
 
         match_id = save_match_history(match_data)
+        logging.info(f"Match {match_id} saved successfully for winner: {match_data['winner']}")
         confirm_view = ConfirmRollbackView(match_id=match_id)
 
         if interaction.response.is_done():
