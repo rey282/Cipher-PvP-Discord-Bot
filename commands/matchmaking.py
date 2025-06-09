@@ -8,6 +8,7 @@ from discord import Interaction
 from utils.db_utils import load_elo_data, save_elo_data, initialize_player_data
 from utils.rank_utils import get_rank
 from dotenv import load_dotenv
+from utils.rank_utils import is_CipherChampion_now
 
 load_dotenv()
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
@@ -293,7 +294,7 @@ class MatchmakingCommands(commands.Cog):
 
         if rank == "Aeon" and is_CipherChampion_now(player_id, elo_data):
             rank = "Cipher Champion"
-            
+
         # Create embed with new layout
         banner_url = player_data.get("banner_url")
         color = elo_data.get(player_id, {}).get("color", 0xB197FC)

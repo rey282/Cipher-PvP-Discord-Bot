@@ -1,6 +1,5 @@
 import discord
 from discord.utils import get
-from utils.rank_utils import is_CipherChampion_now
 
 def is_CipherChampion_now(player_id: str, elo_data: dict) -> bool:
     top_players = sorted(
