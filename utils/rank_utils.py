@@ -1,15 +1,16 @@
 import discord
 from discord.utils import get
 
-def is_CipherChampion_now(player_id: str, elo_data: dict) -> bool:
-    top_players = sorted(
-        elo_data.items(),
-        key=lambda x: x[1].get("elo", 200),
-        reverse=True
-    )[:3]
-    return any(pid == player_id and pdata.get("elo", 0) >= 1000 for pid, pdata in top_players)
-
 def get_rank(elo_score, player_id=None, elo_data=None):
+    if elo_data and player_id and elo_score >= 1000:
+        top_players = sorted(
+            elo_data.items(),
+            key=lambda x: x[1].get("elo", 200),
+            reverse=True
+        )[:3]
+        if any(pid == str(player_id) for pid, _ in top_players):
+            return "Cipher Champion"
+
     if elo_score < 300:
         return "Trailblazer"
     elif 300 <= elo_score < 500:
@@ -32,17 +33,17 @@ async def update_rank_role(
     force_old_rank: str = None
 ):
     guild = member.guild
+    player_id = str(member.id)
+
+    # Properly calculate both old and new rank using Cipher Champion logic directly
     old_rank = force_old_rank if force_old_rank else get_rank(
-        elo_data.get(str(member.id), {}).get("elo", 200),
-        player_id=member.id,
+        elo_data.get(player_id, {}).get("elo", 200),
+        player_id=player_id,
         elo_data=elo_data
     )
-    new_rank = get_rank(new_elo, player_id=member.id, elo_data=elo_data)
+    new_rank = get_rank(new_elo, player_id=player_id, elo_data=elo_data)
 
     was_CipherChampion = "Cipher Champion" in [r.name for r in member.roles]
-
-    if new_rank == "Aeon" and is_CipherChampion_now(str(member.id), elo_data):
-        new_rank = "Cipher Champion"
 
     rank_order = [
         "Trailblazer", "Memokeeper", "Genius Scholar",
@@ -61,12 +62,10 @@ async def update_rank_role(
         print(f"⚠️ Role '{new_rank}' not found in guild {guild.name}")
         return
 
-    # Already has correct role?
     has_rank_role = any(role.name == new_rank for role in member.roles)
     if old_rank == new_rank and has_rank_role:
         return
 
-    # Check bot permissions
     bot_member = guild.me
     if not bot_member.guild_permissions.manage_roles:
         print(f"❌ Bot lacks 'Manage Roles' permission")
@@ -83,6 +82,7 @@ async def update_rank_role(
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
 
+    # Handle Cipher Champion demotion logic
     if new_rank == "Cipher Champion":
         top_CipherChampions = sorted(
             [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1000],
