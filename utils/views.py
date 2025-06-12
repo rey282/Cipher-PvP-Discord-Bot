@@ -301,6 +301,8 @@ class TiebreakerView(ui.View):
         )
         save_elo_data(self.elo_data)
 
+        self.match_data["winner"] = "blue" if winner_team == self.blue_team else "red"
+
         await asyncio.to_thread(
             update_character_table_stats,
             self.match_data,
