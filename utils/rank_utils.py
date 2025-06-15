@@ -89,28 +89,30 @@ async def update_rank_role(
     )[:3]
     top_CipherChampion_ids = [pid for pid, _ in top_CipherChampions]
 
-    for pid, _ in elo_data.items():
-        if pid not in top_CipherChampion_ids:
-            user = guild.get_member(int(pid))
-            if user and any(role.name == "Cipher Champion" for role in user.roles):
-                CipherChampion_role = get(guild.roles, name="Cipher Champion")
-                fallback_rank = get_rank(
-                    elo_score=elo_data[pid]["elo"],
-                    player_id=pid,
-                    elo_data=elo_data
-                )
-                fallback_role = get(guild.roles, name=fallback_rank)
-                try:
-                    await user.remove_roles(CipherChampion_role)
-                    if fallback_role:
-                        await user.add_roles(fallback_role)
-                    if channel and announce_demotions:
-                        await channel.send(
-                            f"{user.mention} has stepped down from **Cipher Champion**.\n"
-                            f"Even the fates must bow to the ever-changing threads…"
-                        )
-                except Exception as e:
-                    print(f"❌ Failed to adjust {user.display_name}: {e}")
+    if new_rank == "Cipher Champion" and old_rank != "Cipher Champion":
+        for pid, _ in elo_data.items():
+            if pid not in top_CipherChampion_ids:
+                user = guild.get_member(int(pid))
+                if user and any(role.name == "Cipher Champion" for role in user.roles):
+                    CipherChampion_role = get(guild.roles, name="Cipher Champion")
+                    fallback_rank = get_rank(
+                        elo_score=elo_data[pid]["elo"],
+                        player_id=pid,
+                        elo_data=elo_data
+                    )
+                    fallback_role = get(guild.roles, name=fallback_rank)
+                    try:
+                        await user.remove_roles(CipherChampion_role)
+                        if fallback_role:
+                            await user.add_roles(fallback_role)
+                        if channel and announce_demotions:
+                            await channel.send(
+                                f"{user.mention} has stepped down from **Cipher Champion**.\n"
+                                f"Even the fates must bow to the ever-changing threads…"
+                            )
+                    except Exception as e:
+                        print(f"❌ Failed to adjust {user.display_name}: {e}")
+
 
     if channel:
         try:
