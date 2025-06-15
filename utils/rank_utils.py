@@ -3,6 +3,7 @@ from discord.utils import get
 
 def get_rank(elo_score, player_id=None, elo_data=None):
     if elo_data and player_id and elo_score >= 1000:
+    
         top_players = sorted(
             elo_data.items(),
             key=lambda x: x[1].get("elo", 200),
@@ -22,7 +23,7 @@ def get_rank(elo_score, player_id=None, elo_data=None):
     elif 800 <= elo_score < 900:
         return "Emanator"
     else:
-        return "Aeon"
+        return "Aeon" 
 
 async def update_rank_role(
     member: discord.Member,
@@ -35,7 +36,6 @@ async def update_rank_role(
     guild = member.guild
     player_id = str(member.id)
 
-    # Properly calculate both old and new rank using Cipher Champion logic directly
     old_rank = force_old_rank if force_old_rank else get_rank(
         elo_data.get(player_id, {}).get("elo", 200),
         player_id=player_id,
@@ -82,30 +82,35 @@ async def update_rank_role(
         print(f"❌ Missing permission to update {member.display_name}'s roles")
         return
 
-    # Handle Cipher Champion demotion logic
-    if new_rank == "Cipher Champion":
-        top_CipherChampions = sorted(
-            [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1000],
-            key=lambda x: x[1].get("elo", 200),
-            reverse=True
-        )[:3]
+    top_CipherChampions = sorted(
+        [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1000],
+        key=lambda x: x[1].get("elo", 200),
+        reverse=True
+    )[:3]
+    top_CipherChampion_ids = [pid for pid, _ in top_CipherChampions]
 
-        top_CipherChampion_ids = [pid for pid, _ in top_CipherChampions]
-        for pid, _ in elo_data.items():
-            if pid not in top_CipherChampion_ids:
-                user = guild.get_member(int(pid))
-                if user and any(role.name == "Cipher Champion" for role in user.roles):
-                    CipherChampion_role = get(guild.roles, name="Cipher Champion")
-                    if CipherChampion_role:
-                        try:
-                            await user.remove_roles(CipherChampion_role)
-                            if channel and announce_demotions:
-                                await channel.send(
-                                    f"{user.mention} has stepped down from **Cipher Champion**.\n"
-                                    f"Even the fates must bow to the ever-changing threads…"
-                                )
-                        except Exception as e:
-                            print(f"❌ Failed to remove Cipher Champion role from {user.display_name}: {e}")
+    for pid, _ in elo_data.items():
+        if pid not in top_CipherChampion_ids:
+            user = guild.get_member(int(pid))
+            if user and any(role.name == "Cipher Champion" for role in user.roles):
+                CipherChampion_role = get(guild.roles, name="Cipher Champion")
+                fallback_rank = get_rank(
+                    elo_score=elo_data[pid]["elo"],
+                    player_id=pid,
+                    elo_data=elo_data
+                )
+                fallback_role = get(guild.roles, name=fallback_rank)
+                try:
+                    await user.remove_roles(CipherChampion_role)
+                    if fallback_role:
+                        await user.add_roles(fallback_role)
+                    if channel and announce_demotions:
+                        await channel.send(
+                            f"{user.mention} has stepped down from **Cipher Champion**.\n"
+                            f"Even the fates must bow to the ever-changing threads…"
+                        )
+                except Exception as e:
+                    print(f"❌ Failed to adjust {user.display_name}: {e}")
 
     if channel:
         try:
