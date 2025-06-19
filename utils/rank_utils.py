@@ -113,6 +113,20 @@ async def update_rank_role(
                     except Exception as e:
                         print(f"❌ Failed to adjust {user.display_name}: {e}")
 
+        # ✅ NEW: Announce promotion to Cipher Champion after demotions
+        top_CipherChampions = sorted(
+            [(pid, pdata) for pid, pdata in elo_data.items() if pdata.get("elo", 0) >= 1000],
+            key=lambda x: x[1].get("elo", 200),
+            reverse=True
+        )[:3]
+        top_CipherChampion_ids = [pid for pid, _ in top_CipherChampions]
+
+        if str(member.id) in top_CipherChampion_ids and not was_CipherChampion and channel:
+            await channel.send(
+                f"{member.mention} has ascended as the **Cipher Champion**, Weaver of Fates!\n"
+                f"The loom bows to their threads — all destinies now orbit their will."
+            )
+
 
     if channel:
         try:
