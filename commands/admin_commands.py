@@ -269,10 +269,10 @@ class AdminCommands(commands.Cog):
     @app_commands.guilds(GUILD_ID)
     async def reset_elo(self, interaction: Interaction):
 
-        if not interaction.user.guild_permissions.administrator:
+        if interaction.user.id != OWNER_ID:
             await interaction.response.send_message(
-                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
-                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                "<:Unamurice:1349309283669377064> O-oh… I’m sorry, but only Haya may realign the threads of fate like this...\n"
+                "*You’re not Haya, are you…?*",
                 ephemeral=True
             )
             return
