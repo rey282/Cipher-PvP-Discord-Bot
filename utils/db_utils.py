@@ -88,33 +88,48 @@ def load_elo_data():
 def save_elo_data(data):
     with get_cursor(commit=True) as cursor:
         for discord_id, stats in data.items():
-            cursor.execute('''
-                INSERT INTO players (discord_id, nickname, elo, games_played, win_rate, uid, mirror_id, points, description, color, banner_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+
+            cursor.execute(
+                '''
+                INSERT INTO players (
+                    discord_id, nickname, avatar,
+                    elo, games_played, win_rate,
+                    uid, mirror_id, points,
+                    description, color, banner_url
+                ) VALUES (
+                    %(discord_id)s, %(nickname)s, %(avatar)s,
+                    %(elo)s, %(games_played)s, %(win_rate)s,
+                    %(uid)s, %(mirror_id)s, %(points)s,
+                    %(description)s, %(color)s, %(banner_url)s
+                )
                 ON CONFLICT (discord_id) DO UPDATE SET
-                    nickname = EXCLUDED.nickname,
-                    elo = EXCLUDED.elo,
-                    games_played = EXCLUDED.games_played,
-                    win_rate = EXCLUDED.win_rate,
-                    uid = EXCLUDED.uid,
-                    mirror_id = EXCLUDED.mirror_id,
-                    points = EXCLUDED.points,
+                    nickname    = EXCLUDED.nickname,
+                    avatar      = EXCLUDED.avatar,
+                    elo         = EXCLUDED.elo,
+                    games_played= EXCLUDED.games_played,
+                    win_rate    = EXCLUDED.win_rate,
+                    uid         = EXCLUDED.uid,
+                    mirror_id   = EXCLUDED.mirror_id,
+                    points      = EXCLUDED.points,
                     description = EXCLUDED.description,
-                    color = EXCLUDED.color,
-                    banner_url = EXCLUDED.banner_url
-            ''', (
-                discord_id,
-                stats.get("nickname", ""),
-                stats.get("elo", 200),
-                stats.get("games_played", 0),
-                stats.get("win_rate", 0.0),
-                stats.get("uid", "Not Registered"),
-                stats.get("mirror_id", "Not Set"),
-                stats.get("points", 0),
-                stats.get("description", ""),
-                stats.get("color", 0xB197FC),
-                stats.get("banner_url", None)
-            ))
+                    color       = EXCLUDED.color,
+                    banner_url  = EXCLUDED.banner_url
+                ''',
+                {
+                    "discord_id"  : discord_id,
+                    "nickname"    : stats.get("nickname", ""),
+                    "avatar"      : stats.get("avatar"),      
+                    "elo"         : stats.get("elo", 200),
+                    "games_played": stats.get("games_played", 0),
+                    "win_rate"    : stats.get("win_rate", 0.0),
+                    "uid"         : stats.get("uid", "Not Registered"),
+                    "mirror_id"   : stats.get("mirror_id", "Not Set"),
+                    "points"      : stats.get("points", 0),
+                    "description" : stats.get("description", ""),
+                    "color"       : stats.get("color", 0xB197FC),
+                    "banner_url"  : stats.get("banner_url"),
+                }
+            )
 
 
 def load_match_history():
