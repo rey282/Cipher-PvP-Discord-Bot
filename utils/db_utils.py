@@ -103,8 +103,8 @@ def save_elo_data(data):
                     %(description)s, %(color)s, %(banner_url)s
                 )
                 ON CONFLICT (discord_id) DO UPDATE SET
-                    nickname    = EXCLUDED.nickname,
-                    avatar      = EXCLUDED.avatar,
+                    nickname    = COALESCE(EXCLUDED.nickname, players.nickname)
+                    avatar      = COALESCE(EXCLUDED.avatar, players.avatar)
                     elo         = EXCLUDED.elo,
                     games_played= EXCLUDED.games_played,
                     win_rate    = EXCLUDED.win_rate,
