@@ -60,16 +60,17 @@ class Tournament(commands.Cog):
         if winner_4: winners.append(winner_4)
         if winner_5: winners.append(winner_5)
 
-        winner_string = ", ".join(w.display_name for w in winners)
+        winner_ids = ", ".join(str(w.id) for w in winners)
 
         pool = await self.get_db_pool()
         async with pool.acquire() as conn:
             await conn.execute(
-                "INSERT INTO tournaments (name, winner, timestamp) VALUES ($1, $2, $3)",
+                "INSERT INTO tournaments (name, winner_ids, timestamp) VALUES ($1, $2, $3)",
                 name,
-                winner_string,
+                winner_ids,
                 datetime.now()
             )
+
 
         await interaction.response.send_message(f"**{name}** has been recorded!\nWinners: {winner_string}")
 
@@ -101,7 +102,7 @@ class Tournament(commands.Cog):
             title="📜 Tournament Archive",
             color=discord.Color.gold(),
             description="\n\n".join(
-                f"**{r['name']}**\n🏆 {', '.join(r['winner'].split(',')).strip()} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
+                f"**{r['name']}**\n🏆 {', '.join(f'<@{id.strip()}>' for id in r['winner_ids'].split(','))} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
                 for r in page_records
             )
         )
