@@ -157,13 +157,6 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
             await interaction.followup.send("<:Unamurice:1349309283669377064> U-Um… I think the UID should be exactly 9 numbers... Could you double-check it for me?", ephemeral=True)
             return
 
-        # Convert points
-        try:
-            points = int(points_input) if points_input else 0
-        except ValueError:
-            await interaction.followup.send("<:Unamurice:1349309283669377064> Oh no… I couldn’t understand the Mirror Points. It should be a number—would you mind trying again?", ephemeral=True)
-            return
-
         # Case 1: Existing player
         if player_id in elo_data:
             player_data = elo_data[player_id]
