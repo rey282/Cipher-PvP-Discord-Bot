@@ -144,8 +144,6 @@ class DescriptionModal(discord.ui.Modal, title="Rewrite Your Soul’s Thread"):
 
 class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence"):
     uid = discord.ui.TextInput(label="UID", required=False, placeholder="9-digit UID")
-    mirror_id = discord.ui.TextInput(label="Mirror ID", required=False, placeholder="Mirror ID")
-    points = discord.ui.TextInput(label="Total Cost", required=False, placeholder="Mirror Points")
 
     async def on_submit(self, interaction: Interaction):
         await interaction.response.defer()
@@ -153,8 +151,6 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
         player_id = str(interaction.user.id)
 
         uid_input = self.uid.value.strip()
-        mirror_id_input = self.mirror_id.value.strip()
-        points_input = self.points.value.strip()
 
         # Validate UID format if provided
         if uid_input and (not uid_input.isdigit() or len(uid_input) != 9):
@@ -173,10 +169,6 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
             player_data = elo_data[player_id]
             if uid_input:
                 player_data["uid"] = uid_input
-            if mirror_id_input:
-                player_data["mirror_id"] = mirror_id_input
-            if points_input:
-                player_data["points"] = points
             action = "updated"
         # Case 2: New registration
         else:
@@ -186,8 +178,6 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
 
             elo_data[player_id] = {
                 "uid": uid_input,
-                "mirror_id": mirror_id_input,
-                "points": points,
                 "elo": 200,
                 "win_rate": 0.0,
                 "games_played": 0,
@@ -206,15 +196,6 @@ class RegisterPlayerModal(discord.ui.Modal, title="Gently Update Your Presence")
 
         if uid_input:
             embed.add_field(name="UID", value=f"`{uid_input}`", inline=False)
-
-        if mirror_id_input:
-            embed.add_field(name="Mirror ID", value=f"`{mirror_id_input}`", inline=False)
-
-        embed.add_field(
-            name="Total cost",
-            value=f"`{elo_data[player_id].get('points', 0)}`",
-            inline=False
-        )
 
         if action == "registered":
             embed.add_field(name="Starting ELO", value="`200`", inline=False)
@@ -329,7 +310,7 @@ class MatchmakingCommands(commands.Cog):
         if banner_url:
             embed.set_image(url=banner_url)
         
-        embed.set_footer(text=f"Mirror ID: {mirror_id}\nHandled with care by Kyasutorisu")
+        embed.set_footer(text=f"Handled with care by Kyasutorisu")
     
         await interaction.followup.send(embed=embed)
 
