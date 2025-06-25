@@ -108,7 +108,6 @@ async def on_ready():
         "commands.matchmaking",
         "commands.admin_commands",
         "commands.history_commands",
-        "commands.show",
         "commands.sync",
         "commands.help",
         "commands.queue",
