@@ -1,4 +1,5 @@
 import discord
+import asyncpg
 import os
 import json
 import asyncio
@@ -15,6 +16,7 @@ load_dotenv()
 
 OWNER_ID = int(os.getenv("OWNER_ID"))
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
+POSTGRES_URL = os.getenv("DATABASE_URL")
 
 class ResetConfirmModal(discord.ui.Modal, title="Are you sure you wish to reset all ELO?"):
     confirmation = discord.ui.TextInput(
@@ -211,30 +213,29 @@ class AdminCommands(commands.Cog):
         try:
             guild = interaction.guild
             members = [member async for member in guild.fetch_members(limit=None)]
-            pool: asyncpg.Pool = await self.bot.get_db_pool()
+            pool = await asyncpg.create_pool(POSTGRES_URL)
             updated = 0
 
-            for m in members:
-                global_name = m.global_name
-                if not global_name:
-                    continue  # skip if user has no global_name
+            async with pool.acquire() as conn:
+                for m in members:
+                    if not m.global_name:
+                        continue
 
-                await pool.execute("""
-                    INSERT INTO discord_usernames (discord_id, username, global_name)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (discord_id) DO UPDATE
-                    SET global_name = EXCLUDED.global_name
-                """, str(m.id), m.name, global_name)
+                    await conn.execute("""
+                        INSERT INTO discord_usernames (discord_id, username, global_name)
+                        VALUES ($1, $2, $3)
+                        ON CONFLICT (discord_id) DO UPDATE
+                        SET global_name = EXCLUDED.global_name
+                    """, str(m.id), m.name, m.global_name)
 
-                updated += 1
+                    updated += 1
 
+            await pool.close()
             await interaction.followup.send(f"✅ Synced global names for {updated} users.", ephemeral=True)
 
         except Exception as e:
             await interaction.followup.send("❌ Failed to sync global names.", ephemeral=True)
             print("Error syncing global names:", e)
-
-
 
     @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
