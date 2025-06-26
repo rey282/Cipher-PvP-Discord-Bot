@@ -168,30 +168,33 @@ class AdminCommands(commands.Cog):
                 ephemeral=True
             )
             return
-        
+
         await interaction.response.defer()
+
         try:
             pages = await self._create_leaderboard_pages()
             view = LeaderboardView(pages)
 
             if self.leaderboard_message is None:
-                # Send the leaderboard message and store it in leaderboard_message
-                self.leaderboard_message = await interaction.followup.send(embed=embed)
-                # Store the message ID and channel ID to retrieve it later
+                self.leaderboard_message = await interaction.followup.send(embed=pages[0], view=view)
                 with open(self.message_id_file, 'w') as f:
                     json.dump({
                         'message_id': self.leaderboard_message.id,
                         'channel_id': interaction.channel.id
                     }, f)
             else:
-                # If the message already exists, just update it
                 await self.leaderboard_message.edit(embed=pages[0], view=view)
 
         except Exception as e:
-            await interaction.response.send_message(
-                f"❌ Failed to create leaderboard: {str(e)}",
-                ephemeral=True
-            )
+            # Fix: check if already responded
+            try:
+                await interaction.followup.send(
+                    f"❌ Failed to create leaderboard: {str(e)}",
+                    ephemeral=True
+                )
+            except discord.InteractionResponded:
+                print(f"❌ Could not send error response: {e}")
+
 
     @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
