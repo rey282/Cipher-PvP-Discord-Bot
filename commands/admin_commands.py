@@ -198,7 +198,7 @@ class AdminCommands(commands.Cog):
     # Add inside your admin_commands.py Cog
 
     @app_commands.command(name="sync-global-names", description="Update global names for all users in the server.")
-    @app_commands.guilds(Object(id=GUILD_ID))
+    @app_commands.guilds(GUILD_ID)
     async def sync_global_names(self, interaction: Interaction):
         required_role = "Arbiter"
 
