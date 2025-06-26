@@ -47,21 +47,6 @@ class ResetConfirmModal(discord.ui.Modal, title="Are you sure you wish to reset 
         except Exception as e:
             await interaction.response.send_message(f"The thread frayed… I couldn’t reset the ratings: {str(e)}. Forgive me. We can try again… when fate allows.", ephemeral=True)
 
-class LeaderboardView(discord.ui.View):
-    def __init__(self, pages: list[discord.Embed]):
-        super().__init__(timeout=None)
-        self.pages = pages
-        self.index = 0
-
-    @discord.ui.button(label="◀️", style=discord.ButtonStyle.secondary)
-    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.index = (self.index - 1) % len(self.pages)
-        await interaction.response.edit_message(embed=self.pages[self.index], view=self)
-
-    @discord.ui.button(label="▶️", style=discord.ButtonStyle.secondary)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.index = (self.index + 1) % len(self.pages)
-        await interaction.response.edit_message(embed=self.pages[self.index], view=self)
 
 class AdminCommands(commands.Cog):
     def __init__(self, bot):
@@ -119,44 +104,42 @@ class AdminCommands(commands.Cog):
         """Wait until the bot is ready before running the update loop."""
         await self.bot.wait_until_ready()
 
-    async def _create_leaderboard_pages(self) -> list[discord.Embed]:
+    async def _create_leaderboard_embed(self) -> discord.Embed:
+        """Generate an embed showing the leaderboard."""
         elo_data = load_elo_data()
-        sorted_players = sorted(
+        top_players = sorted(
             elo_data.items(),
             key=lambda x: x[1].get("elo", 200),
             reverse=True
-        )[:20]  # Top 20
+        )[:15]
 
-        pages = []
+        embed = discord.Embed(
+            title="<:Nekorice:1349312200426127420> Threads of the Strongest <:Nekorice:1349312200426127420>",
+            color=discord.Color.purple(),
+            description="The top 15 players... whose threads shine brightest in this season’s weave."
+        )
 
-        for page_index in range(0, len(sorted_players), 10):
-            embed = discord.Embed(
-                title="<:Nekorice:1349312200426127420> Threads of the Strongest <:Nekorice:1349312200426127420>",
-                color=discord.Color.purple(),
-                description="The strongest threads of this season's weave."
+        for rank, (player_id, data) in enumerate(top_players, 1):
+            try:
+                player = await self.bot.fetch_user(int(player_id))
+                name = player.display_name
+            except:
+                name = f"Unknown Soul ({player_id})"
+
+            embed.add_field(
+                name=f"{rank}. {name}",
+                value=(
+                    f"✦ ELO Woven: {int(data.get('elo', 200))}\n"
+                    f"✦ Win Rate: {data.get('win_rate', 0.0) * 100:.0f}%\n"
+                    f"✦ Trials Faced: {data.get('games_played', 0)}\n"
+                    f"✦ Cipher Points: {data.get('points', 0)}"
+                ),
+                inline=False
             )
+        embed.set_footer(text="The loom watches in silence... Your journey is far from over.")
+            
 
-            for rank, (player_id, data) in enumerate(sorted_players[page_index:page_index+10], start=page_index + 1):
-                try:
-                    player = await self.bot.fetch_user(int(player_id))
-                    name = player.global_name or player.name
-                except:
-                    name = f"Unknown Soul ({player_id})"
-
-                embed.add_field(
-                    name=f"{rank}. {name}",
-                    value=(
-                        f"✦ Win Rate: {data.get('win_rate', 0.0) * 100:.0f}%\n"
-                        f"✦ Trials Faced: {data.get('games_played', 0)}\n"
-                        f"✦ Cipher Points: {data.get('points', 0)}"
-                    ),
-                    inline=False
-                )
-
-            embed.set_footer(text=f"Page {page_index // 10 + 1} of {len(sorted_players) // 10}")
-            pages.append(embed)
-
-        return pages
+        return embed
 
     @app_commands.command(name="start-leaderboard", description="Live Leaderboard")
     @app_commands.guilds(GUILD_ID)
@@ -168,32 +151,29 @@ class AdminCommands(commands.Cog):
                 ephemeral=True
             )
             return
-
+        
         await interaction.response.defer()
-
         try:
-            pages = await self._create_leaderboard_pages()
-            view = LeaderboardView(pages)
+            embed = await self._create_leaderboard_embed()
 
             if self.leaderboard_message is None:
-                self.leaderboard_message = await interaction.followup.send(embed=pages[0], view=view)
+                # Send the leaderboard message and store it in leaderboard_message
+                self.leaderboard_message = await interaction.followup.send(embed=embed)
+                # Store the message ID and channel ID to retrieve it later
                 with open(self.message_id_file, 'w') as f:
                     json.dump({
                         'message_id': self.leaderboard_message.id,
                         'channel_id': interaction.channel.id
                     }, f)
             else:
-                await self.leaderboard_message.edit(embed=pages[0], view=view)
+                # If the message already exists, just update it
+                await self.leaderboard_message.edit(embed=embed)
 
         except Exception as e:
-            # Fix: check if already responded
-            try:
-                await interaction.followup.send(
-                    f"❌ Failed to create leaderboard: {str(e)}",
-                    ephemeral=True
-                )
-            except discord.InteractionResponded:
-                print(f"❌ Could not send error response: {e}")
+            await interaction.response.send_message(
+                f"❌ Failed to create leaderboard: {str(e)}",
+                ephemeral=True
+            )
 
     @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
