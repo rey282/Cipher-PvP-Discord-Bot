@@ -195,6 +195,46 @@ class AdminCommands(commands.Cog):
             except discord.InteractionResponded:
                 print(f"❌ Could not send error response: {e}")
 
+    # Add inside your admin_commands.py Cog
+
+    @app_commands.command(name="sync-global-names", description="Update global names for all users in the server.")
+    @app_commands.guilds(Object(id=GUILD_ID))
+    async def sync_global_names(self, interaction: Interaction):
+        required_role = "Arbiter"
+
+        if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
+            await interaction.response.send_message("You need the role to use this command.", ephemeral=True)
+            return
+
+        await interaction.response.send_message("🔄 Syncing global names... this may take a few seconds.", ephemeral=True)
+
+        try:
+            guild = interaction.guild
+            members = await guild.fetch_members(limit=None).flatten()
+            pool: asyncpg.Pool = await self.bot.get_db_pool()
+            updated = 0
+
+            for m in members:
+                global_name = m.global_name
+                if not global_name:
+                    continue  # skip if user has no global_name
+
+                await pool.execute("""
+                    INSERT INTO discord_usernames (discord_id, username, global_name)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (discord_id) DO UPDATE
+                    SET global_name = EXCLUDED.global_name
+                """, str(m.id), m.name, global_name)
+
+                updated += 1
+
+            await interaction.followup.send(f"✅ Synced global names for {updated} users.", ephemeral=True)
+
+        except Exception as e:
+            await interaction.followup.send("❌ Failed to sync global names.", ephemeral=True)
+            print("Error syncing global names:", e)
+
+
 
     @app_commands.command(name="change-rating", description="Gently adjust a player's ELO rating, weaving their journey with care.")
     @app_commands.guilds(GUILD_ID)
