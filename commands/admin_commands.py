@@ -210,7 +210,7 @@ class AdminCommands(commands.Cog):
 
         try:
             guild = interaction.guild
-            members = await guild.fetch_members(limit=None).flatten()
+            members = [member async for member in guild.fetch_members(limit=None)]
             pool: asyncpg.Pool = await self.bot.get_db_pool()
             updated = 0
 
