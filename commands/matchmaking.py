@@ -344,14 +344,19 @@ class MatchmakingCommands(commands.Cog):
             elif match_type == "1v2":
                 points1 = get_points(team1[0])
                 team2_avg = sum(get_points(p) for p in team2) / len(team2)
-                points2 = team2_avg * 1.1
+                points2 = team2_avg 
             elif match_type == "2v1":
                 points2 = get_points(team2[0])
                 team1_avg = sum(get_points(p) for p in team1) / len(team1)
-                points1 = team1_avg * 1.1
-            else:  # 2v2
-                points1 = sum(get_points(p) for p in team1) / len(team1)
-                points2 = sum(get_points(p) for p in team2) / len(team2)
+                points1 = team1_avg 
+            else:  # 2v2 with weighted cost (60% lower, 40% higher)
+                def weighted_cost(team):
+                    c1, c2 = get_points(team[0]), get_points(team[1])
+                    low, high = sorted([c1, c2])
+                    return 0.6 * low + 0.4 * high
+
+                points1 = weighted_cost(team1)
+                points2 = weighted_cost(team2)
             
             # Define format_team function
             def format_team(team):
