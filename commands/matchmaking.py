@@ -337,26 +337,28 @@ class MatchmakingCommands(commands.Cog):
             def get_points(player):
                 return elo_data.get(str(player.id), {}).get("points", 0)
             
-            # Calculate team averages
+            # ───── Weighted cost logic ─────
+            def weighted_cost(team):
+                if len(team) == 1:
+                    return get_points(team[0])
+                c1, c2 = get_points(team[0]), get_points(team[1])
+                low, high = sorted([c1, c2])
+                return 0.6 * low + 0.4 * high
+
+            # ───── Match type logic ─────
             if match_type == "1v1":
                 points1 = get_points(team1[0])
                 points2 = get_points(team2[0])
             elif match_type == "1v2":
                 points1 = get_points(team1[0])
-                team2_avg = sum(get_points(p) for p in team2) / len(team2)
-                points2 = team2_avg 
+                points2 = weighted_cost(team2)
             elif match_type == "2v1":
+                points1 = weighted_cost(team1)
                 points2 = get_points(team2[0])
-                team1_avg = sum(get_points(p) for p in team1) / len(team1)
-                points1 = team1_avg 
-            else:  # 2v2 with weighted cost (60% lower, 40% higher)
-                def weighted_cost(team):
-                    c1, c2 = get_points(team[0]), get_points(team[1])
-                    low, high = sorted([c1, c2])
-                    return 0.6 * low + 0.4 * high
-
+            else:  # 2v2
                 points1 = weighted_cost(team1)
                 points2 = weighted_cost(team2)
+
             
             # Define format_team function
             def format_team(team):
