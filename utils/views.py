@@ -188,7 +188,21 @@ class UpdateEloView(ui.View):
         logging.info(f"Match {match_id} saved successfully for winner: {match_data['winner']}")
         confirm_view = ConfirmRollbackView(match_id=match_id)
 
-        await interaction.followup.send(embed=embed, view=confirm_view)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, view=confirm_view)
+            else:
+                await interaction.response.send_message(embed=embed, view=confirm_view)
+        except discord.NotFound:
+            logging.warning("❌ Webhook expired — posting result to channel instead.")
+            await interaction.channel.send(
+                "⚠️ The interaction expired before I could show the result. Here it is anyway:",
+                embed=embed,
+                view=confirm_view
+            )
+        except Exception as e:
+            logging.error(f"❌ Unexpected error while sending result: {e}")
+
 
         await asyncio.sleep(1)
 
@@ -378,10 +392,21 @@ class TiebreakerView(ui.View):
         logging.info(f"Match {match_id} saved successfully for winner: {match_data['winner']}")
         confirm_view = ConfirmRollbackView(match_id=match_id)
 
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed, view=confirm_view)
-        else:
-            await interaction.response.send_message(embed=embed, view=confirm_view)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed, view=confirm_view)
+            else:
+                await interaction.response.send_message(embed=embed, view=confirm_view)
+        except discord.NotFound:
+            logging.warning("❌ Webhook expired — posting result to channel instead.")
+            await interaction.channel.send(
+                "⚠️ The interaction expired before I could show the result. Here it is anyway:",
+                embed=embed,
+                view=confirm_view
+            )
+        except Exception as e:
+            logging.error(f"❌ Unexpected error while sending tiebreaker result: {e}")
+
 
         await asyncio.sleep(1)
 
