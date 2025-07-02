@@ -171,8 +171,18 @@ class MatchmakingQueue(commands.Cog):
 
     @app_commands.command(name="clearqueue", description="Gently unravel all threads from the queue.")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.checks.has_permissions(administrator=True)
     async def clear_queue(self, interaction: Interaction):
+        required_role = "Stonehearts" 
+    
+        # If the user is not an admin and does not have the required role
+        if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
+                "Please speak to someone with the right permissions if you'd like this command woven into being.",
+                ephemeral=True
+            )
+            return
+        
         async with self.queue_lock:
             self.queue.clear()
             for task in self.voice_channel_monitor.values():
