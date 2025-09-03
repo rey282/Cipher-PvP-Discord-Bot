@@ -12,7 +12,7 @@ from utils.db_utils import load_elo_data
 
 load_dotenv()
 
-GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
 
 Member = discord.Member  # alias for readability
 
@@ -91,7 +91,12 @@ class MatchmakingQueue(commands.Cog):
                         "The threads of fate have not woven any new paths for 45 minutes... "
                         "As a result, the queue has been gently disbanded. May your threads intertwine again when the time is right."
                     )
+                    # Clear queue and cancel all per-user voice monitors (FIX #1)
                     self.queue.clear()
+                    for task in self.voice_channel_monitor.values():
+                        task.cancel()
+                    self.voice_channel_monitor.clear()
+
                     self._cancel_inactivity_monitor()
                     self._cancel_single_player_monitor()
         except asyncio.CancelledError:
@@ -311,26 +316,34 @@ class MatchmakingQueue(commands.Cog):
         # Announce each match outside the lock
         guild = interaction.guild
         for ids in match_groups:
-            players: List[Member] = [self._get_member(guild, i) for i in ids]
+            players = [self._get_member(guild, i) for i in ids]
             players = [p for p in players if p is not None]
             if len(players) < 4:
-                # Someone bailed; put remaining back at the head and re-sync monitors
+                # Someone bailed; requeue remaining and RESTART their voice monitors (FIX #2)
                 async with self.queue_lock:
                     self.queue = [p.id for p in players] + self.queue
+
+                    for p in players:
+                        old = self.voice_channel_monitor.pop(p.id, None)
+                        if old:
+                            old.cancel()
+                        self.voice_channel_monitor[p.id] = asyncio.create_task(
+                            self.check_voice_channel(interaction.guild.id, p.id, interaction.channel)
+                        )
+
                     self._reset_global_monitors(interaction.guild.id, interaction.channel)
                 continue
 
             random.shuffle(players)
             team1, team2 = players[:2], players[2:]
+            mentions = ", ".join(p.mention for p in players)
 
-            mentions = ", ".join(p.mention for p in (team1 + team2))
             await interaction.channel.send(
                 f"**Match Found!**\n"
                 f"**Players:** {mentions}\n"
                 f"Fate has woven your paths together. Best of luck"
             )
 
-            # Match embed (kept as per your original)
             match_embed = discord.Embed(
                 title="Threads Aligned",
                 description="The threads have been gently woven… Here is your match.",
@@ -341,7 +354,6 @@ class MatchmakingQueue(commands.Cog):
             match_embed.set_footer(text="Woven gently by Kyasutorisu")
             await interaction.channel.send(embed=match_embed)
 
-            # Pre-bans embed — EXACT wording & thresholds as your /prebans
             prebans_embed = self._build_prebans_embed(team1, team2)
             await interaction.channel.send(embed=prebans_embed)
 
