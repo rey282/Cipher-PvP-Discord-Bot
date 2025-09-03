@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
 
-# import your elo loader (same one your /prebans uses)
+# Use the same ELO loader your /prebans command uses
 from utils.db_utils import load_elo_data
 
 load_dotenv()
@@ -21,22 +21,23 @@ class MatchmakingQueue(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-        # Store queue as user IDs (stable across lookups)
-        self.queue: List[int] = []
+        # Queue & locks
+        self.queue: List[int] = []                 # store user IDs (not Member objects)
         self.queue_lock = asyncio.Lock()
 
-        # Per-user monitors keyed by user ID
+        # Per-user monitor (VOICE ONLY — AFK removed)
         self.voice_channel_monitor: Dict[int, asyncio.Task] = {}
-        self.afk_monitor: Dict[int, asyncio.Task] = {}
 
-        # Global inactivity timer for when people are waiting but no matches form
-        self.queue_inactivity_monitor: Optional[asyncio.Task] = None
+        # Global monitors
+        self.queue_inactivity_monitor: Optional[asyncio.Task] = None  # 45m when people are waiting
+        self.single_player_monitor: Optional[asyncio.Task] = None     # 15m when exactly one is waiting
 
     # ─────────────────────────── helpers ───────────────────────────
 
     def _get_member(self, guild: discord.Guild, user_id: int) -> Optional[Member]:
         return guild.get_member(user_id)
 
+    # Inactivity monitor (45m with people waiting)
     def _ensure_inactivity_monitor(self, channel: discord.abc.Messageable):
         if self.queue_inactivity_monitor is None:
             self.queue_inactivity_monitor = asyncio.create_task(self.check_queue_inactivity(channel))
@@ -45,6 +46,39 @@ class MatchmakingQueue(commands.Cog):
         if self.queue_inactivity_monitor:
             self.queue_inactivity_monitor.cancel()
             self.queue_inactivity_monitor = None
+
+    # Single-player monitor (15m when exactly one is waiting)
+    def _ensure_single_player_monitor(self, guild_id: int, channel: discord.abc.Messageable):
+        if self.single_player_monitor is None and len(self.queue) == 1:
+            self.single_player_monitor = asyncio.create_task(self.check_single_player_in_queue(guild_id, channel))
+
+    def _cancel_single_player_monitor(self):
+        if self.single_player_monitor:
+            self.single_player_monitor.cancel()
+            self.single_player_monitor = None
+
+    # Bring monitors into a valid state for the current queue length (no forced resets)
+    def _sync_global_monitors(self, guild_id: int, channel: discord.abc.Messageable):
+        if len(self.queue) == 0:
+            self._cancel_inactivity_monitor()
+            self._cancel_single_player_monitor()
+        elif len(self.queue) == 1:
+            self._ensure_inactivity_monitor(channel)
+            self._cancel_single_player_monitor()
+            self._ensure_single_player_monitor(guild_id, channel)
+        else:  # 2 or more
+            self._ensure_inactivity_monitor(channel)
+            self._cancel_single_player_monitor()
+
+    # Force reset global monitors after a match is formed (as requested)
+    def _reset_global_monitors(self, guild_id: int, channel: discord.abc.Messageable):
+        self._cancel_inactivity_monitor()
+        self._cancel_single_player_monitor()
+        # Start fresh according to current queue size
+        if len(self.queue) > 0:
+            self._ensure_inactivity_monitor(channel)
+            if len(self.queue) == 1:
+                self._ensure_single_player_monitor(guild_id, channel)
 
     # ───────────────────────── background tasks ─────────────────────────
 
@@ -59,41 +93,7 @@ class MatchmakingQueue(commands.Cog):
                     )
                     self.queue.clear()
                     self._cancel_inactivity_monitor()
-        except asyncio.CancelledError:
-            pass
-
-    async def check_afk(self, guild_id: int, user_id: int, channel: discord.abc.Messageable):
-        afk_timeout = 15 * 60
-        try:
-            await asyncio.sleep(afk_timeout)
-            guild = self.bot.get_guild(guild_id)
-            if guild is None:
-                return
-
-            async with self.queue_lock:
-                if user_id in self.queue:
-                    member = self._get_member(guild, user_id)
-
-                    # Consider AFK if not in VC AND no recent message in text
-                    is_not_in_vc = (member is None) or (member.voice is None)
-                    no_recent_text = True
-                    if member and member.last_message:
-                        diff = (discord.utils.utcnow() - member.last_message.created_at).total_seconds()
-                        no_recent_text = diff > afk_timeout
-
-                    if is_not_in_vc and no_recent_text:
-                        self.queue.remove(user_id)
-                        await channel.send(
-                            f"**{member.display_name if member else 'A player'}** ,I’m afraid your thread has been gently unraveled from the queue. "
-                            "You’ve drifted away from the voice and text realms for too long..."
-                        )
-                        self.afk_monitor.pop(user_id, None)
-                        vtask = self.voice_channel_monitor.pop(user_id, None)
-                        if vtask:
-                            vtask.cancel()
-
-                        if len(self.queue) == 0:
-                            self._cancel_inactivity_monitor()
+                    self._cancel_single_player_monitor()
         except asyncio.CancelledError:
             pass
 
@@ -113,29 +113,24 @@ class MatchmakingQueue(commands.Cog):
                         f"**{member.display_name if member else 'A player'}** , alas, your thread has been gently unwoven from the queue. "
                         "You've waited with patience, but fate has not yet woven your match. Please return soon, dear one..."
                     )
-                    atask = self.afk_monitor.pop(uid, None)
-                    if atask:
-                        atask.cancel()
                     vtask = self.voice_channel_monitor.pop(uid, None)
-                    if vtask:
-                        vtask.cancel()
+                    if vtask: vtask.cancel()
 
-                    if len(self.queue) == 0:
-                        self._cancel_inactivity_monitor()
+                    self._cancel_single_player_monitor()
+                    self._sync_global_monitors(guild_id, channel)
         except asyncio.CancelledError:
             pass
 
     async def check_voice_channel(self, guild_id: int, user_id: int, channel: discord.abc.Messageable):
         """
-        10s grace; if the bot has voice_states intent and the user truly left voice, remove them.
-        If voice_states intent is not enabled, we skip removal to avoid false positives.
+        10s grace; if bot has voice_states intent and the user truly left voice, remove them.
+        If voice_states intent is not enabled, skip removal to avoid false positives.
         """
         try:
             await asyncio.sleep(10)
 
-            # Skip this auto-kick if bot doesn't have voice state intent (prevents "instant end" false removals)
             if not getattr(self.bot, "intents", None) or not self.bot.intents.voice_states:
-                return
+                return  # safety: avoid false kicks when intent is off
 
             guild = self.bot.get_guild(guild_id)
             if guild is None:
@@ -144,31 +139,23 @@ class MatchmakingQueue(commands.Cog):
             async with self.queue_lock:
                 if user_id in self.queue:
                     member = self._get_member(guild, user_id)
-                    if member is None:
-                        return
-                    if member.voice is None:
+                    if member and member.voice is None:
                         self.queue.remove(user_id)
                         await channel.send(
                             f"**{member.display_name}**, your thread has been gently unwoven from the queue, "
                             "as you are no longer in the voice channel. May the threads weave once more when you return."
                         )
-                        self.afk_monitor.pop(user_id, None)
                         self.voice_channel_monitor.pop(user_id, None)
 
-                        if len(self.queue) == 0:
-                            self._cancel_inactivity_monitor()
+                        self._sync_global_monitors(guild_id, channel)
         except asyncio.CancelledError:
             pass
 
-    # ─────────────────────── prebans builder (exact clone) ───────────────────────
+    # ────────────────────── prebans builder (exact same as /prebans) ──────────────────────
 
     def _build_prebans_embed(self, team1: List[Member], team2: List[Member]) -> discord.Embed:
-        """
-        Builds a prebans embed with the *exact same* logic/text/field names as your /prebans command.
-        """
         elo_data = load_elo_data()
 
-        # Team processing
         def get_points(player: Member):
             return elo_data.get(str(player.id), {}).get("points", 0)
 
@@ -195,15 +182,12 @@ class MatchmakingQueue(commands.Cog):
             points1 = weighted_cost(team1)
             points2 = weighted_cost(team2)
 
-        # Define format_team function
         def format_team(team: List[Member]):
             return ", ".join(p.display_name for p in team)
 
-        # Determine point difference / lower team
         point_diff = abs(points1 - points2)
         lower_points_team = team2 if points1 > points2 else team1
 
-        # If <100, exact embed
         if point_diff < 100:
             embed = discord.Embed(
                 title=f"Pre-Bans Calculation for {match_type}",
@@ -224,7 +208,7 @@ class MatchmakingQueue(commands.Cog):
             embed.set_footer(text="Handled with care by Kyasutorisu")
             return embed
 
-        # Calculate bans (identical thresholds & integer division)
+        # Thresholds identical to your command
         if point_diff >= 560:
             regular_bans = 3
             joker_bans = 2 + (point_diff - 560) // 200
@@ -235,13 +219,12 @@ class MatchmakingQueue(commands.Cog):
             regular_bans = min(3, point_diff // 100)
             joker_bans = 0
 
-        # Build embed (preserve your exact field names/text)
         embed = discord.Embed(
             title=f"Pre-Bans Calculation for {match_type}",
             color=discord.Color.purple()
         )
         embed.add_field(
-            name="Teams Alligned",  # keep original spelling to match your command output
+            name="Teams Alligned",  # keep your original spelling
             value=(f" {format_team(team1)} (Avg: {points1:.1f} pts)\n"
                    f" {format_team(team2)} (Avg: {points2:.1f} pts)"),
             inline=False
@@ -296,77 +279,71 @@ class MatchmakingQueue(commands.Cog):
 
             self.queue.append(uid)
 
-            # Start voice and afk monitors
+            # Start voice monitor ONLY (AFK removed)
             self.voice_channel_monitor[uid] = asyncio.create_task(
                 self.check_voice_channel(interaction.guild.id, uid, interaction.channel)
             )
-            self.afk_monitor[uid] = asyncio.create_task(
-                self.check_afk(interaction.guild.id, uid, interaction.channel)
-            )
 
-            if len(self.queue) == 1:
-                self._ensure_inactivity_monitor(interaction.channel)
-                asyncio.create_task(self.check_single_player_in_queue(interaction.guild.id, interaction.channel))
+            # Bring global monitors into a valid state
+            self._sync_global_monitors(interaction.guild.id, interaction.channel)
 
         await interaction.response.send_message(
             f"{member.display_name} has joined the queue. The threads of fate are being woven.", ephemeral=False
         )
 
-        # Try to form a match right after someone joins
+        # ── Form as many matches as possible (drain in groups of 4) ──
+        match_groups: List[List[int]] = []
         async with self.queue_lock:
-            if len(self.queue) >= 4:
-                guild = interaction.guild
+            while len(self.queue) >= 4:
                 ids = self.queue[:4]
                 self.queue = self.queue[4:]
 
-                # Cancel monitors for these players
+                # Cancel voice monitor for these 4
                 for pid in ids:
-                    t = self.afk_monitor.pop(pid, None)
-                    if t:
-                        t.cancel()
                     t = self.voice_channel_monitor.pop(pid, None)
-                    if t:
-                        t.cancel()
+                    if t: t.cancel()
 
-                # If queue is now empty, cancel inactivity monitor
-                if len(self.queue) == 0:
-                    self._cancel_inactivity_monitor()
+                match_groups.append(ids)
 
-                players: List[Member] = [self._get_member(guild, i) for i in ids]
-                players = [p for p in players if p is not None]
-                if len(players) < 4:
-                    # If someone left between join and now, put remaining back to the head
-                    remaining_ids = [p.id for p in players]
-                    self.queue = remaining_ids + self.queue
-                    if len(self.queue) > 0:
-                        self._ensure_inactivity_monitor(interaction.channel)
-                    return
+            # After forming matches, reset global timers for remaining queued
+            self._reset_global_monitors(interaction.guild.id, interaction.channel)
 
-                random.shuffle(players)
-                team1, team2 = players[:2], players[2:]
+        # Announce each match outside the lock
+        guild = interaction.guild
+        for ids in match_groups:
+            players: List[Member] = [self._get_member(guild, i) for i in ids]
+            players = [p for p in players if p is not None]
+            if len(players) < 4:
+                # Someone bailed; put remaining back at the head and re-sync monitors
+                async with self.queue_lock:
+                    self.queue = [p.id for p in players] + self.queue
+                    self._reset_global_monitors(interaction.guild.id, interaction.channel)
+                continue
 
-        # Build and send the match + prebans (outside the lock)
-        mentions = ", ".join(p.mention for p in (team1 + team2))
-        await interaction.channel.send(
-            f"**Match Found!**\n"
-            f"**Players:** {mentions}\n"
-            f"Fate has woven your paths together. Best of luck"
-        )
+            random.shuffle(players)
+            team1, team2 = players[:2], players[2:]
 
-        # Your original match embed
-        embed = discord.Embed(
-            title="Threads Aligned",
-            description="The threads have been gently woven… Here is your match.",
-            color=discord.Color.blue()
-        )
-        embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
-        embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
-        embed.set_footer(text="Woven gently by Kyasutorisu")
-        await interaction.channel.send(embed=embed)
+            mentions = ", ".join(p.mention for p in (team1 + team2))
+            await interaction.channel.send(
+                f"**Match Found!**\n"
+                f"**Players:** {mentions}\n"
+                f"Fate has woven your paths together. Best of luck"
+            )
 
-        # Prebans embed — EXACT same layout/content as your /prebans command
-        prebans_embed = self._build_prebans_embed(team1, team2)
-        await interaction.channel.send(embed=prebans_embed)
+            # Match embed (kept as per your original)
+            match_embed = discord.Embed(
+                title="Threads Aligned",
+                description="The threads have been gently woven… Here is your match.",
+                color=discord.Color.blue()
+            )
+            match_embed.add_field(name="Team 1", value=f"{team1[0].mention} & {team1[1].mention}", inline=False)
+            match_embed.add_field(name="Team 2", value=f"{team2[0].mention} & {team2[1].mention}", inline=False)
+            match_embed.set_footer(text="Woven gently by Kyasutorisu")
+            await interaction.channel.send(embed=match_embed)
+
+            # Pre-bans embed — EXACT wording & thresholds as your /prebans
+            prebans_embed = self._build_prebans_embed(team1, team2)
+            await interaction.channel.send(embed=prebans_embed)
 
     @app_commands.command(name="leavequeue", description="Untie your thread from the queue.")
     @app_commands.guilds(GUILD_ID)
@@ -385,14 +362,9 @@ class MatchmakingQueue(commands.Cog):
             self.queue.remove(uid)
 
             vtask = self.voice_channel_monitor.pop(uid, None)
-            if vtask:
-                vtask.cancel()
-            atask = self.afk_monitor.pop(uid, None)
-            if atask:
-                atask.cancel()
+            if vtask: vtask.cancel()
 
-            if len(self.queue) == 0:
-                self._cancel_inactivity_monitor()
+            self._sync_global_monitors(interaction.guild.id, interaction.channel)
 
         await interaction.response.send_message("Your thread has been untied from the queue.", ephemeral=False)
 
@@ -405,7 +377,10 @@ class MatchmakingQueue(commands.Cog):
 
         async with self.queue_lock:
             if not self.queue:
-                await interaction.response.send_message("It’s so quiet in here... The threads of fate are still at rest.", ephemeral=False)
+                await interaction.response.send_message(
+                    "It’s so quiet in here... The threads of fate are still at rest.",
+                    ephemeral=False
+                )
                 return
 
             guild = interaction.guild
@@ -432,8 +407,8 @@ class MatchmakingQueue(commands.Cog):
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
             return
 
-        # If the user is not an admin and does not have the required role
-        if not interaction.user.guild_permissions.administrator and not any(role.name == required_role for role in interaction.user.roles):
+        if (not interaction.user.guild_permissions.administrator and
+                not any(role.name == required_role for role in interaction.user.roles)):
             await interaction.response.send_message(
                 "<:Unamurice:1349309283669377064> I-I’m really sorry, but only an administrator may pull the threads of fate this way...\n"
                 "Please speak to someone with the right permissions if you'd like this command woven into being.",
@@ -445,11 +420,9 @@ class MatchmakingQueue(commands.Cog):
             self.queue.clear()
             for task in self.voice_channel_monitor.values():
                 task.cancel()
-            for task in self.afk_monitor.values():
-                task.cancel()
             self.voice_channel_monitor.clear()
-            self.afk_monitor.clear()
             self._cancel_inactivity_monitor()
+            self._cancel_single_player_monitor()
 
         await interaction.response.send_message("The threads of fate have been gently unraveled. The queue is now empty.", ephemeral=False)
 
