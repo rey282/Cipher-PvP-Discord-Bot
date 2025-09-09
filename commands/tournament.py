@@ -60,19 +60,27 @@ class Tournament(commands.Cog):
         if winner_4: winners.append(winner_4)
         if winner_5: winners.append(winner_5)
 
-        winner_ids = ", ".join(str(w.id) for w in winners)
+        winner_ids = ", ".join(str(w.id) for w in winners)      # stored in DB
+        winner_string = ", ".join(w.mention for w in winners)   # shown in Discord
 
         pool = await self.get_db_pool()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                "INSERT INTO tournaments (name, winner_ids, timestamp) VALUES ($1, $2, $3)",
-                name,
-                winner_ids,
-                datetime.now()
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO tournaments (name, winner_ids, timestamp) VALUES ($1, $2, $3)",
+                    name, winner_ids, datetime.now()
+                )
+        except Exception as e:
+            # surface DB issues so you know if the INSERT ever fails again
+            await interaction.response.send_message(
+                f"Could not record **{name}**: `{type(e).__name__}: {e}`",
+                ephemeral=True
             )
+            return
 
-
-        await interaction.response.send_message(f"**{name}** has been recorded!\nWinners: {winner_string}")
+        await interaction.response.send_message(
+            f"**{name}** has been recorded!\nWinners: {winner_string}"
+)
 
     # --- Public Command to View Tournament History ---
     @app_commands.command(name="tournament-archive", description="View the glorious archive of tournament champions...")
@@ -125,18 +133,69 @@ class TournamentPagination(discord.ui.View):
     @discord.ui.button(label="⬅️", style=discord.ButtonStyle.gray)
     async def prev_page(self, interaction: Interaction, button: discord.ui.Button):
         if self.current_page > 1:
-            await interaction.response.defer()
-            await self.cog.send_page(interaction, self.current_page - 1)
+            self.current_page -= 1
+
+            # rebuild page content
+            pool = await self.cog.get_db_pool()
+            async with pool.acquire() as conn:
+                records = await conn.fetch("SELECT * FROM tournaments ORDER BY timestamp DESC")
+
+            per_page = 10
+            total_pages = max(1, (len(records) + per_page - 1) // per_page)
+            start = (self.current_page - 1) * per_page
+            end = start + per_page
+            page_records = records[start:end]
+
+            embed = discord.Embed(
+                title="📜 Tournament Archive",
+                color=discord.Color.gold(),
+                description="\n\n".join(
+                    f"**{r['name']}**\n🏆 {', '.join(f'<@{id.strip()}>' for id in r['winner_ids'].split(','))} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
+                    for r in page_records
+                )
+            )
+            embed.set_footer(text=f"Page {self.current_page} of {total_pages} — preserved with care")
+
+            # rebuild view with updated current page
+            view = TournamentPagination(self.cog, self.current_page, total_pages) if total_pages > 1 else None
+
+            await interaction.response.edit_message(embed=embed, view=view)
         else:
             await interaction.response.defer()
+
 
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.gray)
     async def next_page(self, interaction: Interaction, button: discord.ui.Button):
         if self.current_page < self.total_pages:
-            await interaction.response.defer()
-            await self.cog.send_page(interaction, self.current_page + 1)
+            self.current_page += 1
+
+            # rebuild page content
+            pool = await self.cog.get_db_pool()
+            async with pool.acquire() as conn:
+                records = await conn.fetch("SELECT * FROM tournaments ORDER BY timestamp DESC")
+
+            per_page = 10
+            total_pages = max(1, (len(records) + per_page - 1) // per_page)
+            start = (self.current_page - 1) * per_page
+            end = start + per_page
+            page_records = records[start:end]
+
+            embed = discord.Embed(
+                title="📜 Tournament Archive",
+                color=discord.Color.gold(),
+                description="\n\n".join(
+                    f"**{r['name']}**\n🏆 {', '.join(f'<@{id.strip()}>' for id in r['winner_ids'].split(','))} *(on {r['timestamp'].strftime('%d/%m/%Y')})*"
+                    for r in page_records
+                )
+            )
+            embed.set_footer(text=f"Page {self.current_page} of {total_pages} — preserved with care")
+
+            view = TournamentPagination(self.cog, self.current_page, total_pages) if total_pages > 1 else None
+
+            await interaction.response.edit_message(embed=embed, view=view)
         else:
             await interaction.response.defer()
+
 
 # Setup
 async def setup(bot):
