@@ -15,15 +15,15 @@ def get_rank(elo_score, player_id=None, elo_data=None):
     if elo_score < 400:
         return "Trailblazer"
     elif 400 <= elo_score < 600:
-        return "Berserker"
+        return "Titan"
     elif 600 <= elo_score < 800:
-        return "Lancer"
+        return "Chrysos Heir"
     elif 800 <= elo_score < 1000:
-        return "Rider"
+        return "Flame Reaver"
     elif 1000 <= elo_score < 1200:
-        return "Archer"
+        return "Khaslana"
     else:
-        return "Saber" 
+        return "First Genius" 
 
 async def update_rank_role(
     member: discord.Member,
@@ -46,8 +46,8 @@ async def update_rank_role(
     was_CipherChampion = "Cipher Champion" in [r.name for r in member.roles]
 
     rank_order = [
-        "Trailblazer", "Berserker", "Lancer",
-        "Rider", "Archer", "Saber", "Cipher Champion"
+        "Trailblazer", "Titan", "Chrysos Heir", "Flame Reaver", 
+        "Khaslana", "First Genius", "Cipher Champion"
     ]
 
     try:
