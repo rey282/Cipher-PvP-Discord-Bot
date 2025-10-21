@@ -1,3 +1,5 @@
+# character_stats.py
+import asyncio
 import discord
 import asyncpg
 import time
@@ -11,7 +13,6 @@ from dotenv import load_dotenv
 load_dotenv()
 POSTGRES_URL = os.getenv("DATABASE_URL")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
-
 
 class StatsView(discord.ui.View):
     def __init__(self, cog, mode, data, user_id):
@@ -34,20 +35,17 @@ class StatsView(discord.ui.View):
             color=0xB197FC
         )
         for i, row in enumerate(self.data, start=1):
-            # For win/lose rates, we'll add the raw rate in parentheses
             if self.mode in ["winrate", "loserate"]:
                 weighted_rate = f"{round(row['rate'] * 100)}%"
-                raw_rate = f"{round(row['base_rate'] * 100)}%" if 'base_rate' in row else "N/A"
+                raw_rate = f"{round(row['base_rate'] * 100)}%" if 'base_rate' in row and row['base_rate'] is not None else "N/A"
                 rate_value = f"{raw_rate} (Weighted Rate: {weighted_rate})"
             else:
                 rate_value = f"{round(row['rate'] * 100)}%"
-            
             embed.add_field(
                 name=f"{i}. {row['name']}",
                 value=f"{self.mode.title().replace('rate', ' Rate')}: {rate_value}",
                 inline=False
             )
-
         embed.set_footer(text="Handled with love by Kyasutorisu")
         return embed
 
@@ -59,7 +57,11 @@ class StatsButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         view: StatsView = self.view
         if interaction.user.id != view.user_id:
-            await interaction.response.send_message("A-ack, it seems like you can’t interact with this menu... P-please, use the appropriate command yourself to unlock the threads of fate!", ephemeral=True)
+            await interaction.response.send_message(
+                "A-ack, it seems like you can’t interact with this menu... "
+                "P-please, use the appropriate command yourself to unlock the threads of fate!",
+                ephemeral=True
+            )
             return
         await interaction.response.defer()
         new_data = await view.cog.fetch_stats_data(mode=self.custom_id)
@@ -70,37 +72,76 @@ class StatsButton(discord.ui.Button):
 class UnitInfo(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.db_pool = None
-        self.cached_names = []
-        self.name_lookup_map = {}
-        self.last_cache_time = 0
-        self.cache_duration = 300  # 5 minutes
+        self.db_pool: asyncpg.Pool | None = None
+        self.cached_names: list[str] = []
+        self.name_lookup_map: dict[str, str] = {}
+        self.last_cache_time = 0.0
+        self.cache_duration = 300  # seconds
+        self._refreshing = False
 
     async def get_pool(self):
         if self.db_pool is None:
-            self.db_pool = await asyncpg.create_pool(POSTGRES_URL)
+            # PgBouncer (pooler:6543) friendly settings:
+            # - statement_cache_size=0 disables server-side prepares (required for transaction pooling)
+            # - keep pool small
+            # Ensure POSTGRES_URL points to ...pooler.supabase.com:6543 and includes sslmode=require
+            self.db_pool = await asyncpg.create_pool(
+                POSTGRES_URL,
+                min_size=1,
+                max_size=5,
+                timeout=5.0,
+                command_timeout=5.0,
+                statement_cache_size=0,                 # ⚠️ critical for PgBouncer
+                max_inactive_connection_lifetime=60.0,  # recycle idle conns
+            )
         return self.db_pool
 
-    async def fetch_cached_names(self):
-        now = time.time()
-        if not self.cached_names or now - self.last_cache_time > self.cache_duration:
-            pool = await self.get_pool()
-            rows = await pool.fetch("SELECT name, subname FROM characters")
-            name_map = {}
-            for row in rows:
-                name = row["name"]
-                subname = row["subname"]
+    async def _refresh_names_task(self):
+        pool = await self.get_pool()
+        rows = await pool.fetch("SELECT name, subname FROM characters")
+        name_map: dict[str, str] = {}
+        for row in rows:
+            name = row["name"]
+            subname = row["subname"]
+            if name:
                 name_map[name.lower()] = name
-                if subname:
-                    name_map[subname.lower()] = name
-            self.cached_names = sorted(set(name_map.values()))
-            self.name_lookup_map = name_map
-            self.last_cache_time = now
+            if subname:
+                name_map[subname.lower()] = name
+        self.cached_names = sorted(set(name_map.values()))
+        self.name_lookup_map = name_map
+        self.last_cache_time = time.time()
+
+    async def fetch_cached_names(self, non_blocking: bool = False):
+        now = time.time()
+        # If cache is fresh, nothing to do.
+        if self.cached_names and now - self.last_cache_time <= self.cache_duration:
+            return
+
+        # No cache yet -> warm synchronously once.
+        if not self.cached_names:
+            await self._refresh_names_task()
+            return
+
+        # Cache exists but stale:
+        if non_blocking:
+            if not self._refreshing:
+                self._refreshing = True
+                async def runner():
+                    try:
+                        await self._refresh_names_task()
+                    finally:
+                        self._refreshing = False
+                asyncio.create_task(runner())
+            return
+
+        # Blocking refresh for non-latency-critical paths
+        await self._refresh_names_task()
 
     async def unit_autocomplete(self, interaction: Interaction, current: str) -> List[app_commands.Choice[str]]:
         try:
-            await self.fetch_cached_names()
-            current_lower = current.lower()
+            # Never block on DB in autocomplete; refresh in background if stale
+            await self.fetch_cached_names(non_blocking=True)
+            current_lower = (current or "").lower()
             matched_names = {
                 original_name
                 for key, original_name in self.name_lookup_map.items()
@@ -114,32 +155,32 @@ class UnitInfo(commands.Cog):
             print(f"[Autocomplete Error] {e}")
             return []
 
-    async def get_total_tracked_matches(self, debut_date):
+    async def get_total_tracked_matches(self, debut_date: date):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT COUNT(*) FROM matches 
-                WHERE has_character_data = TRUE AND timestamp::DATE >= $1
+                WHERE has_character_data = TRUE AND timestamp::date >= $1
             """, debut_date)
 
-    async def get_total_preban_matches(self, debut_date):
+    async def get_total_preban_matches(self, debut_date: date):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT COUNT(*) FROM matches
                 WHERE has_character_data = TRUE
-                AND timestamp::DATE >= $1
-                AND jsonb_array_length(raw_data->'prebans') > 0
+                  AND timestamp::date >= $1
+                  AND jsonb_array_length(raw_data->'prebans') > 0
             """, debut_date)
 
-    async def get_total_joker_matches(self, debut_date):
+    async def get_total_joker_matches(self, debut_date: date):
         pool = await self.get_pool()
         async with pool.acquire() as conn:
             return await conn.fetchval("""
                 SELECT COUNT(*) FROM matches
                 WHERE has_character_data = TRUE
-                AND timestamp::DATE >= $1
-                AND jsonb_array_length(raw_data->'jokers') > 0
+                  AND timestamp::date >= $1
+                  AND jsonb_array_length(raw_data->'jokers') > 0
             """, debut_date)
 
     async def fetch_stats_data(self, mode: str):
@@ -148,15 +189,13 @@ class UnitInfo(commands.Cog):
             if mode == "winrate":
                 return await conn.fetch("""
                     SELECT name,
-                        -- Base win rate
-                        (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0) AS base_rate,
-                        
-                        -- Weighted win rate using exponential decay formula
-                        ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) *
-                        (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
-                        
+                        (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::float
+                        / NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0) AS base_rate,
+                        (
+                          (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::float
+                          / NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)
+                        )
+                        * (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
                     FROM characters
                     WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
@@ -171,56 +210,55 @@ class UnitInfo(commands.Cog):
                 column = column_map[mode]
                 return await conn.fetch(f"""
                     SELECT name,
-                        {column}::FLOAT / NULLIF((
+                        {column}::float / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date::DATE
+                            WHERE has_character_data = TRUE
+                              AND timestamp >= characters.debut_date::date
                         ), 0) AS rate
                     FROM characters
                     WHERE {column} > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
-
             elif mode == "prebanrate":
                 return await conn.fetch("""
                     SELECT name,
-                        preban_count::FLOAT / NULLIF((
+                        preban_count::float / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
-                            AND jsonb_array_length(raw_data->'prebans') > 0
+                            WHERE has_character_data = TRUE
+                              AND timestamp >= characters.debut_date
+                              AND jsonb_array_length(raw_data->'prebans') > 0
                         ), 0) AS rate
                     FROM characters
                     WHERE preban_count > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
-
             elif mode == "jokerrate":
                 return await conn.fetch("""
                     SELECT name,
-                        joker_count::FLOAT / NULLIF((
+                        joker_count::float / NULLIF((
                             SELECT COUNT(*) FROM matches
-                            WHERE has_character_data = TRUE AND timestamp >= characters.debut_date
-                            AND jsonb_array_length(raw_data->'jokers') > 0
+                            WHERE has_character_data = TRUE
+                              AND timestamp >= characters.debut_date
+                              AND jsonb_array_length(raw_data->'jokers') > 0
                         ), 0) AS rate
                     FROM characters
                     WHERE joker_count > 0
                     ORDER BY rate DESC
                     LIMIT 10
                 """)
-        
             elif mode == "loserate":
                 return await conn.fetch("""
                     SELECT name,
-                        -- Base lose rate (1 - win rate)
-                        1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)) AS base_rate,
-                        
-                        -- Weighted lose rate
-                        (1 - ((e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::FLOAT /
-                        NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0))) *
-                        (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
-                        
+                        1 - (
+                          (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::float
+                          / NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)
+                        ) AS base_rate,
+                        (1 - (
+                          (e0_wins + e1_wins + e2_wins + e3_wins + e4_wins + e5_wins + e6_wins)::float
+                          / NULLIF(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses, 0)
+                        )) * (1 - EXP(-(e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses)/10.0)) AS rate
                     FROM characters
                     WHERE (e0_uses + e1_uses + e2_uses + e3_uses + e4_uses + e5_uses + e6_uses) >= 5
                     ORDER BY rate DESC
@@ -234,10 +272,17 @@ class UnitInfo(commands.Cog):
     async def unit_info(self, interaction: Interaction, unit: str):
         await interaction.response.defer()
         pool = await self.get_pool()
-        row = await pool.fetchrow("SELECT * FROM characters WHERE name ILIKE $1 OR subname ILIKE $1 LIMIT 1", unit)
+        # Allow partial name matches via ILIKE %...%
+        row = await pool.fetchrow(
+            "SELECT * FROM characters WHERE name ILIKE $1 OR subname ILIKE $1 LIMIT 1",
+            f"%{unit}%"
+        )
 
         if not row:
-            await interaction.followup.send("I-I couldn’t find data for that unit… maybe check the spelling?", ephemeral=True)
+            await interaction.followup.send(
+                "I-I couldn’t find data for that unit… maybe check the spelling?",
+                ephemeral=True
+            )
             return
 
         def percent(value, total):
@@ -260,10 +305,10 @@ class UnitInfo(commands.Cog):
                 ephemeral=True
             )
             return
+
         total_tracked_matches = await self.get_total_tracked_matches(debut_date)
         total_preban_matches = await self.get_total_preban_matches(debut_date)
         total_joker_matches = await self.get_total_joker_matches(debut_date)
-
 
         embed = Embed(
             title=f"Unit Info for {row['name']}",
@@ -299,4 +344,10 @@ class UnitInfo(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(UnitInfo(bot))
+    cog = UnitInfo(bot)
+    await bot.add_cog(cog)
+    # Warm the unit name cache once so autocomplete is instant from the first use
+    try:
+        await cog.fetch_cached_names(non_blocking=False)
+    except Exception as e:
+        print("Initial name cache warm failed:", e)
