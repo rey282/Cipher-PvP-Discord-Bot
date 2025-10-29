@@ -214,12 +214,12 @@ class MatchmakingQueue(commands.Cog):
             return embed
 
         # Thresholds identical to your command
-        if point_diff >= 560:
+        if point_diff >= 600:
             regular_bans = 3
-            joker_bans = 2 + (point_diff - 560) // 200
+            joker_bans = 2 + (point_diff - 600) // 200
         elif point_diff >= 300:
             regular_bans = 3
-            joker_bans = min(5, (point_diff - 300) // 130)
+            joker_bans = min(5, (point_diff - 300) // 150)
         else:
             regular_bans = min(3, point_diff // 100)
             joker_bans = 0
@@ -239,16 +239,16 @@ class MatchmakingQueue(commands.Cog):
         if regular_bans > 0:
             ban_info.append(f"▸ {int(regular_bans)} regular ban(s) (100pts each)")
         if joker_bans > 0:
-            if point_diff >= 560:
+            if point_diff >= 600:
                 extra_jokers = int(joker_bans - 2)
                 if extra_jokers > 0:
                     ban_info.append(
-                        f"▸ 2 joker bans (130pts each) + {int(extra_jokers)} extra joker ban(s) (200pts each)"
+                        f"▸ 2 joker bans (pts each) + {int(extra_jokers)} extra joker ban(s) (200pts each)"
                     )
                 else:
-                    ban_info.append("▸ 2 joker bans (130pts each)")
+                    ban_info.append("▸ 2 joker bans (150pts each)")
             else:
-                ban_info.append(f"▸ {int(joker_bans)} joker ban(s) (130pts each)")
+                ban_info.append(f"▸ {int(joker_bans)} joker ban(s) (150pts each)")
 
         embed.add_field(
             name=f"{format_team(lower_points_team)} receives pre-bans",
