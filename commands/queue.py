@@ -169,7 +169,7 @@ class MatchmakingQueue(commands.Cog):
                 return get_points(team[0])
             c1, c2 = get_points(team[0]), get_points(team[1])
             low, high = sorted([c1, c2])
-            return 0.6 * low + 0.4 * high
+            return 0.65 * low + 0.35 * high
 
         match_type = f"{len(team1)}v{len(team2)}"
 
