@@ -243,7 +243,7 @@ class MatchmakingQueue(commands.Cog):
                 extra_jokers = int(joker_bans - 2)
                 if extra_jokers > 0:
                     ban_info.append(
-                        f"▸ 2 joker bans (pts each) + {int(extra_jokers)} extra joker ban(s) (200pts each)"
+                        f"▸ 2 joker bans (150pts each) + {int(extra_jokers)} extra joker ban(s) (200pts each)"
                     )
                 else:
                     ban_info.append("▸ 2 joker bans (150pts each)")
