@@ -3,58 +3,64 @@ import asyncpg
 import asyncio
 import json
 from discord.ext import commands, tasks
-from discord import app_commands
 from dotenv import load_dotenv
-from commands.admin_commands import AdminCommands
 import os
-from utils.db_utils import initialize_db
 import logging
 
-# ───── Logging Setup ─────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# LOGGING
+# ───────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] %(levelname)s: %(message)s'
 )
 
-# ───── Environment Vars ──────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# ENVIRONMENT VARIABLES
+# ───────────────────────────────────────────────────────────────
 load_dotenv()
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
-NEON_DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")  # Supabase DB URL
 
-# ───── Bot Setup ─────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# DISCORD BOT SETUP
+# ───────────────────────────────────────────────────────────────
 intents = discord.Intents.default()
 intents.message_content = True
-intents.presences = True
 intents.members = True
+intents.presences = True
 
 client = commands.Bot(command_prefix="c!", intents=intents)
 
+# ───────────────────────────────────────────────────────────────
+# GLOBAL ASYNCPG POOL (Supabase FIX)
+# ───────────────────────────────────────────────────────────────
+pool = None
 
-# ───── Database Connection Helper ────────────────────────────────────────────
-async def get_db_connection():
+async def init_db_pool():
+    global pool
     try:
-        conn = await asyncpg.connect(NEON_DATABASE_URL)
-        return conn
+        pool = await asyncpg.create_pool(
+            dsn=DATABASE_URL,
+            max_size=5,
+            command_timeout=5
+        )
+        logging.info("[DB] Pool initialized successfully")
     except Exception as e:
-        logging.error(f"[DB] Failed to connect: {e}")
-        return None
+        logging.error(f"[DB ERROR] Could not create connection pool: {e}")
 
 
-# ───── DATABASE QUERIES ──────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# DATABASE HELPERS USING CONNECTION POOL
+# ───────────────────────────────────────────────────────────────
 async def get_games_played():
     logging.info("Fetching games played...")
     try:
-        conn = await get_db_connection()
-        if conn is None:
-            logging.error("[DB] No DB connection for games played")
-            return 0
-
-        result = await conn.fetchval('SELECT COUNT(*) FROM matches')
-        await conn.close()
-
-        logging.info(f"Games Played = {result}")
-        return result
+        async with pool.acquire() as conn:
+            result = await conn.fetchval("SELECT COUNT(*) FROM matches")
+            logging.info(f"Games Played = {result}")
+            return result
     except Exception as e:
         logging.error(f"[DB ERROR] get_games_played: {e}")
         return 0
@@ -65,7 +71,7 @@ async def get_member_counts():
 
     guild = client.get_guild(GUILD_ID)
     if guild is None:
-        logging.error("Guild not found! Check GUILD_ID.")
+        logging.error("Guild not found! Check GUILD_ID")
         return 0, 0
 
     try:
@@ -74,7 +80,7 @@ async def get_member_counts():
         total = guild.member_count
         online = sum(1 for m in guild.members if m.status != discord.Status.offline)
 
-        logging.info(f"Members → Total={total}, Online={online}")
+        logging.info(f"Members → Total={total} Online={online}")
         return total, online
 
     except Exception as e:
@@ -86,39 +92,36 @@ async def get_match_modes():
     logging.info("Fetching match modes...")
 
     try:
-        conn = await get_db_connection()
-        if conn is None:
-            logging.error("[DB] No DB connection for match modes")
-            return {"1v1": 0, "1v2": 0, "2v2": 0}
-
-        result = await conn.fetch('SELECT elo_gains FROM matches')
-        await conn.close()
-
-        mode_count = {"1v1": 0, "1v2": 0, "2v2": 0}
-
-        for row in result:
-            try:
-                elo_gains = json.loads(row["elo_gains"])
-                num_players = len(elo_gains)
-
-                if num_players == 2:
-                    mode_count["1v1"] += 1
-                elif num_players == 3:
-                    mode_count["1v2"] += 1
-                elif num_players == 4:
-                    mode_count["2v2"] += 1
-            except Exception as e:
-                logging.error(f"Error parsing match mode: {e}")
-
-        logging.info(f"Match Mode Counts: {mode_count}")
-        return mode_count
-
+        async with pool.acquire() as conn:
+            rows = await conn.fetch("SELECT elo_gains FROM matches")
     except Exception as e:
         logging.error(f"[DB ERROR] get_match_modes: {e}")
         return {"1v1": 0, "1v2": 0, "2v2": 0}
 
+    mode_count = {"1v1": 0, "1v2": 0, "2v2": 0}
 
-# ───── BACKGROUND TASK ───────────────────────────────────────────────────────
+    for row in rows:
+        try:
+            data = json.loads(row["elo_gains"])
+            n = len(data)
+
+            if n == 2:
+                mode_count["1v1"] += 1
+            elif n == 3:
+                mode_count["1v2"] += 1
+            elif n == 4:
+                mode_count["2v2"] += 1
+
+        except Exception as e:
+            logging.error(f"Error parsing match row: {e}")
+
+    logging.info(f"Match Modes: {mode_count}")
+    return mode_count
+
+
+# ───────────────────────────────────────────────────────────────
+# BACKGROUND TASK — Updates stats every 60 minutes
+# ───────────────────────────────────────────────────────────────
 @tasks.loop(minutes=60)
 async def update_stats():
     logging.info("Running update_stats...")
@@ -132,38 +135,48 @@ async def update_stats():
         member_channel = client.get_channel(1362388485398593546)
         match_mode_channel = client.get_channel(1362420110480113766)
 
+        # Channel exist checks
         if not games_channel:
             logging.error("Games channel NOT FOUND!")
         if not member_channel:
-            logging.error("Member channel NOT FOUND!")
+            logging.error("Members channel NOT FOUND!")
         if not match_mode_channel:
             logging.error("Match mode channel NOT FOUND!")
 
+        # Update channels
         if games_channel:
             await games_channel.edit(name=f"Games Played: {games_played}")
-            logging.info("Updated games channel")
+            logging.info("Updated Games Played channel")
 
         if member_channel:
-            await member_channel.edit(name=f"Members: {total_members} | Online: {online_members}")
-            logging.info("Updated member channel")
+            await member_channel.edit(
+                name=f"Members: {total_members} | Online: {online_members}"
+            )
+            logging.info("Updated Member Count channel")
 
         if match_mode_channel:
             await match_mode_channel.edit(
-                name=f"1v1: {mode_count['1v1']} | 1v2: {mode_count['1v2']} | 2v2: {mode_count['2v2']}"
+                name=f"1v1: {mode_count['1v1']} | "
+                     f"1v2: {mode_count['1v2']} | "
+                     f"2v2: {mode_count['2v2']}"
             )
-            logging.info("Updated match mode channel")
+            logging.info("Updated Match Mode channel")
 
     except Exception as e:
         logging.error(f"[update_stats ERROR] {e}")
 
 
-# ───── BOT READY EVENT ───────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# BOT READY — START POOL & TASKS
+# ───────────────────────────────────────────────────────────────
 @client.event
 async def on_ready():
     logging.info(f"Logged in as {client.user} (ID: {client.user.id})")
 
-    update_stats.start()
+    await init_db_pool()   # IMPORTANT FIX
+    update_stats.start()   # Start loop AFTER pool is ready
 
+    # Load command extensions
     extensions = [
         "commands.fun_commands",
         "commands.elo_commands",
@@ -184,43 +197,43 @@ async def on_ready():
         except Exception as e:
             logging.error(f"Failed to load extension {ext}: {e}")
 
-    # Sync commands
+    # Sync guild commands
     try:
         guild = discord.Object(id=GUILD_ID)
         synced = await client.tree.sync(guild=guild)
-        logging.info(f"Synced {len(synced)} commands → Guild {GUILD_ID}")
+        logging.info(f"Synced {len(synced)} commands to Guild {GUILD_ID}")
     except Exception as e:
         logging.error(f"Error syncing commands: {e}")
 
 
-# ───── MEMBER JOIN EVENT (username sync) ─────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# MEMBER JOIN EVENT — SYNC USERNAMES
+# ───────────────────────────────────────────────────────────────
 @client.event
 async def on_member_join(member):
     discord_id = str(member.id)
     username = str(member)
 
-    logging.info(f"New member joined: {username}")
-
-    conn = await get_db_connection()
-    if conn is None:
-        return
+    logging.info(f"Member joined: {username}")
 
     try:
-        await conn.execute(
-            """
-            INSERT INTO discord_usernames (discord_id, username)
-            VALUES ($1, $2)
-            ON CONFLICT (discord_id) DO UPDATE SET username = EXCLUDED.username
-            """,
-            discord_id, username
-        )
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO discord_usernames (discord_id, username)
+                VALUES ($1, $2)
+                ON CONFLICT (discord_id) DO UPDATE SET 
+                username = EXCLUDED.username
+                """,
+                discord_id, username
+            )
+        logging.info("Username synced")
 
-        logging.info(f"Synced username → {username}")
     except Exception as e:
-        logging.error(f"Error syncing member on join: {e}")
-    finally:
-        await conn.close()
+        logging.error(f"Error syncing username: {e}")
 
 
-# ───── START BOT ─────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────
+# START BOT
+# ───────────────────────────────────────────────────────────────
 client.run(TOKEN)
