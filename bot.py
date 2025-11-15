@@ -93,9 +93,7 @@ async def update_stats():
             )
         
     except discord.errors.HTTPException as e:
-        retry_after = e.response.get('retry_after', 1) 
-        await asyncio.sleep(retry_after)
-        await update_stats()
+        print(f"Failed to update channel: {e}")
 
 @client.event
 async def on_ready():
