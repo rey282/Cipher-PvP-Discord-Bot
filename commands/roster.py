@@ -194,7 +194,7 @@ class Roster(commands.Cog):
         ICON = 96
         GAP = 10
         PADDING = 20
-        PER_ROW = 12
+        PER_ROW = 8
 
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
@@ -268,7 +268,7 @@ class Roster(commands.Cog):
             # rarity border
             border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
             if c["rarity"] == 5:
-                color = (255, 215, 0, 255)
+                color = (212, 175, 55, 255)
             elif c["rarity"] == 4:
                 color = (182, 102, 210, 255)
             else:

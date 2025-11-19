@@ -614,7 +614,7 @@ class MatchmakingCommands(commands.Cog):
 
             border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
             if c["rarity"] == 5:
-                color = (255, 215, 0, 255)
+                color = (212, 175, 55, 255)
             elif c["rarity"] == 4:
                 color = (182, 102, 210, 255)
             else:
