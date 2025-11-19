@@ -7,8 +7,12 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 import io
 import math
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 API = os.getenv("CIPHER_API") or "https://api.cipher.uno"
+GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 
 class Roster(commands.Cog):
