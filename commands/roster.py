@@ -85,30 +85,40 @@ class Roster(commands.Cog):
 
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
-                    # ───── FACE CROP / UPPER BODY ZOOM ─────
+                    # ───── FACE CROP (square + upper emphasis) ─────
                     w, h = img.size
-                    left = int(w * 0.15)
-                    right = int(w * 0.85)
-                    top = 0
-                    bottom = int(h * 0.75)
+                    crop_size = int(min(w, h) * 0.70)
 
-                    # ensure valid crop
-                    if right > left and bottom > top:
-                        img = img.crop((left, top, right, bottom))
+                    x_center = w // 2
+                    y_center = int(h * 0.38)
 
+                    left   = x_center - crop_size // 2
+                    right  = x_center + crop_size // 2
+                    top    = y_center - crop_size // 2
+                    bottom = y_center + crop_size // 2
+
+                    left   = max(0, left)
+                    top    = max(0, top)
+                    right  = min(w, right)
+                    bottom = min(h, bottom)
+
+                    img = img.crop((left, top, right, bottom))
+
+                    # ───── ADD BLACK BACKGROUND (fix shape + remove stretching) ─────
+                    bg = Image.new("RGBA", (crop_size, crop_size), (0, 0, 0, 255))
+                    bg.paste(img, (0, 0), img)
+                    img = bg
+
+                    # ───── BRIGHTNESS / CONTRAST SOFTENING ─────
                     img = ImageEnhance.Brightness(img).enhance(0.93)
-
-                    # Slight highlight softening
                     img = ImageEnhance.Contrast(img).enhance(0.93)
-                                            
 
-                    # final resize
+                    # ───── FINAL RESIZE — PERFECT SQUARE ─────
                     img = img.resize((96, 96), Image.LANCZOS)
 
-                    # store in shared cache
                     shared_cache.icon_cache[cid] = img
 
-                except:
+                except Exception as e:
                     continue
 
 
