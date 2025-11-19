@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API = os.getenv("CIPHER_API") or "https://api.cipher.uno"
+ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 
@@ -32,7 +33,7 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         async with aiohttp.ClientSession() as session:
             # Roster
-            async with session.get(f"{API}/api/roster/users") as r1:
+            async with session.get(ROSTER_API) as r1:
                 roster_users = await r1.json()
 
             # Character metadata
