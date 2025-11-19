@@ -11,7 +11,7 @@ import asyncio
 from dotenv import load_dotenv
 
 from utils.db_utils import get_cursor
-from . import shared_cache   # ✅ global shared cache
+from . import shared_cache   
 
 BADGE_FONT = ImageFont.truetype(
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15
@@ -126,7 +126,7 @@ class Roster(commands.Cog):
                     # ────────────────────────────────
                     # FINAL SQUARE RESIZE
                     # ────────────────────────────────
-                    img = img.resize((96, 96), Image.LANCZOS)
+                    img = img.resize((108, 108), Image.LANCZOS)
 
                     shared_cache.icon_cache[cid] = img
 
@@ -213,8 +213,8 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         # 4) Layout
         # -------------------------------------------------------
-        ICON = 96
-        GAP = 10
+        ICON = 108
+        GAP = 6
         PADDING = 20
         PER_ROW = 8
 
@@ -282,13 +282,29 @@ class Roster(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
+            
+            SAFE_PAD = 5
+
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
-            mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=12, fill=255)
+
+            mask_draw.rounded_rectangle(
+                [SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD],
+                radius=12,
+                fill=255,
+            )
+
+            # apply mask
             canvas.paste(icon, (x, y), rounded)
 
             # rarity border
-            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
+            border_rect = [
+                x + SAFE_PAD + 2,
+                y + SAFE_PAD + 2,
+                x + ICON - SAFE_PAD - 2,
+                y + ICON - SAFE_PAD - 2
+            ]
+
             if c["rarity"] == 5:
                 color = (212, 175, 55, 255)
             elif c["rarity"] == 4:
@@ -297,8 +313,12 @@ class Roster(commands.Cog):
                 color = None
 
             if color:
-                glow_rect = [border_rect[0] - 1, border_rect[1] - 1,
-                             border_rect[2] + 1, border_rect[3] + 1]
+                glow_rect = [
+                    border_rect[0] - 1,
+                    border_rect[1] - 1,
+                    border_rect[2] + 1,
+                    border_rect[3] + 1
+                ]
                 draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
                 draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
 
