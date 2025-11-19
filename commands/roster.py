@@ -289,37 +289,28 @@ class Roster(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            SAFE_PAD = 6
+            SAFE_PAD = 12
 
-            # full-size rounded mask
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
             mask_draw.rounded_rectangle(
                 [0, 0, ICON, ICON],
-                radius=16,
+                radius=22,   # bigger curve for 132px icons
                 fill=255,
             )
 
-            # --- HARD CROP so NO OVERFLOW EVER ---
-            # crop icon to mask area (remove outer overflow)
             cropped_icon = icon.crop(
                 (SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD)
             )
-
-            # resize back to full icon size
             cropped_icon = cropped_icon.resize((ICON, ICON), Image.LANCZOS)
 
-            # paste clipped icon with mask
             canvas.paste(cropped_icon, (x, y), rounded)
 
-
-
-            # rarity border
             border_rect = [
-                x + SAFE_PAD + 2,
-                y + SAFE_PAD + 2,
-                x + ICON - SAFE_PAD - 2,
-                y + ICON - SAFE_PAD - 2
+                x + SAFE_PAD,
+                y + SAFE_PAD,
+                x + ICON - SAFE_PAD,
+                y + ICON - SAFE_PAD
             ]
 
             if c["rarity"] == 5:
@@ -331,13 +322,15 @@ class Roster(commands.Cog):
 
             if color:
                 glow_rect = [
-                    border_rect[0] - 1,
-                    border_rect[1] - 1,
-                    border_rect[2] + 1,
-                    border_rect[3] + 1
+                    border_rect[0] - 2,
+                    border_rect[1] - 2,
+                    border_rect[2] + 2,
+                    border_rect[3] + 2,
                 ]
-                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
-                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
+
+                draw.rounded_rectangle(glow_rect, radius=20, outline=color, width=2)
+                draw.rounded_rectangle(border_rect, radius=18, outline=color, width=4)
+
 
             # eidolon badge
             if c["id"] in owned:
