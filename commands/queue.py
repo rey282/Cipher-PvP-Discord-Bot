@@ -262,8 +262,8 @@ class MatchmakingQueue(commands.Cog):
         sorted_chars = sorted(shared_cache.char_map_cache.values(), key=sort_key)
 
         # 2) Layout 
-        ICON = 96
-        GAP = 10
+        ICON = 110
+        GAP = 8
         PADDING = 20
         PER_ROW = 8
 
@@ -331,92 +331,62 @@ class MatchmakingQueue(commands.Cog):
             y = grid_top + row * (ICON + GAP)
 
             base_icon = shared_cache.icon_cache.get(c["id"])
-            if base_icon is None:
+            if not base_icon:
                 continue
 
-            # use roster-preprocessed icon (already cropped + resized)
+            # use exact preprocessed icon (already: cropped, resized, rounded, rarity-bg)
             icon = base_icon.copy()
 
-            # Grey out if neither player owns
+            # dim if not owned (same as roster.py)
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            # Rounded mask
-            mask = Image.new("L", (ICON, ICON), 0)
-            mask_draw = ImageDraw.Draw(mask)
-            radius = 12
-            mask_draw.rounded_rectangle(
-                [(0, 0), (ICON, ICON)],
-                radius=radius,
-                fill=255,
-            )
-
-            canvas.paste(icon, (x, y), mask)
-
-
-            # Rarity border + glow (same as roster.py)
-            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
-            if c["rarity"] == 5:
-                color = (212, 175, 55, 255)  # gold
-            elif c["rarity"] == 4:
-                color = (182, 102, 210, 255)  # purple
-            else:
-                color = None
-
-            if color:
-                glow_rect = [
-                    border_rect[0] - 1,
-                    border_rect[1] - 1,
-                    border_rect[2] + 1,
-                    border_rect[3] + 1,
-                ]
-                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
-                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
+            # paste directly — background & rounded edges are already included
+            canvas.paste(icon, (x, y), icon)
 
             # Dual Eidolon badges
             e1 = owned1.get(c["id"])
             e2 = owned2.get(c["id"])
 
-            badge_w = 38
-            badge_h = 24
-            badge_y = y + ICON - badge_h - 6
+            # -------------------------------------------------------
+            # DUAL EIDOLON BADGES (MATCH roster.py EXACTLY)
+            # -------------------------------------------------------
 
-            # Helper to draw a single badge
+            badge_w, badge_h = 40, 26          # same as roster.py
+            badge_y = y + ICON - badge_h - 4   # same bottom offset
+
             def draw_badge(e_value: int, bx: int):
-                badge_rect = [
-                    bx,
-                    badge_y,
-                    bx + badge_w,
-                    badge_y + badge_h,
-                ]
+                rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
+
                 draw.rounded_rectangle(
-                    badge_rect,
+                    rect,
                     radius=8,
                     fill=(0, 0, 0, 210),
-                    outline=(255, 255, 255, 255),
+                    outline="white",
                     width=2,
                 )
+
                 text = f"E{e_value}"
                 text_bbox = draw.textbbox((0, 0), text, font=BADGE_FONT)
                 tw = text_bbox[2] - text_bbox[0]
                 th = text_bbox[3] - text_bbox[1]
+
                 tx = bx + (badge_w - tw) // 2
                 ty = badge_y + (badge_h - th) // 2 - 3
-                draw.text(
-                    (tx, ty),
-                    text,
-                    font=BADGE_FONT,
-                    fill=(255, 255, 255, 255),
-                )
 
-            # Left badge for player 1, right badge for player 2
+                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
+
+            # Player 1 badge (left)
             if e1 is not None:
-                bx1 = x + 6
+                bx1 = x + 4                   # SAME as roster
                 draw_badge(e1, bx1)
+
+            # Player 2 badge (right)
             if e2 is not None:
-                bx2 = x + ICON - badge_w - 6
+                bx2 = x + ICON - badge_w - 4  # SAME as roster
                 draw_badge(e2, bx2)
+
 
         # 6) Buffer
         buffer = io.BytesIO()

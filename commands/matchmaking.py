@@ -486,6 +486,8 @@ class MatchmakingCommands(commands.Cog):
         roster_index: Dict[str, dict],
         team_label: str,
     ) -> Optional[io.BytesIO]:
+
+        # must be 2 players
         if len(team) < 2:
             return None
 
@@ -495,28 +497,21 @@ class MatchmakingCommands(commands.Cog):
         entry1 = roster_index.get(id1)
         entry2 = roster_index.get(id2)
 
-        if entry1 is None and entry2 is None:
+        if not entry1 and not entry2:
             return None
 
-        owned1 = (
-            {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])}
-            if entry1
-            else {}
-        )
-        owned2 = (
-            {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])}
-            if entry2
-            else {}
-        )
+        owned1 = {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])} if entry1 else {}
+        owned2 = {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])} if entry2 else {}
 
+        # union of both players' owned roster
         combined_owned = set(owned1.keys()) | set(owned2.keys())
 
         char_map_cache = shared_cache.char_map_cache
         icon_cache = shared_cache.icon_cache
-
         if not char_map_cache:
             return None
 
+        # ******** EXACT roster.py sorting *******
         def sort_key(c: dict):
             return (
                 0 if c["id"] in combined_owned else 1,
@@ -526,8 +521,9 @@ class MatchmakingCommands(commands.Cog):
 
         sorted_chars = sorted(char_map_cache.values(), key=sort_key)
 
-        ICON = 96
-        GAP = 10
+        # ******** EXACT roster.py layout ********
+        ICON = 110
+        GAP = 8
         PADDING = 20
         PER_ROW = 8
 
@@ -537,10 +533,9 @@ class MatchmakingCommands(commands.Cog):
         title_text = f"{team_label} — {p1.display_name} & {p2.display_name}"
 
         title_font = load_title_font(40)
-        dummy_img = Image.new("RGB", (1, 1))
-        dummy_draw = ImageDraw.Draw(dummy_img)
-        title_bbox = dummy_draw.textbbox((0, 0), title_text, font=title_font)
-        title_h = title_bbox[3] - title_bbox[1]
+        dummy = Image.new("RGB", (1, 1))
+        draw_dummy = ImageDraw.Draw(dummy)
+        title_h = draw_dummy.textbbox((0, 0), title_text, font=title_font)[3]
 
         TITLE_TOP = 30
         UNDERLINE_GAP = 8
@@ -548,41 +543,34 @@ class MatchmakingCommands(commands.Cog):
 
         title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
         grid_top = title_block_bottom + PADDING
-
         grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
         height = grid_top + grid_height
 
+        # ******** SAME gradient as roster.py ********
         canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
         draw = ImageDraw.Draw(canvas)
 
         for y in range(height):
-            t = y / max(1, height - 1)
+            t = y / (height - 1)
             r = int(14 + (28 - 14) * t)
             g = int(10 + (18 - 10) * t)
             b = int(30 + (52 - 30) * t)
             draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
 
+        # ******** Title + underline ********
         title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
         title_w = title_bbox[2] - title_bbox[0]
-
         title_x = (width - title_w) // 2
         title_y = TITLE_TOP
 
-        draw.text(
-            (title_x, title_y),
-            title_text,
-            font=title_font,
-            fill=(255, 255, 255, 255),
-        )
+        draw.text((title_x, title_y), title_text, font=title_font, fill="white")
 
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
-        underline_margin = int(width * 0.28)
-        draw.line(
-            [(underline_margin, underline_y), (width - underline_margin, underline_y)],
-            fill=(255, 255, 255, 180),
-            width=3,
-        )
+        margin = int(width * 0.28)
+        draw.line([(margin, underline_y), (width - margin, underline_y)],
+                fill=(255, 255, 255, 180), width=3)
 
+        # ******** Icons + Eidolon Badges (EXACT) ********
         for idx, c in enumerate(sorted_chars):
             col = idx % PER_ROW
             row = idx // PER_ROW
@@ -590,91 +578,53 @@ class MatchmakingCommands(commands.Cog):
             x = PADDING + col * (ICON + GAP)
             y = grid_top + row * (ICON + GAP)
 
-            base_icon = icon_cache.get(c["id"])
-            if base_icon is None:
+            icon = icon_cache.get(c["id"])
+            if not icon:
                 continue
 
-            # use roster-preprocessed icon (already cropped + resized)
-            icon = base_icon.copy()
-
+            # dim unowned
+            icon = icon.copy()
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            mask = Image.new("L", (ICON, ICON), 0)
-            mask_draw = ImageDraw.Draw(mask)
-            radius = 12
-            mask_draw.rounded_rectangle(
-                [(0, 0), (ICON, ICON)],
-                radius=radius,
-                fill=255,
-            )
+            # paste EXACT icon (already includes rarity background)
+            canvas.paste(icon, (x, y), icon)
 
-            canvas.paste(icon, (x, y), mask)
+            # *****************
+            # EID BADGES (same)
+            # *****************
+            badge_w, badge_h = 40, 26
+            badge_y = y + ICON - badge_h - 4
 
-            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
-            if c["rarity"] == 5:
-                color = (212, 175, 55, 255)
-            elif c["rarity"] == 4:
-                color = (182, 102, 210, 255)
-            else:
-                color = None
+            def draw_badge(e_val, bx):
+                rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
+                draw.rounded_rectangle(rect, radius=8,
+                                    fill=(0, 0, 0, 210),
+                                    outline="white", width=2)
 
-            if color:
-                glow_rect = [
-                    border_rect[0] - 1,
-                    border_rect[1] - 1,
-                    border_rect[2] + 1,
-                    border_rect[3] + 1,
-                ]
-                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
-                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
+                text = f"E{e_val}"
+                tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
+                th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
+                tx = bx + (badge_w - tw) // 2
+                ty = badge_y + (badge_h - th) // 2 - 3
+                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
             e1 = owned1.get(c["id"])
             e2 = owned2.get(c["id"])
 
-            badge_w = 38
-            badge_h = 24
-            badge_y = y + ICON - badge_h - 6
-
-            def draw_badge(e_value: int, bx: int):
-                badge_rect = [
-                    bx,
-                    badge_y,
-                    bx + badge_w,
-                    badge_y + badge_h,
-                ]
-                draw.rounded_rectangle(
-                    badge_rect,
-                    radius=8,
-                    fill=(0, 0, 0, 210),
-                    outline=(255, 255, 255, 255),
-                    width=2,
-                )
-                text = f"E{e_value}"
-                text_bbox = draw.textbbox((0, 0), text, font=BADGE_FONT)
-                tw = text_bbox[2] - text_bbox[0]
-                th = text_bbox[3] - text_bbox[1]
-                tx = bx + (badge_w - tw) // 2
-                ty = badge_y + (badge_h - th) // 2 - 3
-                draw.text(
-                    (tx, ty),
-                    text,
-                    font=BADGE_FONT,
-                    fill=(255, 255, 255, 255),
-                )
-
             if e1 is not None:
-                bx1 = x + 6
-                draw_badge(e1, bx1)
+                draw_badge(e1, x + 4)
             if e2 is not None:
-                bx2 = x + ICON - badge_w - 6
-                draw_badge(e2, bx2)
+                draw_badge(e2, x + ICON - badge_w - 4)
 
+        # return buffer
         buffer = io.BytesIO()
         canvas.save(buffer, "PNG")
         buffer.seek(0)
         return buffer
+
+
 
     async def _send_match_rosters(
         self,
