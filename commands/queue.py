@@ -1,18 +1,53 @@
+# queue.py
 import discord
 import os
 import asyncio
 import random
+import io
+import math
 from typing import Optional, List, Dict
+
 from discord.ext import commands
 from discord import app_commands, Interaction
 from dotenv import load_dotenv
 
-# Use the same ELO loader your /prebans command uses
-from utils.db_utils import load_elo_data
+import aiohttp
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+
+# DB helpers
+from utils.db_utils import load_elo_data, get_cursor
+from .shared_cache import char_map_cache, icon_cache
 
 load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
+ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
+
+# Font paths (same pattern as roster.py)
+FONT_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "fonts",
+    "NotoSansSC-VariableFont_wght.ttf",
+)
+
+try:
+    BADGE_FONT = ImageFont.truetype(
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15
+    )
+except Exception:
+    BADGE_FONT = ImageFont.load_default()
+
+
+def load_title_font(size: int) -> ImageFont.FreeTypeFont:
+    """Try to load HSR-like font, fallback to default if missing."""
+    try:
+        return ImageFont.truetype(FONT_PATH, size)
+    except Exception:
+        try:
+            return ImageFont.truetype("DejaVuSans.ttf", size)
+        except Exception:
+            return ImageFont.load_default()
+
 
 Member = discord.Member  # alias for readability
 
@@ -22,7 +57,7 @@ class MatchmakingQueue(commands.Cog):
         self.bot = bot
 
         # Queue & locks
-        self.queue: List[int] = []                 # store user IDs (not Member objects)
+        self.queue: List[int] = []  # store user IDs (not Member objects)
         self.queue_lock = asyncio.Lock()
 
         # Per-user monitor (VOICE ONLY — AFK removed)
@@ -155,6 +190,267 @@ class MatchmakingQueue(commands.Cog):
                         self._sync_global_monitors(guild_id, channel)
         except asyncio.CancelledError:
             pass
+
+
+    async def _fetch_roster_users(self) -> Optional[list]:
+        """
+        Fetch full roster JSON (same as /roster).
+        Returns list of users or None on error.
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(ROSTER_API, timeout=10) as resp:
+                    if resp.status != 200:
+                        return None
+                    try:
+                        return await resp.json()
+                    except Exception:
+                        return None
+        except Exception:
+            return None
+
+    def _build_team_roster_image(
+        self,
+        team: List[Member],
+        roster_index: Dict[str, dict],
+        team_label: str,
+    ) -> Optional[io.BytesIO]:
+        """
+        Build a roster image for a 2-player team:
+        - Same style as /roster
+        - Combined ownership
+        - Dual Eidolon badges (left for player1, right for player2)
+        - Title like "Team 1 — P1 & P2"
+        """
+        if len(team) < 2:
+            return None
+
+        p1, p2 = team[0], team[1]
+        id1, id2 = str(p1.id), str(p2.id)
+
+        entry1 = roster_index.get(id1)
+        entry2 = roster_index.get(id2)
+
+        # If both have no roster, skip
+        if entry1 is None and entry2 is None:
+            return None
+
+        owned1 = (
+            {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])}
+            if entry1
+            else {}
+        )
+        owned2 = (
+            {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])}
+            if entry2
+            else {}
+        )
+
+        combined_owned = set(owned1.keys()) | set(owned2.keys())
+
+        if not char_map_cache:
+            return None
+
+        # 1) Sorting logic 
+        def sort_key(c: dict):
+            return (
+                0 if c["id"] in combined_owned else 1,  
+                -c["rarity"],                          
+                c["name"],                             
+            )
+
+        sorted_chars = sorted(char_map_cache.values(), key=sort_key)
+
+        # 2) Layout 
+        ICON = 96
+        GAP = 10
+        PADDING = 20
+        PER_ROW = 10
+
+        rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
+        width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
+
+        # Title text: "Team 1 — P1 & P2"
+        title_text = f"{team_label} — {p1.display_name} & {p2.display_name}"
+
+        title_font = load_title_font(40)
+        dummy_img = Image.new("RGB", (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        title_bbox = dummy_draw.textbbox((0, 0), title_text, font=title_font)
+        title_h = title_bbox[3] - title_bbox[1]
+
+        TITLE_TOP = 30
+        UNDERLINE_GAP = 8
+        UNDERLINE_EXTRA = 24
+
+        title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
+        grid_top = title_block_bottom + PADDING
+
+        grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
+        height = grid_top + grid_height
+
+        # 3) Canvas + gradient
+        canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
+        draw = ImageDraw.Draw(canvas)
+
+        for y in range(height):
+            t = y / max(1, height - 1)
+            r = int(14 + (28 - 14) * t)
+            g = int(10 + (18 - 10) * t)
+            b = int(30 + (52 - 30) * t)
+            draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
+
+        # 4) Title + underline (same style)
+        title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
+        title_w = title_bbox[2] - title_bbox[0]
+
+        title_x = (width - title_w) // 2
+        title_y = TITLE_TOP
+
+        draw.text(
+            (title_x, title_y),
+            title_text,
+            font=title_font,
+            fill=(255, 255, 255, 255),
+        )
+
+        underline_y = title_y + title_h + UNDERLINE_GAP + 10
+        underline_margin = int(width * 0.28)
+        draw.line(
+            [(underline_margin, underline_y), (width - underline_margin, underline_y)],
+            fill=(255, 255, 255, 180),
+            width=3,
+        )
+
+        # 5) Character icons + dual EIDs
+        for idx, c in enumerate(sorted_chars):
+            col = idx % PER_ROW
+            row = idx // PER_ROW
+
+            x = PADDING + col * (ICON + GAP)
+            y = grid_top + row * (ICON + GAP)
+
+            base_icon = icon_cache.get(c["id"])
+            if base_icon is None:
+                continue
+
+            icon = base_icon.copy()
+
+            # Grey out if neither player owns
+            if c["id"] not in combined_owned:
+                icon = ImageEnhance.Brightness(icon).enhance(0.35)
+                icon = icon.convert("LA").convert("RGBA")
+
+            # Rounded mask
+            mask = Image.new("L", (ICON, ICON), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            radius = 12
+            mask_draw.rounded_rectangle(
+                [(0, 0), (ICON, ICON)],
+                radius=radius,
+                fill=255,
+            )
+
+            canvas.paste(icon, (x, y), mask)
+
+            # Rarity border + glow (same as roster.py)
+            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
+            if c["rarity"] == 5:
+                color = (255, 215, 0, 255)  # gold
+            elif c["rarity"] == 4:
+                color = (182, 102, 210, 255)  # purple
+            else:
+                color = None
+
+            if color:
+                glow_rect = [
+                    border_rect[0] - 1,
+                    border_rect[1] - 1,
+                    border_rect[2] + 1,
+                    border_rect[3] + 1,
+                ]
+                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
+                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
+
+            # Dual Eidolon badges
+            e1 = owned1.get(c["id"])
+            e2 = owned2.get(c["id"])
+
+            badge_w = 38
+            badge_h = 24
+            badge_y = y + ICON - badge_h - 6
+
+            # Helper to draw a single badge
+            def draw_badge(e_value: int, bx: int):
+                badge_rect = [
+                    bx,
+                    badge_y,
+                    bx + badge_w,
+                    badge_y + badge_h,
+                ]
+                draw.rounded_rectangle(
+                    badge_rect,
+                    radius=8,
+                    fill=(0, 0, 0, 210),
+                    outline=(255, 255, 255, 255),
+                    width=2,
+                )
+                text = f"E{e_value}"
+                text_bbox = draw.textbbox((0, 0), text, font=BADGE_FONT)
+                tw = text_bbox[2] - text_bbox[0]
+                th = text_bbox[3] - text_bbox[1]
+                tx = bx + (badge_w - tw) // 2
+                ty = badge_y + (badge_h - th) // 2 - 3
+                draw.text(
+                    (tx, ty),
+                    text,
+                    font=BADGE_FONT,
+                    fill=(255, 255, 255, 255),
+                )
+
+            # Left badge for player 1, right badge for player 2
+            if e1 is not None:
+                bx1 = x + 6
+                draw_badge(e1, bx1)
+            if e2 is not None:
+                bx2 = x + ICON - badge_w - 6
+                draw_badge(e2, bx2)
+
+        # 6) Buffer
+        buffer = io.BytesIO()
+        canvas.save(buffer, "PNG")
+        buffer.seek(0)
+        return buffer
+
+    async def _send_match_rosters(
+        self,
+        channel: discord.abc.Messageable,
+        team1: List[Member],
+        team2: List[Member],
+    ):
+        """
+        After match + prebans, send:
+        - Team 1 roster image (combined of both players)
+        - Team 2 roster image
+        """
+        if not char_map_cache or not icon_cache:
+            return
+
+
+        roster_users = await self._fetch_roster_users()
+        if not roster_users:
+            return
+
+        roster_index = {u.get("discordId"): u for u in roster_users}
+
+        team_pairs = [(team1, "Team 1"), (team2, "Team 2")]
+
+        for idx, (team, label) in enumerate(team_pairs, start=1):
+            buf = self._build_team_roster_image(team, roster_index, label)
+            if buf:
+                await channel.send(
+                    file=discord.File(buf, filename=f"team{idx}_roster.png")
+                )
 
     # ────────────────────── prebans builder (exact same as /prebans) ──────────────────────
 
@@ -306,7 +602,8 @@ class MatchmakingQueue(commands.Cog):
                 # Cancel voice monitor for these 4
                 for pid in ids:
                     t = self.voice_channel_monitor.pop(pid, None)
-                    if t: t.cancel()
+                    if t:
+                        t.cancel()
 
                 match_groups.append(ids)
 
@@ -357,6 +654,12 @@ class MatchmakingQueue(commands.Cog):
             prebans_embed = self._build_prebans_embed(team1, team2)
             await interaction.channel.send(embed=prebans_embed)
 
+            try:
+                await self._send_match_rosters(interaction.channel, team1, team2)
+            except Exception as e:
+
+                print(f"[queue] Failed to send match rosters: {e}")
+
     @app_commands.command(name="leavequeue", description="Untie your thread from the queue.")
     @app_commands.guilds(GUILD_ID)
     async def leave_queue(self, interaction: Interaction):
@@ -374,7 +677,8 @@ class MatchmakingQueue(commands.Cog):
             self.queue.remove(uid)
 
             vtask = self.voice_channel_monitor.pop(uid, None)
-            if vtask: vtask.cancel()
+            if vtask:
+                vtask.cancel()
 
             self._sync_global_monitors(interaction.guild.id, interaction.channel)
 

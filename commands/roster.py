@@ -9,7 +9,8 @@ import math
 import os
 from dotenv import load_dotenv
 
-from utils.db_utils import get_cursor  
+from utils.db_utils import get_cursor
+from .shared_cache import char_map_cache, icon_cache  
 
 BADGE_FONT = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
 
@@ -46,6 +47,8 @@ class Roster(commands.Cog):
 
     async def preload_all(self):
         """Load character metadata + icons ONCE when bot starts."""
+        global char_map_cache, icon_cache
+
         # --- Load metadata from DB ---
         char_map = {}
         with get_cursor() as cur:
@@ -56,7 +59,7 @@ class Roster(commands.Cog):
 
         for r in rows:
             url = r["image_url"]
-            fid = url.split("/")[-1].split(".")[0] 
+            fid = url.split("/")[-1].split(".")[0]
             char_map[fid] = {
                 "id": fid,
                 "name": r["name"],
@@ -64,7 +67,12 @@ class Roster(commands.Cog):
                 "image": url,
             }
 
+        # local copy
         self.char_map_cache = char_map
+
+        # 🔥 shared cache update
+        char_map_cache.clear()
+        char_map_cache.update(char_map)
 
         # --- Preload images ---
         async with aiohttp.ClientSession() as session:
@@ -75,10 +83,15 @@ class Roster(commands.Cog):
 
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
                     img = img.resize((96, 96), Image.LANCZOS)
+
+                    # local cache
                     self.icon_cache[cid] = img
+
+                    # 🔥 shared cache
+                    icon_cache[cid] = img
+
                 except:
                     continue
-
 
     @app_commands.command(
         name="roster",
