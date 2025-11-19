@@ -86,10 +86,10 @@ class Roster(commands.Cog):
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
                     # ----------------------------------------------------
-                    # SMART CENTER CROP
+                    # TIGHTER SMART ZOOM
                     # ----------------------------------------------------
                     w, h = img.size
-                    crop_size = int(min(w, h) * 0.66)
+                    crop_size = int(min(w, h) * 0.85)  # ⬅️ much closer zoom
 
                     x_center = w // 2
                     y_center = int(h * 0.35)
@@ -101,43 +101,39 @@ class Roster(commands.Cog):
 
                     img = img.crop((left, top, right, bottom))
 
-                    # softening
-                    img = ImageEnhance.Brightness(img).enhance(0.93)
-                    img = ImageEnhance.Contrast(img).enhance(0.93)
+                    # soften
+                    img = ImageEnhance.Brightness(img).enhance(0.95)
+                    img = ImageEnhance.Contrast(img).enhance(0.96)
 
-                    # resize character
-                    FACE_SIZE = 96
-                    img = img.resize((FACE_SIZE, FACE_SIZE), Image.LANCZOS)
+                    ICON = 110  # final icon size
+                    img = img.resize((ICON, ICON), Image.LANCZOS)
 
                     # ----------------------------------------------------
-                    # APPLY RARITY BACKGROUND HERE ✔️
+                    # APPLY RARITY BACKGROUND (PERFECT FIT)
                     # ----------------------------------------------------
                     if char_map[cid]["rarity"] == 5:
-                        bg_color = (212, 175, 55, 255)  # gold
+                        bg_color = (212, 175, 55, 255)
                     elif char_map[cid]["rarity"] == 4:
-                        bg_color = (182, 102, 210, 255)  # purple
+                        bg_color = (182, 102, 210, 255)
                     else:
-                        bg_color = (55, 55, 55, 255)     # grey
+                        bg_color = (55, 55, 55, 255)
 
-                    ICON = 110
-                    inset = (ICON - FACE_SIZE) // 2  # center the face
-
-                    # background box
                     bg = Image.new("RGBA", (ICON, ICON), bg_color)
 
                     # rounded mask
                     mask = Image.new("L", (ICON, ICON), 0)
-                    mask_draw = ImageDraw.Draw(mask)
-                    mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)
+                    draw_mask = ImageDraw.Draw(mask)
+                    draw_mask.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)
 
-                    # paste face onto background
-                    bg.paste(img, (inset, inset), img)
+                    # paste face EXACTLY on top — perfect positioning
+                    bg.paste(img, (0, 0), img)
 
-                    # final icon stored in cache
+                    # store final icon
                     shared_cache.icon_cache[cid] = bg
 
                 except Exception:
                     continue
+
 
     # ──────────────────────────────────────────────────────────────
     # /roster command
