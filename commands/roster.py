@@ -39,6 +39,13 @@ def load_title_font(size: int) -> ImageFont.FreeTypeFont:
         except Exception:
             return ImageFont.load_default()
 
+def autocrop(img):
+    bbox = img.getbbox()  
+    if bbox:
+        img = img.crop(bbox)
+    return img
+
+
 
 class Roster(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -85,6 +92,7 @@ class Roster(commands.Cog):
                         raw = await resp.read()
 
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                    img = autocrop(img) 
                     img = img.resize((96, 96), Image.LANCZOS)
 
                     shared_cache.icon_cache[cid] = img
