@@ -28,7 +28,7 @@ FONT_PATH = os.path.join(
     "NotoSansSC-VariableFont_wght.ttf",
 )
 
-ICON_SIZE = 116
+ICON_SIZE = 132
 
 
 def load_title_font(size: int) -> ImageFont.FreeTypeFont:
@@ -93,7 +93,7 @@ class Roster(commands.Cog):
                     w, h = img.size
 
                     # a bit tighter zoom so faces are larger
-                    crop_size = int(min(w, h) * 0.70)
+                    crop_size = int(min(w, h) * 0.75)
 
                     # center ~slightly above middle
                     x_center = w // 2
@@ -221,7 +221,7 @@ class Roster(commands.Cog):
         # 4) Layout
         # -------------------------------------------------------
         ICON = ICON_SIZE
-        GAP = 4
+        GAP = 2
         PADDING = 20
         PER_ROW = 8
 
@@ -292,17 +292,18 @@ class Roster(commands.Cog):
             
             SAFE_PAD = 5
 
+            # mask with inner margin
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
-
             mask_draw.rounded_rectangle(
                 [SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD],
                 radius=12,
                 fill=255,
             )
 
-            # apply mask
+            # paste full icon using reduced mask
             canvas.paste(icon, (x, y), rounded)
+
 
             # rarity border
             border_rect = [
