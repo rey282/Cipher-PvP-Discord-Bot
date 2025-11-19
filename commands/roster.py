@@ -289,7 +289,8 @@ class Roster(commands.Cog):
             )
 
             # Apply rounded mask directly onto icon
-            masked_icon = Image.new("RGBA", (ICON, ICON))
+            masked_icon = Image.new("RGBA", (ICON, ICON), (0, 0, 0, 0))
+
             masked_icon.paste(icon, (0, 0), rounded_mask)
 
             canvas.paste(masked_icon, (x, y), masked_icon)
