@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 
 from utils.db_utils import get_cursor  
 
+BADGE_FONT = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
+
+
 load_dotenv()
 
 ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
@@ -289,13 +292,12 @@ class Roster(commands.Cog):
                     draw.rounded_rectangle(
                         badge_rect,
                         radius=8,
-                        fill=(0, 0, 0, 210),              # darker background
-                        outline=(255, 255, 255, 255),     # FULL white border
-                        width=2,                          # thicker outline
+                        fill=(0, 0, 0, 210),             
+                        outline=(255, 255, 255, 255),     
+                        width=2,                          
                     )
 
-                    # Bigger + clearer text
-                    badge_font = load_title_font(16)      # increased from 14 → 16
+                    badge_font = BADGE_FONT
                     text = f"E{e}"
                     text_bbox = draw.textbbox((0, 0), text, font=badge_font)
                     tw = text_bbox[2] - text_bbox[0]
@@ -303,7 +305,7 @@ class Roster(commands.Cog):
 
                     # Center the text
                     tx = badge_x + (badge_w - tw) // 2
-                    ty = badge_y + (badge_h - th) // 2 - 1
+                    ty = badge_y + (badge_h - th) // 2 - 3
 
                     draw.text((tx, ty), text, font=badge_font, fill=(255, 255, 255, 255))
 
