@@ -594,25 +594,8 @@ class MatchmakingCommands(commands.Cog):
             if base_icon is None:
                 continue
 
+            # use roster-preprocessed icon (already cropped + resized)
             icon = base_icon.copy()
-
-            # ───── SAME ZOOM LOGIC ─────
-            w, h = icon.size
-
-            left = int(w * 0.15)
-            right = int(w * 0.85)
-            top = 0
-            bottom = int(h * 0.75)
-
-            # Ensure valid crop
-            if right > left and bottom > top:
-                icon = icon.crop((left, top, right, bottom))
-
-            # Final resize
-            icon = icon.resize((ICON, ICON), Image.LANCZOS)
-            # ───── END FACE CROP ─────
-
-
 
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)

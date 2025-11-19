@@ -334,20 +334,8 @@ class MatchmakingQueue(commands.Cog):
             if base_icon is None:
                 continue
 
+            # use roster-preprocessed icon (already cropped + resized)
             icon = base_icon.copy()
-
-            # ---- FACE CROP / UPPER BODY ZOOM ----
-            w, h = icon.size
-            left = int(w * 0.15)
-            right = int(w * 0.85)
-            top = 0
-            bottom = int(h * 0.75)
-
-            if right > left and bottom > top:
-                icon = icon.crop((left, top, right, bottom))
-
-            # resize final
-            icon = icon.resize((ICON, ICON), Image.LANCZOS)
 
             # Grey out if neither player owns
             if c["id"] not in combined_owned:
@@ -365,6 +353,7 @@ class MatchmakingQueue(commands.Cog):
             )
 
             canvas.paste(icon, (x, y), mask)
+
 
             # Rarity border + glow (same as roster.py)
             border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
