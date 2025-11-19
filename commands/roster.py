@@ -291,27 +291,20 @@ class Roster(commands.Cog):
 
             SAFE_PAD = 12
 
-            rounded = Image.new("L", (ICON, ICON), 0)
-            mask_draw = ImageDraw.Draw(rounded)
+            # ---- Rounded mask for full-size 132px icon ----
+            rounded_mask = Image.new("L", (ICON, ICON), 0)
+            mask_draw = ImageDraw.Draw(rounded_mask)
             mask_draw.rounded_rectangle(
                 [0, 0, ICON, ICON],
-                radius=22,   # bigger curve for 132px icons
+                radius=26,  # slightly larger radius for cleaner curve
                 fill=255,
             )
 
-            cropped_icon = icon.crop(
-                (SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD)
-            )
-            cropped_icon = cropped_icon.resize((ICON, ICON), Image.LANCZOS)
+            # Paste full icon with proper rounded mask
+            canvas.paste(icon, (x, y), rounded_mask)
 
-            canvas.paste(cropped_icon, (x, y), rounded)
-
-            border_rect = [
-                x + SAFE_PAD,
-                y + SAFE_PAD,
-                x + ICON - SAFE_PAD,
-                y + ICON - SAFE_PAD
-            ]
+            # ---- Border exactly matching icon size ----
+            border_rect = [x, y, x + ICON, y + ICON]
 
             if c["rarity"] == 5:
                 color = (212, 175, 55, 255)
@@ -321,15 +314,18 @@ class Roster(commands.Cog):
                 color = None
 
             if color:
+                # Outer glow
                 glow_rect = [
-                    border_rect[0] - 2,
-                    border_rect[1] - 2,
-                    border_rect[2] + 2,
-                    border_rect[3] + 2,
+                    border_rect[0] - 3,
+                    border_rect[1] - 3,
+                    border_rect[2] + 3,
+                    border_rect[3] + 3,
                 ]
+                draw.rounded_rectangle(glow_rect, radius=30, outline=color, width=3)
 
-                draw.rounded_rectangle(glow_rect, radius=20, outline=color, width=2)
-                draw.rounded_rectangle(border_rect, radius=18, outline=color, width=4)
+                # Actual border
+                draw.rounded_rectangle(border_rect, radius=28, outline=color, width=5)
+
 
 
             # eidolon badge
