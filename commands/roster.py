@@ -88,31 +88,39 @@ class Roster(commands.Cog):
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
                     # ────────────────────────────────
-                    # SMART CENTERED FACE CROP
+                    # SMART CENTERED FACE CROP (SAFE)
                     # ────────────────────────────────
                     w, h = img.size
 
-                    # a bit tighter zoom so faces are larger
+                    # tighter zoom
                     crop_size = int(min(w, h) * 0.75)
 
-                    # center ~slightly above middle
+                    # center slightly above middle
                     x_center = w // 2
-                    y_center = int(h * 0.37)
+                    y_center = int(h * 0.40)
 
-                    left   = x_center - crop_size // 2
-                    right  = x_center + crop_size // 2
-                    top    = y_center - crop_size // 2
-                    bottom = y_center + crop_size // 2
+                    half = crop_size // 2
 
-                    # clamp
-                    left   = max(0, left)
-                    top    = max(0, top)
-                    right  = min(w, right)
-                    bottom = min(h, bottom)
+                    # proposed crop rectangle
+                    left = x_center - half
+                    top = y_center - half
 
+                    # shift crop INTO the valid image region
+                    if left < 0:
+                        left = 0
+                    elif left + crop_size > w:
+                        left = w - crop_size
+
+                    if top < 0:
+                        top = 0
+                    elif top + crop_size > h:
+                        top = h - crop_size
+
+                    right = left + crop_size
+                    bottom = top + crop_size
+
+                    # final safe crop
                     img = img.crop((left, top, right, bottom))
-
-                    img = img  
 
                     # ────────────────────────────────
                     # BRIGHTNESS / CONTRAST
