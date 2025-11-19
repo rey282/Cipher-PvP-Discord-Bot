@@ -45,39 +45,39 @@ class Roster(commands.Cog):
         self.char_map_cache = None
 
     async def preload_all(self):
-    """Load character metadata + icons ONCE when bot starts."""
-    # --- Load metadata from DB ---
-    char_map = {}
-    with get_cursor() as cur:
-        cur.execute(
-            "SELECT name, rarity, image_url FROM characters WHERE image_url IS NOT NULL"
-        )
-        rows = cur.fetchall()
+        """Load character metadata + icons ONCE when bot starts."""
+        # --- Load metadata from DB ---
+        char_map = {}
+        with get_cursor() as cur:
+            cur.execute(
+                "SELECT name, rarity, image_url FROM characters WHERE image_url IS NOT NULL"
+            )
+            rows = cur.fetchall()
 
-    for r in rows:
-        url = r["image_url"]
-        fid = url.split("/")[-1].split(".")[0] 
-        char_map[fid] = {
-            "id": fid,
-            "name": r["name"],
-            "rarity": r["rarity"],
-            "image": url,
-        }
+        for r in rows:
+            url = r["image_url"]
+            fid = url.split("/")[-1].split(".")[0] 
+            char_map[fid] = {
+                "id": fid,
+                "name": r["name"],
+                "rarity": r["rarity"],
+                "image": url,
+            }
 
-    self.char_map_cache = char_map
+        self.char_map_cache = char_map
 
-    # --- Preload images ---
-    async with aiohttp.ClientSession() as session:
-        for cid, meta in char_map.items():
-            try:
-                async with session.get(meta["image"]) as resp:
-                    raw = await resp.read()
+        # --- Preload images ---
+        async with aiohttp.ClientSession() as session:
+            for cid, meta in char_map.items():
+                try:
+                    async with session.get(meta["image"]) as resp:
+                        raw = await resp.read()
 
-                img = Image.open(io.BytesIO(raw)).convert("RGBA")
-                img = img.resize((96, 96), Image.LANCZOS)
-                self.icon_cache[cid] = img
-            except:
-                continue
+                    img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                    img = img.resize((96, 96), Image.LANCZOS)
+                    self.icon_cache[cid] = img
+                except:
+                    continue
 
 
     @app_commands.command(
