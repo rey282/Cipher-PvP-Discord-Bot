@@ -112,17 +112,7 @@ class Roster(commands.Cog):
 
                     img = img.crop((left, top, right, bottom))
 
-                    # ────────────────────────────────
-                    # INTERNAL PADDING + BLACK BG
-                    # ────────────────────────────────
-                    pad = 8  # small, just enough to avoid border overflow
-                    padded = Image.new(
-                        "RGBA",
-                        (crop_size + pad * 2, crop_size + pad * 2),
-                        (0, 0, 0, 255),
-                    )
-                    padded.paste(img, (pad, pad), img)
-                    img = padded
+                    img = img  
 
                     # ────────────────────────────────
                     # BRIGHTNESS / CONTRAST
@@ -221,7 +211,7 @@ class Roster(commands.Cog):
         # 4) Layout
         # -------------------------------------------------------
         ICON = ICON_SIZE
-        GAP = 2
+        GAP = 6
         PADDING = 20
         PER_ROW = 8
 
@@ -321,10 +311,9 @@ class Roster(commands.Cog):
                     border_rect[2] + 3,
                     border_rect[3] + 3,
                 ]
-                draw.rounded_rectangle(glow_rect, radius=30, outline=color, width=3)
+                draw.rounded_rectangle(glow_rect, radius=30, outline=color, width=2)
+                draw.rounded_rectangle(border_rect, radius=28, outline=color, width=3)
 
-                # Actual border
-                draw.rounded_rectangle(border_rect, radius=28, outline=color, width=5)
 
 
 
