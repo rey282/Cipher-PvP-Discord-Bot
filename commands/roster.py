@@ -11,7 +11,7 @@ import asyncio
 from dotenv import load_dotenv
 
 from utils.db_utils import get_cursor
-from . import shared_cache   
+from . import shared_cache   # ✅ global shared cache
 
 BADGE_FONT = ImageFont.truetype(
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15
@@ -27,8 +27,6 @@ FONT_PATH = os.path.join(
     "fonts",
     "NotoSansSC-VariableFont_wght.ttf",
 )
-
-ICON_SIZE = 132
 
 
 def load_title_font(size: int) -> ImageFont.FreeTypeFont:
@@ -88,42 +86,39 @@ class Roster(commands.Cog):
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
                     # ────────────────────────────────
-                    # SMART CENTERED FACE CROP (SAFE)
+                    # SMART CENTERED FACE CROP  (improved)
                     # ────────────────────────────────
                     w, h = img.size
 
-                    # tighter zoom
-                    crop_size = int(min(w, h) * 0.75)
+                    # crop slightly smaller so it never overflows borders
+                    crop_size = int(min(w, h) * 0.66)
 
-                    # center slightly above middle
+                    # center calculation
                     x_center = w // 2
-                    y_center = int(h * 0.40)
+                    y_center = int(h * 0.35)
 
-                    half = crop_size // 2
+                    left   = x_center - crop_size // 2
+                    right  = x_center + crop_size // 2
+                    top    = y_center - crop_size // 2
+                    bottom = y_center + crop_size // 2
 
-                    # proposed crop rectangle
-                    left = x_center - half
-                    top = y_center - half
+                    # clamp
+                    left   = max(0, left)
+                    top    = max(0, top)
+                    right  = min(w, right)
+                    bottom = min(h, bottom)
 
-                    # shift crop INTO the valid image region
-                    if left < 0:
-                        left = 0
-                    elif left + crop_size > w:
-                        left = w - crop_size
-
-                    if top < 0:
-                        top = 0
-                    elif top + crop_size > h:
-                        top = h - crop_size
-
-                    right = left + crop_size
-                    bottom = top + crop_size
-
-                    # final safe crop
                     img = img.crop((left, top, right, bottom))
 
                     # ────────────────────────────────
-                    # BRIGHTNESS / CONTRAST
+                    # ADD INTERNAL PADDING (prevents border overflow)
+                    # ────────────────────────────────
+                    padded = Image.new("RGBA", (crop_size + 10, crop_size + 10), (0, 0, 0, 255))
+                    padded.paste(img, (5, 5), img)
+                    img = padded
+
+                    # ────────────────────────────────
+                    # BRIGHTNESS / CONTRAST (soften)
                     # ────────────────────────────────
                     img = ImageEnhance.Brightness(img).enhance(0.93)
                     img = ImageEnhance.Contrast(img).enhance(0.93)
@@ -131,7 +126,7 @@ class Roster(commands.Cog):
                     # ────────────────────────────────
                     # FINAL SQUARE RESIZE
                     # ────────────────────────────────
-                    img = img.resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS)
+                    img = img.resize((96, 96), Image.LANCZOS)
 
                     shared_cache.icon_cache[cid] = img
 
@@ -218,8 +213,8 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         # 4) Layout
         # -------------------------------------------------------
-        ICON = ICON_SIZE
-        GAP = 6
+        ICON = 96
+        GAP = 10
         PADDING = 20
         PER_ROW = 8
 
@@ -287,26 +282,13 @@ class Roster(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            # ---- Rounded mask for full-size 132px icon ----
-            rounded_mask = Image.new("L", (ICON, ICON), 0)
-            mask_draw = ImageDraw.Draw(rounded_mask)
-            mask_draw.rounded_rectangle(
-                [0, 0, ICON, ICON],
-                radius=26,  # slightly larger radius for cleaner curve
-                fill=255,
-            )
+            rounded = Image.new("L", (ICON, ICON), 0)
+            mask_draw = ImageDraw.Draw(rounded)
+            mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=12, fill=255)
+            canvas.paste(icon, (x, y), rounded)
 
-            # Apply rounded mask directly onto icon
-            masked_icon = Image.new("RGBA", (ICON, ICON), (0, 0, 0, 0))
-
-            masked_icon.paste(icon, (0, 0), rounded_mask)
-
-            canvas.paste(masked_icon, (x, y), masked_icon)
-
-
-            # ---- Border exactly matching icon size ----
-            border_rect = [x, y, x + ICON, y + ICON]
-
+            # rarity border
+            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
             if c["rarity"] == 5:
                 color = (212, 175, 55, 255)
             elif c["rarity"] == 4:
@@ -315,18 +297,10 @@ class Roster(commands.Cog):
                 color = None
 
             if color:
-                # Outer glow
-                glow_rect = [
-                    border_rect[0] - 3,
-                    border_rect[1] - 3,
-                    border_rect[2] + 3,
-                    border_rect[3] + 3,
-                ]
-                draw.rounded_rectangle(glow_rect, radius=30, outline=color, width=2)
-                draw.rounded_rectangle(border_rect, radius=28, outline=color, width=3)
-
-
-
+                glow_rect = [border_rect[0] - 1, border_rect[1] - 1,
+                             border_rect[2] + 1, border_rect[3] + 1]
+                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
+                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
 
             # eidolon badge
             if c["id"] in owned:
