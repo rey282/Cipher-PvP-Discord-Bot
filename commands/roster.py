@@ -96,6 +96,12 @@ class Roster(commands.Cog):
                     if right > left and bottom > top:
                         img = img.crop((left, top, right, bottom))
 
+                    img = ImageEnhance.Brightness(img).enhance(0.93)
+
+                    # Slight highlight softening
+                    img = ImageEnhance.Contrast(img).enhance(0.93)
+                                            
+
                     # final resize
                     img = img.resize((96, 96), Image.LANCZOS)
 
@@ -310,5 +316,5 @@ class Roster(commands.Cog):
 
 async def setup(bot: commands.Bot):
     cog = Roster(bot)
-    await cog.preload_all()  # load caches once
+    await cog.preload_all()  
     await bot.add_cog(cog)
