@@ -95,7 +95,7 @@ class Roster(commands.Cog):
 
                     # center calculation
                     x_center = w // 2
-                    y_center = int(h * 0.25)
+                    y_center = int(h * 0.35)
 
                     left   = x_center - crop_size // 2
                     right  = x_center + crop_size // 2
