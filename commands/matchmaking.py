@@ -581,6 +581,9 @@ class MatchmakingCommands(commands.Cog):
             icon = icon_cache.get(c["id"])
             if not icon:
                 continue
+            
+            if icon.size != (ICON, ICON):
+                icon = icon.resize((ICON, ICON), Image.LANCZOS)
 
             # dim unowned
             icon = icon.copy()

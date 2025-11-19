@@ -333,6 +333,9 @@ class MatchmakingQueue(commands.Cog):
             base_icon = shared_cache.icon_cache.get(c["id"])
             if not base_icon:
                 continue
+            
+            if base_icon.size != (ICON, ICON):
+                base_icon = base_icon.resize((ICON, ICON), Image.LANCZOS)
 
             # use exact preprocessed icon (already: cropped, resized, rounded, rarity-bg)
             icon = base_icon.copy()
