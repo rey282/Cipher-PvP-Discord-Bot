@@ -75,7 +75,7 @@ class Roster(commands.Cog):
         shared_cache.char_map_cache.update(char_map)
 
         # --------------------------
-        # Preload all icons once
+        # Preload all icons once + APPLY BACKGROUND HERE
         # --------------------------
         async with aiohttp.ClientSession() as session:
             for cid, meta in char_map.items():
@@ -85,47 +85,59 @@ class Roster(commands.Cog):
 
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
-                    # ────────────────────────────────
-                    # SMART CENTERED FACE CROP  (improved)
-                    # ────────────────────────────────
+                    # ----------------------------------------------------
+                    # SMART CENTER CROP
+                    # ----------------------------------------------------
                     w, h = img.size
-
-                    # crop slightly smaller so it never overflows borders
                     crop_size = int(min(w, h) * 0.66)
 
-                    # center calculation
                     x_center = w // 2
                     y_center = int(h * 0.35)
 
-                    left   = x_center - crop_size // 2
-                    right  = x_center + crop_size // 2
-                    top    = y_center - crop_size // 2
-                    bottom = y_center + crop_size // 2
-
-                    # clamp
-                    left   = max(0, left)
-                    top    = max(0, top)
-                    right  = min(w, right)
-                    bottom = min(h, bottom)
+                    left   = max(0, x_center - crop_size // 2)
+                    right  = min(w, x_center + crop_size // 2)
+                    top    = max(0, y_center - crop_size // 2)
+                    bottom = min(h, y_center + crop_size // 2)
 
                     img = img.crop((left, top, right, bottom))
-                    
-                    # ────────────────────────────────
-                    # BRIGHTNESS / CONTRAST (soften)
-                    # ────────────────────────────────
+
+                    # softening
                     img = ImageEnhance.Brightness(img).enhance(0.93)
                     img = ImageEnhance.Contrast(img).enhance(0.93)
 
-                    # ────────────────────────────────
-                    # FINAL SQUARE RESIZE
-                    # ────────────────────────────────
-                    img = img.resize((96, 96), Image.LANCZOS)
+                    # resize character
+                    FACE_SIZE = 96
+                    img = img.resize((FACE_SIZE, FACE_SIZE), Image.LANCZOS)
 
-                    shared_cache.icon_cache[cid] = img
+                    # ----------------------------------------------------
+                    # APPLY RARITY BACKGROUND HERE ✔️
+                    # ----------------------------------------------------
+                    if char_map[cid]["rarity"] == 5:
+                        bg_color = (212, 175, 55, 255)  # gold
+                    elif char_map[cid]["rarity"] == 4:
+                        bg_color = (182, 102, 210, 255)  # purple
+                    else:
+                        bg_color = (55, 55, 55, 255)     # grey
+
+                    ICON = 110
+                    inset = (ICON - FACE_SIZE) // 2  # center the face
+
+                    # background box
+                    bg = Image.new("RGBA", (ICON, ICON), bg_color)
+
+                    # rounded mask
+                    mask = Image.new("L", (ICON, ICON), 0)
+                    mask_draw = ImageDraw.Draw(mask)
+                    mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)
+
+                    # paste face onto background
+                    bg.paste(img, (inset, inset), img)
+
+                    # final icon stored in cache
+                    shared_cache.icon_cache[cid] = bg
 
                 except Exception:
                     continue
-
 
     # ──────────────────────────────────────────────────────────────
     # /roster command
@@ -277,36 +289,9 @@ class Roster(commands.Cog):
                 icon = icon.convert("LA").convert("RGBA")
 
             # -------------------------------------------------------
-            # RARITY BACKGROUND (NO BORDER)
+            # PASTE FINAL ICON (already has background included)
             # -------------------------------------------------------
-            if c["rarity"] == 5:
-                bg_color = (212, 175, 55, 255)   # gold
-            elif c["rarity"] == 4:
-                bg_color = (182, 102, 210, 255)  # purple
-            else:
-                bg_color = (55, 55, 55, 255)     # dark grey for 3★ / unknown
-
-            # Create rounded square background
-            bg = Image.new("RGBA", (ICON, ICON), bg_color)
-
-            mask_bg = Image.new("L", (ICON, ICON), 0)
-            draw_mask = ImageDraw.Draw(mask_bg)
-            draw_mask.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)
-
-            canvas.paste(bg, (x, y), mask_bg)
-
-            # -------------------------------------------------------
-            # PLACE CHARACTER ON TOP (BIGGER THAN BEFORE)
-            # -------------------------------------------------------
-            inset = 6                        # small padding
-            inner_size = ICON - inset * 2    # larger character area
-
-            icon_resized = icon.resize((inner_size, inner_size), Image.LANCZOS)
-
-            icon_x = x + inset
-            icon_y = y + inset
-
-            canvas.paste(icon_resized, (icon_x, icon_y), icon_resized)
+            canvas.paste(icon, (x, y), icon)
 
             # -------------------------------------------------------
             # EIDOLON BADGE
@@ -334,7 +319,6 @@ class Roster(commands.Cog):
                 ty = by + (badge_h - th) // 2 - 3
 
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
-
 
 
         # -------------------------------------------------------
