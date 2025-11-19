@@ -41,6 +41,45 @@ class Roster(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+        self.icon_cache = {}  
+        self.char_map_cache = None
+
+    async def preload_all(self):
+    """Load character metadata + icons ONCE when bot starts."""
+    # --- Load metadata from DB ---
+    char_map = {}
+    with get_cursor() as cur:
+        cur.execute(
+            "SELECT name, rarity, image_url FROM characters WHERE image_url IS NOT NULL"
+        )
+        rows = cur.fetchall()
+
+    for r in rows:
+        url = r["image_url"]
+        fid = url.split("/")[-1].split(".")[0] 
+        char_map[fid] = {
+            "id": fid,
+            "name": r["name"],
+            "rarity": r["rarity"],
+            "image": url,
+        }
+
+    self.char_map_cache = char_map
+
+    # --- Preload images ---
+    async with aiohttp.ClientSession() as session:
+        for cid, meta in char_map.items():
+            try:
+                async with session.get(meta["image"]) as resp:
+                    raw = await resp.read()
+
+                img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                img = img.resize((96, 96), Image.LANCZOS)
+                self.icon_cache[cid] = img
+            except:
+                continue
+
+
     @app_commands.command(
         name="roster",
         description="Show a player's roster as an image.",
@@ -226,16 +265,11 @@ class Roster(commands.Cog):
                 x = PADDING + col * (ICON + GAP)
                 y = grid_top + row * (ICON + GAP)
 
-                # Load image
-                async with session.get(c["image"]) as resp:
-                    raw = await resp.read()
+                base_icon = self.icon_cache.get(c["id"])
+                if base_icon is None:
+                    continue
 
-                try:
-                    icon = Image.open(io.BytesIO(raw)).convert("RGBA")
-                except Exception:
-                    continue  # skip broken images
-
-                icon = icon.resize((ICON, ICON), Image.LANCZOS)
+                icon = base_icon.copy()
 
                 # Grey out unowned
                 if c["id"] not in owned:
@@ -323,4 +357,7 @@ class Roster(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(Roster(bot))
+    cog = Roster(bot)
+    await cog.preload_all()  
+    await bot.add_cog(cog)
+
