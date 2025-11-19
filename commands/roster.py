@@ -93,9 +93,9 @@ class Roster(commands.Cog):
                     # crop slightly smaller so it never overflows borders
                     crop_size = int(min(w, h) * 0.66)
 
-                    # center calculation — LOWERED slightly (0.45 instead of 0.38)
+                    # center calculation
                     x_center = w // 2
-                    y_center = int(h * 0.45)   # << lowered for better centering
+                    y_center = int(h * 0.50)
 
                     left   = x_center - crop_size // 2
                     right  = x_center + crop_size // 2
