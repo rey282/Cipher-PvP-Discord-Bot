@@ -334,7 +334,7 @@ class MatchmakingQueue(commands.Cog):
             if base_icon is None:
                 continue
 
-           icon = base_icon.copy()
+            icon = base_icon.copy()
 
             # ---- FACE CROP / UPPER BODY ZOOM ----
             w, h = icon.size
