@@ -58,8 +58,32 @@ class Roster(commands.Cog):
         # 1) Fetch roster (from Yanyan API)
         # -------------------------------------------------------
         async with aiohttp.ClientSession() as session:
-            async with session.get(ROSTER_API) as resp:
-                roster_users = await resp.json()
+            try:
+                async with session.get(ROSTER_API, timeout=10) as resp:
+
+                    # Server down or 5xx/4xx?
+                    if resp.status != 200:
+                        return await interaction.followup.send(
+                            "⚠️ The roster server is unavailable at the moment. Please try again later."
+                        )
+
+                    # Try decode JSON
+                    try:
+                        roster_users = await resp.json()
+                    except aiohttp.ContentTypeError:
+                        return await interaction.followup.send(
+                            "⚠️ The roster server returned an invalid response.\nPlease try again shortly."
+                        )
+
+            except asyncio.TimeoutError:
+                return await interaction.followup.send(
+                    "⚠️ The roster server timed out. Please try again later."
+                )
+
+            except Exception as e:
+                return await interaction.followup.send(
+                    f"⚠️ Failed to connect to roster server.\n`{e}`"
+                )
 
         entry = next((u for u in roster_users if u["discordId"] == discord_id), None)
         if not entry:
