@@ -213,8 +213,8 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         # 4) Layout
         # -------------------------------------------------------
-        ICON = 110
-        GAP = 6
+        ICON = 96
+        GAP = 10
         PADDING = 20
         PER_ROW = 8
 
@@ -284,34 +284,23 @@ class Roster(commands.Cog):
 
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
-            mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)  # radius was 12
+            mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=12, fill=255)
             canvas.paste(icon, (x, y), rounded)
 
             # rarity border
+            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
             if c["rarity"] == 5:
-                color = (212, 175, 55, 255)   # gold
+                color = (212, 175, 55, 255)
             elif c["rarity"] == 4:
-                color = (182, 102, 210, 255)  # purple
+                color = (182, 102, 210, 255)
             else:
                 color = None
 
             if color:
-                # Use SAME radius for mask & borders to avoid black strip
-                border_radius = 22
-
-                border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
-
-                glow_rect = [
-                    border_rect[0] - 2,
-                    border_rect[1] - 2,
-                    border_rect[2] + 2,
-                    border_rect[3] + 2,
-                ]
-
-                draw.rounded_rectangle(glow_rect, radius=border_radius, outline=color, width=2)
-                draw.rounded_rectangle(border_rect, radius=border_radius, outline=color, width=3)
-
-
+                glow_rect = [border_rect[0] - 1, border_rect[1] - 1,
+                             border_rect[2] + 1, border_rect[3] + 1]
+                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
+                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
 
             # eidolon badge
             if c["id"] in owned:
