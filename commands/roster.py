@@ -3,38 +3,93 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import aiohttp
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageFilter
 import io
 import math
 import os
 from dotenv import load_dotenv
 
-from utils.db_utils import get_cursor  
-
 load_dotenv()
 
+API = os.getenv("CIPHER_API") or "https://api.cipher.uno"
 ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
+
+ICON_SIZE = 96
+PADDING = 28
+PER_ROW = 10
 
 
 class Roster(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.char_meta = None          # metadata cache
+        self.icon_cache = {}           # id → preloaded PIL image
+        bot.loop.create_task(self.preload_all_icons())  # async preload
 
+    # -----------------------------------------------------------
+    # LOAD & CACHE CHARACTER METADATA + IMAGES ONLY ONCE
+    # -----------------------------------------------------------
+    async def preload_all_icons(self):
+        print("[ROSTER] Preloading metadata + icons...")
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{API}/api/characters?cycle=0") as resp:
+                data = await resp.json()
+
+        self.char_meta = []
+        tasks = []
+
+        for c in data["data"]:
+            filename = c["image_url"].split("/")[-1]
+            char_id = filename.split(".")[0]
+
+            self.char_meta.append({
+                "id": char_id,
+                "name": c["name"],
+                "rarity": c["rarity"],
+                "image": c["image_url"]
+            })
+
+            tasks.append(self.download_icon(char_id, c["image_url"]))
+
+        await asyncio.gather(*tasks)
+
+        print(f"[ROSTER] Preloaded {len(self.icon_cache)} character icons!")
+
+    async def download_icon(self, char_id, url):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    raw = await resp.read()
+
+            img = Image.open(io.BytesIO(raw)).convert("RGBA")
+            img = img.resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS)
+
+            # Rounded corners
+            mask = Image.new("L", (ICON_SIZE, ICON_SIZE), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.rounded_rectangle([0, 0, ICON_SIZE, ICON_SIZE], radius=18, fill=255)
+            img.putalpha(mask)
+
+            self.icon_cache[char_id] = img
+        except Exception as e:
+            print(f"[ROSTER] Failed to load icon {char_id}: {e}")
+
+    # -----------------------------------------------------------
+    # MAIN ROSTER COMMAND
+    # -----------------------------------------------------------
     @app_commands.command(name="roster", description="Show a player's roster as an image.")
     @app_commands.guilds(GUILD_ID)
-    @app_commands.describe(member="Whose roster do you want to view?")
     async def roster(self, interaction: discord.Interaction, member: discord.Member = None):
         await interaction.response.defer()
 
         discord_id = str(member.id if member else interaction.user.id)
 
-        # -------------------------------------------------------
-        # 1) Fetch roster (from Yanyan API)
-        # -------------------------------------------------------
+        # Fetch roster data (fast, small JSON)
         async with aiohttp.ClientSession() as session:
-            async with session.get(ROSTER_API) as resp:
-                roster_users = await resp.json()
+            async with session.get(ROSTER_API) as r1:
+                roster_users = await r1.json()
 
         entry = next((u for u in roster_users if u["discordId"] == discord_id), None)
         if not entry:
@@ -42,100 +97,85 @@ class Roster(commands.Cog):
 
         owned = {c["id"]: c["eidolon"] for c in entry["profileCharacters"]}
 
-        # -------------------------------------------------------
-        # 2) Load character metadata DIRECTLY from PostgreSQL
-        # -------------------------------------------------------
-        char_map = {}
-
-        with get_cursor() as cur:
-            cur.execute("SELECT name, rarity, image_url FROM characters")
-            rows = cur.fetchall()
-
-        for row in rows:
-            url = row["image_url"]
-            file = url.split("/")[-1]
-            numeric_id = file.split(".")[0]   # 1308.png → 1308
-
-            char_map[numeric_id] = {
-                "id": numeric_id,
-                "name": row["name"],
-                "rarity": row["rarity"],
-                "image": row["image_url"],
-            }
-
-        # -------------------------------------------------------
-        # 3) Sorting logic
-        # -------------------------------------------------------
+        # Sorting
         def sort_key(c):
-            return (
-                0 if c["id"] in owned else 1,
-                -c["rarity"],
-                c["name"]
-            )
+            return (0 if c["id"] in owned else 1, -c["rarity"], c["name"])
 
-        sorted_chars = sorted(char_map.values(), key=sort_key)
+        chars = sorted(self.char_meta, key=sort_key)
 
-        # -------------------------------------------------------
-        # 4) Canvas layout
-        # -------------------------------------------------------
-        ICON = 96
-        PADDING = 14
-        PER_ROW = 10
-        rows = math.ceil(len(sorted_chars) / PER_ROW)
+        # -----------------------------------------------------------
+        # BUILD CANVAS (Glassmorphism Style)
+        # -----------------------------------------------------------
+        rows = math.ceil(len(chars) / PER_ROW)
+        width = PADDING * 2 + PER_ROW * ICON_SIZE
+        height = PADDING * 2 + rows * ICON_SIZE + 70
 
-        width = PADDING * 2 + PER_ROW * ICON
-        height = PADDING * 2 + rows * ICON
+        canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
-        canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
+        # Glass background
+        bg = Image.new("RGBA", (width, height), (20, 20, 25, 200))
+        blurred = bg.filter(ImageFilter.GaussianBlur(8))
+        canvas.paste(blurred, (0, 0))
+
         draw = ImageDraw.Draw(canvas)
         font = ImageFont.load_default()
 
-        # -------------------------------------------------------
-        # 5) Draw icons
-        # -------------------------------------------------------
-        async with aiohttp.ClientSession() as session:
-            for idx, c in enumerate(sorted_chars):
-                x = PADDING + (idx % PER_ROW) * ICON
-                y = PADDING + (idx // PER_ROW) * ICON
+        # Header text
+        header = f"Roster – {interaction.user.display_name}"
+        draw.text((width // 2 - len(header) * 3, 20), header, fill="white", font=font)
 
-                async with session.get(c["image"]) as resp:
-                    raw = await resp.read()
+        # Offset for grid
+        offset_y = 70
 
-                try:
-                    icon = Image.open(io.BytesIO(raw)).convert("RGBA")
-                except:
-                    continue
+        # -----------------------------------------------------------
+        # DRAW EACH CHARACTER ICON
+        # -----------------------------------------------------------
+        for idx, c in enumerate(chars):
+            x = PADDING + (idx % PER_ROW) * ICON_SIZE
+            y = offset_y + (idx // PER_ROW) * ICON_SIZE
 
-                icon = icon.resize((ICON, ICON))
+            icon = self.icon_cache.get(c["id"])
+            if icon is None:
+                continue
 
-                # Grey out unowned
-                if c["id"] not in owned:
-                    icon = ImageEnhance.Brightness(icon).enhance(0.35)
-                    icon = icon.convert("LA").convert("RGBA")
+            # If not owned → greyscale fade
+            img = icon.copy()
+            if c["id"] not in owned:
+                img = ImageEnhance.Brightness(img).enhance(0.35)
+                img = img.convert("LA").convert("RGBA")
 
-                canvas.paste(icon, (x, y), icon)
+            # Soft drop shadow
+            shadow = Image.new("RGBA", (ICON_SIZE, ICON_SIZE), (0, 0, 0, 0))
+            shadow_draw = ImageDraw.Draw(shadow)
+            shadow_draw.rounded_rectangle([2, 2, ICON_SIZE, ICON_SIZE], radius=18, fill=(0, 0, 0, 110))
+            canvas.paste(shadow, (x, y), shadow)
 
-                # Border (rarity)
-                if c["rarity"] == 5:
-                    draw.rectangle([x+2, y+2, x+ICON-2, y+ICON-2], outline="gold", width=4)
-                elif c["rarity"] == 4:
-                    draw.rectangle([x+2, y+2, x+ICON-2, y+ICON-2], outline="#b666d2", width=4)
+            canvas.paste(img, (x, y), img)
 
-                # Eidolon badge
-                if c["id"] in owned:
-                    e = owned[c["id"]]
-                    draw.rectangle([x, y+ICON-20, x+28, y+ICON], fill=(0, 0, 0, 180))
-                    draw.text((x+4, y+ICON-17), f"E{e}", fill="white", font=font)
+            # Rarity glow borders
+            if c["rarity"] == 5:
+                border_color = (255, 215, 0, 220)  # bright gold
+            else:
+                border_color = (182, 102, 210, 200)  # purple
 
-        # -------------------------------------------------------
-        # 6) Send to Discord
-        # -------------------------------------------------------
+            draw.rounded_rectangle([x, y, x + ICON_SIZE, y + ICON_SIZE], radius=18, outline=border_color, width=3)
+
+            # Eidolon badge
+            if c["id"] in owned:
+                e = owned[c["id"]]
+                badge_w, badge_h = 32, 20
+                badge_box = [x + 6, y + ICON_SIZE - badge_h - 6, x + 6 + badge_w, y + ICON_SIZE - 6]
+                draw.rounded_rectangle(badge_box, radius=6, fill=(0, 0, 0, 180))
+                draw.text((badge_box[0] + 8, badge_box[1] + 4), f"E{e}", fill="white", font=font)
+
+        # -----------------------------------------------------------
+        # SEND IMAGE
+        # -----------------------------------------------------------
         buffer = io.BytesIO()
-        canvas.save(buffer, "PNG")
+        canvas.save(buffer, format="PNG")
         buffer.seek(0)
 
         await interaction.followup.send(
-            content=f"**Roster for <@{discord_id}>**",
             file=discord.File(buffer, filename="roster.png")
         )
 
