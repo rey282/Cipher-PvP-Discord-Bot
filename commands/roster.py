@@ -89,7 +89,7 @@ class Roster(commands.Cog):
                     # TIGHTER SMART ZOOM
                     # ----------------------------------------------------
                     w, h = img.size
-                    crop_size = int(min(w, h) * 0.85)  # ⬅️ much closer zoom
+                    crop_size = int(min(w, h) * 0.85)  
 
                     x_center = w // 2
                     y_center = int(h * 0.35)
@@ -112,11 +112,11 @@ class Roster(commands.Cog):
                     # APPLY RARITY BACKGROUND (PERFECT FIT)
                     # ----------------------------------------------------
                     if char_map[cid]["rarity"] == 5:
-                        bg_color = (170, 140, 40, 255)  
+                        bg_color = (174, 150, 92, 255) 
                     elif char_map[cid]["rarity"] == 4:
-                        bg_color = (145, 75, 165, 255)   
+                        bg_color = (88, 61, 116, 255)  
                     else:
-                        bg_color = (45, 45, 45, 255)    
+                        bg_color = (54, 54, 54, 255)   
 
                     bg = Image.new("RGBA", (ICON, ICON), bg_color)
 
@@ -128,8 +128,9 @@ class Roster(commands.Cog):
                     # paste face EXACTLY on top — perfect positioning
                     bg.paste(img, (0, 0), img)
 
-                    # store final icon
-                    shared_cache.icon_cache[cid] = bg
+                    rounded = Image.new("RGBA", (ICON, ICON))
+                    rounded.paste(bg, (0,0), mask)
+                    shared_cache.icon_cache[cid] = rounded
 
                 except Exception:
                     continue
@@ -215,7 +216,7 @@ class Roster(commands.Cog):
         # 4) Layout
         # -------------------------------------------------------
         ICON = 110
-        GAP = 6
+        GAP = 8
         PADDING = 20
         PER_ROW = 8
 
