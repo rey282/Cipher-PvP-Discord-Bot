@@ -292,16 +292,19 @@ class Roster(commands.Cog):
             
             SAFE_PAD = 5
 
-            # mask with inner margin
+            SAFE_PAD = 6
+
+            # full-size rounded mask
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
+
             mask_draw.rounded_rectangle(
-                [SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD],
-                radius=12,
+                [0, 0, ICON, ICON],
+                radius=16,       # more curvature
                 fill=255,
             )
 
-            # paste full icon using reduced mask
+            # paste with full mask
             canvas.paste(icon, (x, y), rounded)
 
 
