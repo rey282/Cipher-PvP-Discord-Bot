@@ -289,23 +289,29 @@ class Roster(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            
-            SAFE_PAD = 5
-
             SAFE_PAD = 6
 
             # full-size rounded mask
             rounded = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded)
-
             mask_draw.rounded_rectangle(
                 [0, 0, ICON, ICON],
-                radius=16,       # more curvature
+                radius=16,
                 fill=255,
             )
 
-            # paste with full mask
-            canvas.paste(icon, (x, y), rounded)
+            # --- HARD CROP so NO OVERFLOW EVER ---
+            # crop icon to mask area (remove outer overflow)
+            cropped_icon = icon.crop(
+                (SAFE_PAD, SAFE_PAD, ICON - SAFE_PAD, ICON - SAFE_PAD)
+            )
+
+            # resize back to full icon size
+            cropped_icon = cropped_icon.resize((ICON, ICON), Image.LANCZOS)
+
+            # paste clipped icon with mask
+            canvas.paste(cropped_icon, (x, y), rounded)
+
 
 
             # rarity border
