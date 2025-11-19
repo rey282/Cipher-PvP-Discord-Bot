@@ -194,7 +194,7 @@ class Roster(commands.Cog):
         ICON = 96
         GAP = 10
         PADDING = 20
-        PER_ROW = 10
+        PER_ROW = 12
 
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
