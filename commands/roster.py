@@ -28,6 +28,8 @@ FONT_PATH = os.path.join(
     "NotoSansSC-VariableFont_wght.ttf",
 )
 
+ICON_SIZE = 116
+
 
 def load_title_font(size: int) -> ImageFont.FreeTypeFont:
     """Try to load HSR-like font, fallback to default."""
@@ -86,16 +88,16 @@ class Roster(commands.Cog):
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
                     # ────────────────────────────────
-                    # SMART CENTERED FACE CROP  (improved)
+                    # SMART CENTERED FACE CROP
                     # ────────────────────────────────
                     w, h = img.size
 
-                    # crop slightly smaller so it never overflows borders
-                    crop_size = int(min(w, h) * 0.66)
+                    # a bit tighter zoom so faces are larger
+                    crop_size = int(min(w, h) * 0.70)
 
-                    # center calculation
+                    # center ~slightly above middle
                     x_center = w // 2
-                    y_center = int(h * 0.35)
+                    y_center = int(h * 0.37)
 
                     left   = x_center - crop_size // 2
                     right  = x_center + crop_size // 2
@@ -111,14 +113,19 @@ class Roster(commands.Cog):
                     img = img.crop((left, top, right, bottom))
 
                     # ────────────────────────────────
-                    # ADD INTERNAL PADDING (prevents border overflow)
+                    # INTERNAL PADDING + BLACK BG
                     # ────────────────────────────────
-                    padded = Image.new("RGBA", (crop_size + 10, crop_size + 10), (0, 0, 0, 255))
-                    padded.paste(img, (5, 5), img)
+                    pad = 8  # small, just enough to avoid border overflow
+                    padded = Image.new(
+                        "RGBA",
+                        (crop_size + pad * 2, crop_size + pad * 2),
+                        (0, 0, 0, 255),
+                    )
+                    padded.paste(img, (pad, pad), img)
                     img = padded
 
                     # ────────────────────────────────
-                    # BRIGHTNESS / CONTRAST (soften)
+                    # BRIGHTNESS / CONTRAST
                     # ────────────────────────────────
                     img = ImageEnhance.Brightness(img).enhance(0.93)
                     img = ImageEnhance.Contrast(img).enhance(0.93)
@@ -126,7 +133,7 @@ class Roster(commands.Cog):
                     # ────────────────────────────────
                     # FINAL SQUARE RESIZE
                     # ────────────────────────────────
-                    img = img.resize((108, 108), Image.LANCZOS)
+                    img = img.resize((ICON_SIZE, ICON_SIZE), Image.LANCZOS)
 
                     shared_cache.icon_cache[cid] = img
 
@@ -213,8 +220,8 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         # 4) Layout
         # -------------------------------------------------------
-        ICON = 108
-        GAP = 6
+        ICON = ICON_SIZE
+        GAP = 4
         PADDING = 20
         PER_ROW = 8
 
