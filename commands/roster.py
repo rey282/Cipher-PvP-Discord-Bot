@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 
 from utils.db_utils import get_cursor
-from cogs.shared_cache import char_map_cache, icon_cache  
+from .shared_cache import char_map_cache, icon_cache  
 
 BADGE_FONT = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
 
