@@ -16,6 +16,7 @@ class Roster(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="roster", description="Show a player's roster as an image.")
+    @app_commands.guilds(GUILD_ID)
     @app_commands.describe(member="Whose roster do you want to view?")
     async def roster(self, interaction: discord.Interaction, member: discord.Member = None):
         await interaction.response.defer()
