@@ -109,14 +109,7 @@ class Roster(commands.Cog):
                     bottom = min(h, bottom)
 
                     img = img.crop((left, top, right, bottom))
-
-                    # ────────────────────────────────
-                    # ADD INTERNAL PADDING (prevents border overflow)
-                    # ────────────────────────────────
-                    padded = Image.new("RGBA", (crop_size + 10, crop_size + 10), (0, 0, 0, 255))
-                    padded.paste(img, (5, 5), img)
-                    img = padded
-
+                    
                     # ────────────────────────────────
                     # BRIGHTNESS / CONTRAST (soften)
                     # ────────────────────────────────
