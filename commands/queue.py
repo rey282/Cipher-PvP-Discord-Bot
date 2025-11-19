@@ -334,9 +334,9 @@ class MatchmakingQueue(commands.Cog):
             if base_icon is None:
                 continue
 
-            icon = base_icon.copy()
+           icon = base_icon.copy()
 
-            # ---- FACE CROP / UPPER BODY ZOOM (same as roster.py) ----
+            # ---- FACE CROP / UPPER BODY ZOOM ----
             w, h = icon.size
             left = int(w * 0.15)
             right = int(w * 0.85)
@@ -353,7 +353,6 @@ class MatchmakingQueue(commands.Cog):
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
-
 
             # Rounded mask
             mask = Image.new("L", (ICON, ICON), 0)
