@@ -279,8 +279,6 @@ class Roster(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            SAFE_PAD = 12
-
             # ---- Rounded mask for full-size 132px icon ----
             rounded_mask = Image.new("L", (ICON, ICON), 0)
             mask_draw = ImageDraw.Draw(rounded_mask)
@@ -290,8 +288,12 @@ class Roster(commands.Cog):
                 fill=255,
             )
 
-            # Paste full icon with proper rounded mask
-            canvas.paste(icon, (x, y), rounded_mask)
+            # Apply rounded mask directly onto icon
+            masked_icon = Image.new("RGBA", (ICON, ICON))
+            masked_icon.paste(icon, (0, 0), rounded_mask)
+
+            canvas.paste(masked_icon, (x, y), masked_icon)
+
 
             # ---- Border exactly matching icon size ----
             border_rect = [x, y, x + ICON, y + ICON]
