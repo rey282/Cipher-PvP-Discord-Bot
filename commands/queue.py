@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 # DB helpers
 from utils.db_utils import load_elo_data, get_cursor
-from .shared_cache import char_map_cache, icon_cache
+from cogs.shared_cache import char_map_cache, icon_cache
 
 load_dotenv()
 
