@@ -336,10 +336,24 @@ class MatchmakingQueue(commands.Cog):
 
             icon = base_icon.copy()
 
+            # ---- FACE CROP / UPPER BODY ZOOM (same as roster.py) ----
+            w, h = icon.size
+            left = int(w * 0.15)
+            right = int(w * 0.85)
+            top = 0
+            bottom = int(h * 0.75)
+
+            if right > left and bottom > top:
+                icon = icon.crop((left, top, right, bottom))
+
+            # resize final
+            icon = icon.resize((ICON, ICON), Image.LANCZOS)
+
             # Grey out if neither player owns
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
+
 
             # Rounded mask
             mask = Image.new("L", (ICON, ICON), 0)

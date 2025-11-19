@@ -596,6 +596,24 @@ class MatchmakingCommands(commands.Cog):
 
             icon = base_icon.copy()
 
+            # ───────────── zoom-in crop  ─────────────
+            w, h = icon.size
+
+            # zoom percentage (0.78 = 22% zoom-in)
+            ZOOM = 0.78  
+            new_w = int(w * ZOOM)
+            new_h = int(h * ZOOM)
+
+            left = (w - new_w) // 2
+            top = (h - new_h) // 2
+            right = left + new_w
+            bottom = top + new_h
+
+            icon = icon.crop((left, top, right, bottom))
+            icon = icon.resize((ICON, ICON), Image.LANCZOS)
+            # ───────────── end zoom crop ─────────────
+
+
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
