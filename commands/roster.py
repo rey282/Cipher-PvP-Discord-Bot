@@ -264,13 +264,6 @@ class Roster(commands.Cog):
         draw.line([(margin, underline_y), (width - margin, underline_y)], fill=(255, 255, 255, 180), width=3)
 
         # -------------------------------------------------------
-        # 7) Pre-create mask ONCE for all characters
-        # -------------------------------------------------------
-        rounded_mask = Image.new("L", (ICON, ICON), 0)
-        rounded_mask_draw = ImageDraw.Draw(rounded_mask)
-        rounded_mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=18, fill=255)
-
-        # -------------------------------------------------------
         # 7) Draw icons + eidolon badges
         # -------------------------------------------------------
         for idx, c in enumerate(sorted_chars):
@@ -284,42 +277,53 @@ class Roster(commands.Cog):
             if not icon:
                 continue
 
+            # dim unowned
             icon = icon.copy()
             if c["id"] not in owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            # ──────────────────────────────────────────────
-            # COLORED BACKGROUND BASE (rarity)
-            # ──────────────────────────────────────────────
+            # -------------------------------------------------------
+            # RARITY BACKGROUND (NO BORDER)
+            # -------------------------------------------------------
             if c["rarity"] == 5:
-                bg_color = (212, 175, 55, 255)  # gold
+                bg_color = (212, 175, 55, 255)   # gold
             elif c["rarity"] == 4:
                 bg_color = (182, 102, 210, 255)  # purple
             else:
-                bg_color = (40, 40, 40, 255)     # default dark grey
+                bg_color = (55, 55, 55, 255)     # dark grey for 3★ / unknown
 
+            # Create rounded square background
             bg = Image.new("RGBA", (ICON, ICON), bg_color)
-            canvas.paste(bg, (x, y), rounded_mask)
 
-            # ──────────────────────────────────────────────
-            # FACE ICON (slightly inset)
-            # ──────────────────────────────────────────────
-            icon_size = ICON - 16
-            icon_resized = icon.resize((icon_size, icon_size), Image.LANCZOS)
+            mask_bg = Image.new("L", (ICON, ICON), 0)
+            draw_mask = ImageDraw.Draw(mask_bg)
+            draw_mask.rounded_rectangle([0, 0, ICON, ICON], radius=22, fill=255)
 
-            icon_x = x + 8
-            icon_y = y + 8
+            canvas.paste(bg, (x, y), mask_bg)
+
+            # -------------------------------------------------------
+            # PLACE CHARACTER ON TOP (BIGGER THAN BEFORE)
+            # -------------------------------------------------------
+            inset = 6                        # small padding
+            inner_size = ICON - inset * 2    # larger character area
+
+            icon_resized = icon.resize((inner_size, inner_size), Image.LANCZOS)
+
+            icon_x = x + inset
+            icon_y = y + inset
+
             canvas.paste(icon_resized, (icon_x, icon_y), icon_resized)
 
-            # ──────────────────────────────────────────────
-            # Eidolon badge
-            # ──────────────────────────────────────────────
+            # -------------------------------------------------------
+            # EIDOLON BADGE
+            # -------------------------------------------------------
             if c["id"] in owned:
                 e = owned[c["id"]]
-                badge_w, badge_h = 38, 24
-                bx = x + 6
-                by = y + ICON - badge_h - 6
+
+                badge_w, badge_h = 40, 26
+                bx = x + 8
+                by = y + ICON - badge_h - 8
 
                 draw.rounded_rectangle(
                     [bx, by, bx + badge_w, by + badge_h],
@@ -332,10 +336,12 @@ class Roster(commands.Cog):
                 text = f"E{e}"
                 tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
                 th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
+
                 tx = bx + (badge_w - tw) // 2
                 ty = by + (badge_h - th) // 2 - 3
 
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
+
 
 
         # -------------------------------------------------------
