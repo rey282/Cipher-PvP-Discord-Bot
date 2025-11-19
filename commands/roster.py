@@ -7,13 +7,15 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 import io
 import math
 import os
+import asyncio
 from dotenv import load_dotenv
 
 from utils.db_utils import get_cursor
-from .shared_cache import char_map_cache, icon_cache  
+from . import shared_cache   # ✅ global shared cache
 
-BADGE_FONT = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
-
+BADGE_FONT = ImageFont.truetype(
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15
+)
 
 load_dotenv()
 
@@ -28,7 +30,7 @@ FONT_PATH = os.path.join(
 
 
 def load_title_font(size: int) -> ImageFont.FreeTypeFont:
-    """Try to load HSR-like font, fallback to default if missing."""
+    """Try to load HSR-like font, fallback to default."""
     try:
         return ImageFont.truetype(FONT_PATH, size)
     except Exception:
@@ -42,15 +44,17 @@ class Roster(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-        self.icon_cache = {}  
-        self.char_map_cache = None
+        # Initialize shared cache
+        shared_cache.char_map_cache = {}
+        shared_cache.icon_cache = {}
 
     async def preload_all(self):
         """Load character metadata + icons ONCE when bot starts."""
-        global char_map_cache, icon_cache
-
-        # --- Load metadata from DB ---
+        # --------------------------
+        # Load metadata from DB
+        # --------------------------
         char_map = {}
+
         with get_cursor() as cur:
             cur.execute(
                 "SELECT name, rarity, image_url FROM characters WHERE image_url IS NOT NULL"
@@ -59,7 +63,7 @@ class Roster(commands.Cog):
 
         for r in rows:
             url = r["image_url"]
-            fid = url.split("/")[-1].split(".")[0]
+            fid = url.split("/")[-1].split(".")[0]  # 1003.png -> "1003"
             char_map[fid] = {
                 "id": fid,
                 "name": r["name"],
@@ -67,14 +71,13 @@ class Roster(commands.Cog):
                 "image": url,
             }
 
-        # local copy
-        self.char_map_cache = char_map
+        # Store into shared cache
+        shared_cache.char_map_cache.clear()
+        shared_cache.char_map_cache.update(char_map)
 
-        # 🔥 shared cache update
-        char_map_cache.clear()
-        char_map_cache.update(char_map)
-
-        # --- Preload images ---
+        # --------------------------
+        # Preload all icons once
+        # --------------------------
         async with aiohttp.ClientSession() as session:
             for cid, meta in char_map.items():
                 try:
@@ -84,15 +87,14 @@ class Roster(commands.Cog):
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
                     img = img.resize((96, 96), Image.LANCZOS)
 
-                    # local cache
-                    self.icon_cache[cid] = img
-
-                    # 🔥 shared cache
-                    icon_cache[cid] = img
+                    shared_cache.icon_cache[cid] = img
 
                 except:
                     continue
 
+    # ──────────────────────────────────────────────────────────────
+    # /roster command
+    # ──────────────────────────────────────────────────────────────
     @app_commands.command(
         name="roster",
         description="Show a player's roster as an image.",
@@ -106,49 +108,39 @@ class Roster(commands.Cog):
     ):
         await interaction.response.defer()
 
-        # Whose roster?
         discord_id = str(member.id if member else interaction.user.id)
 
         # -------------------------------------------------------
-        # 1) Fetch roster (from Yanyan API)
+        # 1) Fetch roster from Yanyan API
         # -------------------------------------------------------
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(ROSTER_API, timeout=10) as resp:
-
-                    # Server down or 5xx/4xx?
                     if resp.status != 200:
                         return await interaction.followup.send(
-                            "⚠️ The roster server is unavailable at the moment. Please try again later."
+                            "⚠️ Roster server unavailable."
                         )
 
-                    # Try decode JSON
                     try:
                         roster_users = await resp.json()
-                    except aiohttp.ContentTypeError:
+                    except:
                         return await interaction.followup.send(
-                            "⚠️ The roster server returned an invalid response.\nPlease try again shortly."
+                            "⚠️ Invalid roster data returned."
                         )
 
             except asyncio.TimeoutError:
                 return await interaction.followup.send(
-                    "⚠️ The roster server timed out. Please try again later."
+                    "⚠️ Roster request timed out."
                 )
-
             except Exception as e:
-                return await interaction.followup.send(
-                    f"⚠️ Failed to connect to roster server.\n`{e}`"
-                )
+                return await interaction.followup.send(f"⚠️ Error: `{e}`")
 
         entry = next((u for u in roster_users if u["discordId"] == discord_id), None)
         if not entry:
-            return await interaction.followup.send(
-                "❌ This player hasn't created a roster yet."
-            )
+            return await interaction.followup.send("❌ This player has no roster.")
 
         owned = {c["id"]: c["eidolon"] for c in entry["profileCharacters"]}
 
-        # Choose a display name for the title
         player_name = (
             entry.get("globalName")
             or entry.get("username")
@@ -157,74 +149,44 @@ class Roster(commands.Cog):
         title_text = f"{player_name}'s Roster"
 
         # -------------------------------------------------------
-        # 2) Load character metadata DIRECTLY from PostgreSQL
+        # 2) Character metadata (from shared cache)
         # -------------------------------------------------------
-        char_map: dict[str, dict] = {}
+        if not shared_cache.char_map_cache:
+            return await interaction.followup.send("❌ Character cache not loaded.")
 
-        with get_cursor() as cur:
-            cur.execute(
-                """
-                SELECT name, rarity, image_url
-                FROM characters
-                WHERE image_url IS NOT NULL
-                """
-            )
-            rows = cur.fetchall()
-
-        for row in rows:
-            url = row["image_url"]
-            if not url:
-                continue
-            file = url.split("/")[-1]
-            numeric_id = file.split(".")[0]  # 1308.png → "1308"
-
-            char_map[numeric_id] = {
-                "id": numeric_id,
-                "name": row["name"],
-                "rarity": row["rarity"],
-                "image": row["image_url"],
-            }
-
-        if not char_map:
-            return await interaction.followup.send(
-                "❌ No character metadata found in the database."
-            )
+        char_map = shared_cache.char_map_cache
 
         # -------------------------------------------------------
-        # 3) Sorting logic (Owned → 5★ → 4★ → alphabetical)
+        # 3) Sorting
         # -------------------------------------------------------
         def sort_key(c: dict):
             return (
-                0 if c["id"] in owned else 1,  # owned first
-                -c["rarity"],                  # 5★ above 4★
-                c["name"],                     # alphabetical
+                0 if c["id"] in owned else 1,
+                -c["rarity"],
+                c["name"],
             )
 
         sorted_chars = sorted(char_map.values(), key=sort_key)
 
         # -------------------------------------------------------
-        # 4) Layout calculations
+        # 4) Layout
         # -------------------------------------------------------
-        ICON = 96          # icon size
-        GAP = 10           # space between icons
-        PADDING = 20       # padding around grid
+        ICON = 96
+        GAP = 10
+        PADDING = 20
         PER_ROW = 10
 
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
-
-        # width: PADDING + (ICON+GAP)*PER_ROW - GAP + PADDING
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
 
-        # Measure title height using the target font
         title_font = load_title_font(40)
-        dummy_img = Image.new("RGB", (1, 1))
-        dummy_draw = ImageDraw.Draw(dummy_img)
-        title_bbox = dummy_draw.textbbox((0, 0), title_text, font=title_font)
-        title_h = title_bbox[3] - title_bbox[1]
+        dummy = Image.new("RGB", (1, 1))
+        draw_dummy = ImageDraw.Draw(dummy)
+        title_h = draw_dummy.textbbox((0, 0), title_text, font=title_font)[3]
 
         TITLE_TOP = 30
         UNDERLINE_GAP = 8
-        UNDERLINE_EXTRA = 24  # space under the underline
+        UNDERLINE_EXTRA = 24
 
         title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
         grid_top = title_block_bottom + PADDING
@@ -233,131 +195,94 @@ class Roster(commands.Cog):
         height = grid_top + grid_height
 
         # -------------------------------------------------------
-        # 5) Create canvas with subtle gradient background
+        # 5) Canvas + gradient
         # -------------------------------------------------------
         canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
         draw = ImageDraw.Draw(canvas)
 
-        # gradient: dark purple → dark blue-ish
         for y in range(height):
-            t = y / max(1, height - 1)
-            r = int(14 + (28 - 14) * t)   # 14 → 28
-            g = int(10 + (18 - 10) * t)   # 10 → 18
-            b = int(30 + (52 - 30) * t)   # 30 → 52
+            t = y / (height - 1)
+            r = int(14 + (28 - 14) * t)
+            g = int(10 + (18 - 10) * t)
+            b = int(30 + (52 - 30) * t)
             draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
 
         # -------------------------------------------------------
-        # 6) Draw title + underline (Style C)
+        # 6) Title
         # -------------------------------------------------------
         title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
         title_w = title_bbox[2] - title_bbox[0]
-
         title_x = (width - title_w) // 2
         title_y = TITLE_TOP
 
-        # main title
-        draw.text((title_x, title_y), title_text, font=title_font, fill=(255, 255, 255, 255))
+        draw.text((title_x, title_y), title_text, font=title_font, fill="white")
 
-        # underline (shorter than full width)
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
-        underline_margin = int(width * 0.28)
-        draw.line(
-            [(underline_margin, underline_y), (width - underline_margin, underline_y)],
-            fill=(255, 255, 255, 180),
-            width=3,
-        )
+        margin = int(width * 0.28)
+        draw.line([(margin, underline_y), (width - margin, underline_y)], fill=(255, 255, 255, 180), width=3)
 
         # -------------------------------------------------------
-        # 7) Draw character icons
+        # 7) Draw icons + eidolon badges
         # -------------------------------------------------------
-        async with aiohttp.ClientSession() as session:
-            for idx, c in enumerate(sorted_chars):
-                col = idx % PER_ROW
-                row = idx // PER_ROW
+        for idx, c in enumerate(sorted_chars):
+            col = idx % PER_ROW
+            row = idx // PER_ROW
 
-                x = PADDING + col * (ICON + GAP)
-                y = grid_top + row * (ICON + GAP)
+            x = PADDING + col * (ICON + GAP)
+            y = grid_top + row * (ICON + GAP)
 
-                base_icon = self.icon_cache.get(c["id"])
-                if base_icon is None:
-                    continue
+            icon = shared_cache.icon_cache.get(c["id"])
+            if not icon:
+                continue
 
-                icon = base_icon.copy()
+            icon = icon.copy()
+            if c["id"] not in owned:
+                icon = ImageEnhance.Brightness(icon).enhance(0.35)
+                icon = icon.convert("LA").convert("RGBA")
 
-                # Grey out unowned
-                if c["id"] not in owned:
-                    icon = ImageEnhance.Brightness(icon).enhance(0.35)
-                    icon = icon.convert("LA").convert("RGBA")
+            rounded = Image.new("L", (ICON, ICON), 0)
+            mask_draw = ImageDraw.Draw(rounded)
+            mask_draw.rounded_rectangle([0, 0, ICON, ICON], radius=12, fill=255)
+            canvas.paste(icon, (x, y), rounded)
 
-                # Slight rounded-corner mask for icons
-                mask = Image.new("L", (ICON, ICON), 0)
-                mask_draw = ImageDraw.Draw(mask)
-                radius = 12
-                mask_draw.rounded_rectangle(
-                    [(0, 0), (ICON, ICON)],
-                    radius=radius,
-                    fill=255,
-                )
+            # rarity border
+            border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
+            if c["rarity"] == 5:
+                color = (255, 215, 0, 255)
+            elif c["rarity"] == 4:
+                color = (182, 102, 210, 255)
+            else:
+                color = None
 
-                # Paste with rounded mask
-                canvas.paste(icon, (x, y), mask)
+            if color:
+                glow_rect = [border_rect[0] - 1, border_rect[1] - 1,
+                             border_rect[2] + 1, border_rect[3] + 1]
+                draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
+                draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
 
-                # Rarity border with small glow
-                border_rect = [x + 2, y + 2, x + ICON - 2, y + ICON - 2]
-                if c["rarity"] == 5:
-                    color = (255, 215, 0, 255)  # gold
-                elif c["rarity"] == 4:
-                    color = (182, 102, 210, 255)  # purple
-                else:
-                    color = None
+            # eidolon badge
+            if c["id"] in owned:
+                e = owned[c["id"]]
+                badge_w, badge_h = 38, 24
+                bx = x + 6
+                by = y + ICON - badge_h - 6
 
-                if color:
-                    # soft outer glow
-                    glow_rect = [border_rect[0] - 1, border_rect[1] - 1,
-                                 border_rect[2] + 1, border_rect[3] + 1]
-                    draw.rounded_rectangle(glow_rect, radius=14, outline=color, width=1)
-                    # main border
-                    draw.rounded_rectangle(border_rect, radius=12, outline=color, width=3)
+                draw.rounded_rectangle([bx, by, bx + badge_w, by + badge_h],
+                                       radius=8,
+                                       fill=(0, 0, 0, 210),
+                                       outline="white",
+                                       width=2)
 
-                # Eidolon badge (only if owned)
-                if c["id"] in owned:
-                    e = owned[c["id"]]
+                text = f"E{e}"
+                tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
+                th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
+                tx = bx + (badge_w - tw) // 2
+                ty = by + (badge_h - th) // 2 - 3
 
-                    # Bigger, bolder badge size
-                    badge_w = 38
-                    badge_h = 24
-                    badge_x = x + 6
-                    badge_y = y + ICON - badge_h - 6
-
-                    # Stronger pill background + bold outline
-                    badge_rect = [
-                        badge_x,
-                        badge_y,
-                        badge_x + badge_w,
-                        badge_y + badge_h,
-                    ]
-                    draw.rounded_rectangle(
-                        badge_rect,
-                        radius=8,
-                        fill=(0, 0, 0, 210),             
-                        outline=(255, 255, 255, 255),     
-                        width=2,                          
-                    )
-
-                    badge_font = BADGE_FONT
-                    text = f"E{e}"
-                    text_bbox = draw.textbbox((0, 0), text, font=badge_font)
-                    tw = text_bbox[2] - text_bbox[0]
-                    th = text_bbox[3] - text_bbox[1]
-
-                    # Center the text
-                    tx = badge_x + (badge_w - tw) // 2
-                    ty = badge_y + (badge_h - th) // 2 - 3
-
-                    draw.text((tx, ty), text, font=badge_font, fill=(255, 255, 255, 255))
+                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
         # -------------------------------------------------------
-        # 8) Send to Discord
+        # 8) Send image
         # -------------------------------------------------------
         buffer = io.BytesIO()
         canvas.save(buffer, "PNG")
@@ -371,6 +296,5 @@ class Roster(commands.Cog):
 
 async def setup(bot: commands.Bot):
     cog = Roster(bot)
-    await cog.preload_all()  
+    await cog.preload_all()  # load caches once
     await bot.add_cog(cog)
-

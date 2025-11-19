@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 # DB helpers
 from utils.db_utils import load_elo_data, get_cursor
-from .shared_cache import char_map_cache, icon_cache
+from . import shared_cache
 
 load_dotenv()
 
@@ -248,7 +248,7 @@ class MatchmakingQueue(commands.Cog):
 
         combined_owned = set(owned1.keys()) | set(owned2.keys())
 
-        if not char_map_cache:
+        if not shared_cache.char_map_cache:
             return None
 
         # 1) Sorting logic 
@@ -259,7 +259,7 @@ class MatchmakingQueue(commands.Cog):
                 c["name"],                             
             )
 
-        sorted_chars = sorted(char_map_cache.values(), key=sort_key)
+        sorted_chars = sorted(shared_cache.char_map_cache.values(), key=sort_key)
 
         # 2) Layout 
         ICON = 96
@@ -330,7 +330,7 @@ class MatchmakingQueue(commands.Cog):
             x = PADDING + col * (ICON + GAP)
             y = grid_top + row * (ICON + GAP)
 
-            base_icon = icon_cache.get(c["id"])
+            base_icon = shared_cache.icon_cache.get(c["id"])
             if base_icon is None:
                 continue
 
@@ -433,7 +433,7 @@ class MatchmakingQueue(commands.Cog):
         - Team 1 roster image (combined of both players)
         - Team 2 roster image
         """
-        if not char_map_cache or not icon_cache:
+        if not shared_cache.char_map_cache or not shared_cache.icon_cache:
             return
 
 
