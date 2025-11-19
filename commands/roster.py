@@ -85,41 +85,48 @@ class Roster(commands.Cog):
 
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
 
-                    # ───── FACE CROP (square + upper emphasis) ─────
+                    # ───── CENTERED SQUARE FACE CROP ─────
                     w, h = img.size
-                    crop_size = int(min(w, h) * 0.70)
+                    crop_size = int(min(w, h) * 0.70)  # keep 70% of image, very balanced
 
+                    # center position (slightly upper emphasis)
                     x_center = w // 2
-                    y_center = int(h * 0.38)
+                    y_center = int(h * 0.40)
 
                     left   = x_center - crop_size // 2
                     right  = x_center + crop_size // 2
                     top    = y_center - crop_size // 2
                     bottom = y_center + crop_size // 2
 
+                    # boundaries
                     left   = max(0, left)
                     top    = max(0, top)
                     right  = min(w, right)
                     bottom = min(h, bottom)
 
-                    img = img.crop((left, top, right, bottom))
+                    cropped = img.crop((left, top, right, bottom))
 
-                    # ───── ADD BLACK BACKGROUND (fix shape + remove stretching) ─────
-                    bg = Image.new("RGBA", (crop_size, crop_size), (0, 0, 0, 255))
-                    bg.paste(img, (0, 0), img)
-                    img = bg
+                    # ensure result is exactly square
+                    crop_w, crop_h = cropped.size
+                    final_size = max(crop_w, crop_h)
 
-                    # ───── BRIGHTNESS / CONTRAST SOFTENING ─────
+                    # ───── ADD TRUE BLACK BACKGROUND ─────
+                    bg = Image.new("RGBA", (final_size, final_size), (0, 0, 0, 255))
+                    bg.paste(cropped, ((final_size - crop_w)//2, (final_size - crop_h)//2), cropped)
+                    img = bg  # replace
+
+                    # ───── BRIGHTNESS & CONTRAST TWEAK (subtle) ─────
                     img = ImageEnhance.Brightness(img).enhance(0.93)
                     img = ImageEnhance.Contrast(img).enhance(0.93)
 
-                    # ───── FINAL RESIZE — PERFECT SQUARE ─────
+                    # ───── FINAL UNIFORM RESIZE ─────
                     img = img.resize((96, 96), Image.LANCZOS)
 
                     shared_cache.icon_cache[cid] = img
 
-                except Exception as e:
+                except Exception:
                     continue
+
 
 
     # ──────────────────────────────────────────────────────────────
