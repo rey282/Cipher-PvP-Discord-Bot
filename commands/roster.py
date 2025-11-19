@@ -112,11 +112,11 @@ class Roster(commands.Cog):
                     # APPLY RARITY BACKGROUND (PERFECT FIT)
                     # ----------------------------------------------------
                     if char_map[cid]["rarity"] == 5:
-                        bg_color = (212, 175, 55, 255)
+                        bg_color = (170, 140, 40, 255)  
                     elif char_map[cid]["rarity"] == 4:
-                        bg_color = (182, 102, 210, 255)
+                        bg_color = (145, 75, 165, 255)   
                     else:
-                        bg_color = (55, 55, 55, 255)
+                        bg_color = (45, 45, 45, 255)    
 
                     bg = Image.new("RGBA", (ICON, ICON), bg_color)
 
@@ -296,8 +296,9 @@ class Roster(commands.Cog):
                 e = owned[c["id"]]
 
                 badge_w, badge_h = 40, 26
-                bx = x + 8
-                by = y + ICON - badge_h - 8
+                bx = x + 4                        
+                by = y + ICON - badge_h - 4       
+
 
                 draw.rounded_rectangle(
                     [bx, by, bx + badge_w, by + badge_h],
