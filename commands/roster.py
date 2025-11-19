@@ -180,7 +180,7 @@ class Roster(commands.Cog):
         draw.text((title_x, title_y), title_text, font=title_font, fill=(255, 255, 255, 255))
 
         # underline (shorter than full width)
-        underline_y = title_y + title_h + UNDERLINE_GAP
+        underline_y = title_y + title_h + UNDERLINE_GAP + 10
         underline_margin = int(width * 0.28)
         draw.line(
             [(underline_margin, underline_y), (width - underline_margin, underline_y)],
@@ -249,12 +249,13 @@ class Roster(commands.Cog):
                 if c["id"] in owned:
                     e = owned[c["id"]]
 
-                    badge_w = 32
-                    badge_h = 20
-                    badge_x = x + 4
-                    badge_y = y + ICON - badge_h - 4
+                    # Bigger, bolder badge size
+                    badge_w = 38
+                    badge_h = 24
+                    badge_x = x + 6
+                    badge_y = y + ICON - badge_h - 6
 
-                    # badge background (pill)
+                    # Stronger pill background + bold outline
                     badge_rect = [
                         badge_x,
                         badge_y,
@@ -264,19 +265,22 @@ class Roster(commands.Cog):
                     draw.rounded_rectangle(
                         badge_rect,
                         radius=8,
-                        fill=(0, 0, 0, 190),
-                        outline=(255, 255, 255, 160),
-                        width=1,
+                        fill=(0, 0, 0, 210),              # darker background
+                        outline=(255, 255, 255, 255),     # FULL white border
+                        width=2,                          # thicker outline
                     )
 
-                    # badge text
-                    badge_font = load_title_font(14)
+                    # Bigger + clearer text
+                    badge_font = load_title_font(16)      # increased from 14 → 16
                     text = f"E{e}"
                     text_bbox = draw.textbbox((0, 0), text, font=badge_font)
                     tw = text_bbox[2] - text_bbox[0]
                     th = text_bbox[3] - text_bbox[1]
+
+                    # Center the text
                     tx = badge_x + (badge_w - tw) // 2
                     ty = badge_y + (badge_h - th) // 2 - 1
+
                     draw.text((tx, ty), text, font=badge_font, fill=(255, 255, 255, 255))
 
         # -------------------------------------------------------
