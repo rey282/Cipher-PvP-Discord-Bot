@@ -139,207 +139,190 @@ class Roster(commands.Cog):
     # ──────────────────────────────────────────────────────────────
     # /roster command
     # ──────────────────────────────────────────────────────────────
-    @app_commands.command(
-        name="roster",
-        description="Show a player's roster as an image.",
-    )
-    @app_commands.guilds(GUILD_ID)
-    @app_commands.describe(member="Whose roster do you want to view?")
-    async def roster(
-        self,
-        interaction: discord.Interaction,
-        member: discord.Member | None = None,
-    ):
-        await interaction.response.defer()
-
-        discord_id = str(member.id if member else interaction.user.id)
-
-        # -------------------------------------------------------
-        # 1) Fetch roster from Yanyan API
-        # -------------------------------------------------------
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(ROSTER_API, timeout=10) as resp:
-                    if resp.status != 200:
-                        return await interaction.followup.send(
-                            "⚠️ Roster server unavailable."
-                        )
-
-                    try:
-                        roster_users = await resp.json()
-                    except:
-                        return await interaction.followup.send(
-                            "⚠️ Invalid roster data returned."
-                        )
-
-            except asyncio.TimeoutError:
-                return await interaction.followup.send(
-                    "⚠️ Roster request timed out."
-                )
-            except Exception as e:
-                return await interaction.followup.send(f"⚠️ Error: `{e}`")
-
-        entry = next((u for u in roster_users if u["discordId"] == discord_id), None)
-        if not entry:
-            return await interaction.followup.send("❌ This player has no roster.")
-
-        owned = {c["id"]: c["eidolon"] for c in entry["profileCharacters"]}
-
-        player_name = (
-            entry.get("globalName")
-            or entry.get("username")
-            or f"Player {discord_id}"
+        @app_commands.command(
+            name="roster",
+            description="Show a player's roster as an image.",
         )
-        title_text = f"{player_name}'s Roster"
+        @app_commands.guilds(GUILD_ID)
+        @app_commands.describe(member="Whose roster do you want to view?")
+        async def roster(
+            self,
+            interaction: discord.Interaction,
+            member: discord.Member | None = None,
+        ):
+            await interaction.response.defer()
 
-        # -------------------------------------------------------
-        # 2) Character metadata (from shared cache)
-        # -------------------------------------------------------
-        if not shared_cache.char_map_cache:
-            return await interaction.followup.send("❌ Character cache not loaded.")
+            discord_id = str(member.id if member else interaction.user.id)
 
-        char_map = shared_cache.char_map_cache
+            # -------------------------------------------------------
+            # 1) Fetch roster from Yanyan API
+            # -------------------------------------------------------
+            async with aiohttp.ClientSession() as session:
+                try:
+                    async with session.get(ROSTER_API, timeout=10) as resp:
+                        if resp.status != 200:
+                            return await interaction.followup.send(
+                                "⚠️ Roster server unavailable."
+                            )
 
-        # -------------------------------------------------------
-        # 3) Sorting
-        # -------------------------------------------------------
-        def sort_key(c: dict):
-            return (
-                0 if c["id"] in owned else 1,
-                -c["rarity"],
-                c["name"],
+                        try:
+                            roster_users = await resp.json()
+                        except:
+                            return await interaction.followup.send(
+                                "⚠️ Invalid roster data returned."
+                            )
+
+                except asyncio.TimeoutError:
+                    return await interaction.followup.send(
+                        "⚠️ Roster request timed out."
+                    )
+                except Exception as e:
+                    return await interaction.followup.send(f"⚠️ Error: `{e}`")
+
+            # -------------------------------------------------------
+            # Build roster_index here (FIXED)
+            # -------------------------------------------------------
+            roster_index = {u.get("discordId"): u for u in roster_users}
+
+            entry = roster_index.get(discord_id)
+            if not entry:
+                return await interaction.followup.send("❌ This player has no roster.")
+
+            owned = {c["id"]: c["eidolon"] for c in entry["profileCharacters"]}
+
+            # display name priority: Roster Name → Discord Name → fallback
+            roster_name = entry.get("globalName") or entry.get("username")
+            member_obj = interaction.guild.get_member(int(discord_id))
+            discord_name = member_obj.display_name if member_obj else None
+
+            player_name = roster_name or discord_name or f"User {discord_id}"
+            title_text = f"{player_name}'s Roster"
+
+            # -------------------------------------------------------
+            # 2) Character metadata (from shared cache)
+            # -------------------------------------------------------
+            if not shared_cache.char_map_cache:
+                return await interaction.followup.send("❌ Character cache not loaded.")
+
+            char_map = shared_cache.char_map_cache
+
+            # -------------------------------------------------------
+            # 3) Sorting
+            # -------------------------------------------------------
+            def sort_key(c: dict):
+                return (
+                    0 if c["id"] in owned else 1,
+                    -c["rarity"],
+                    c["name"],
+                )
+
+            sorted_chars = sorted(char_map.values(), key=sort_key)
+
+            # -------------------------------------------------------
+            # 4) Layout
+            # -------------------------------------------------------
+            ICON = 110
+            GAP = 8
+            PADDING = 20
+            PER_ROW = 8
+
+            rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
+            width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
+
+            title_font = load_title_font(40)
+            dummy = Image.new("RGB", (1, 1))
+            draw_dummy = ImageDraw.Draw(dummy)
+            title_h = draw_dummy.textbbox((0, 0), title_text, font=title_font)[3]
+
+            TITLE_TOP = 30
+            UNDERLINE_GAP = 8
+            UNDERLINE_EXTRA = 24
+
+            title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
+            grid_top = title_block_bottom + PADDING
+
+            grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
+            height = grid_top + grid_height
+
+            # -------------------------------------------------------
+            # 5) Canvas + gradient
+            # -------------------------------------------------------
+            canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
+            draw = ImageDraw.Draw(canvas)
+
+            for y in range(height):
+                t = y / (height - 1)
+                r = int(14 + (28 - 14) * t)
+                g = int(10 + (18 - 10) * t)
+                b = int(30 + (52 - 30) * t)
+                draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
+
+            # -------------------------------------------------------
+            # 6) Title
+            # -------------------------------------------------------
+            title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
+            title_w = title_bbox[2] - title_bbox[0]
+            title_x = (width - title_w) // 2
+            title_y = TITLE_TOP
+
+            draw.text((title_x, title_y), title_text, font=title_font, fill="white")
+
+            underline_y = title_y + title_h + UNDERLINE_GAP + 10
+            margin = int(width * 0.28)
+            draw.line([(margin, underline_y), (width - margin, underline_y)], fill=(255, 255, 255, 180), width=3)
+
+            # -------------------------------------------------------
+            # 7) Draw icons + eidolon badges
+            # -------------------------------------------------------
+            for idx, c in enumerate(sorted_chars):
+                col = idx % PER_ROW
+                row = idx // PER_ROW
+
+                x = PADDING + col * (ICON + GAP)
+                y = grid_top + row * (ICON + GAP)
+
+                icon = shared_cache.icon_cache.get(c["id"])
+                if not icon:
+                    continue
+
+                icon = icon.copy()
+                if c["id"] not in owned:
+                    icon = ImageEnhance.Brightness(icon).enhance(0.35)
+                    icon = icon.convert("LA").convert("RGBA")
+
+                canvas.paste(icon, (x, y), icon)
+
+                # eid badge
+                if c["id"] in owned:
+                    e = owned[c["id"]]
+
+                    badge_w, badge_h = 40, 26
+                    bx = x + 4
+                    by = y + ICON - badge_h - 4
+
+                    draw.rounded_rectangle(
+                        [bx, by, bx + badge_w, by + badge_h],
+                        radius=8,
+                        fill=(0, 0, 0, 190),
+                    )
+
+                    text = f"E{e}"
+                    tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
+                    th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
+
+                    tx = bx + (badge_w - tw) // 2
+                    ty = by + (badge_h - th) // 2 - 3
+
+                    draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
+
+            # -------------------------------------------------------
+            # 8) Send image (NO PING)
+            # -------------------------------------------------------
+            buffer = io.BytesIO()
+            canvas.save(buffer, "PNG")
+            buffer.seek(0)
+
+            await interaction.followup.send(
+                content=f"**Roster for {player_name}**",
+                file=discord.File(buffer, filename="roster.png"),
             )
-
-        sorted_chars = sorted(char_map.values(), key=sort_key)
-
-        # -------------------------------------------------------
-        # 4) Layout
-        # -------------------------------------------------------
-        ICON = 110
-        GAP = 8
-        PADDING = 20
-        PER_ROW = 8
-
-        rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
-        width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
-
-        title_font = load_title_font(40)
-        dummy = Image.new("RGB", (1, 1))
-        draw_dummy = ImageDraw.Draw(dummy)
-        title_h = draw_dummy.textbbox((0, 0), title_text, font=title_font)[3]
-
-        TITLE_TOP = 30
-        UNDERLINE_GAP = 8
-        UNDERLINE_EXTRA = 24
-
-        title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
-        grid_top = title_block_bottom + PADDING
-
-        grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
-        height = grid_top + grid_height
-
-        # -------------------------------------------------------
-        # 5) Canvas + gradient
-        # -------------------------------------------------------
-        canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
-        draw = ImageDraw.Draw(canvas)
-
-        for y in range(height):
-            t = y / (height - 1)
-            r = int(14 + (28 - 14) * t)
-            g = int(10 + (18 - 10) * t)
-            b = int(30 + (52 - 30) * t)
-            draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
-
-        # -------------------------------------------------------
-        # 6) Title
-        # -------------------------------------------------------
-        title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
-        title_w = title_bbox[2] - title_bbox[0]
-        title_x = (width - title_w) // 2
-        title_y = TITLE_TOP
-
-        draw.text((title_x, title_y), title_text, font=title_font, fill="white")
-
-        underline_y = title_y + title_h + UNDERLINE_GAP + 10
-        margin = int(width * 0.28)
-        draw.line([(margin, underline_y), (width - margin, underline_y)], fill=(255, 255, 255, 180), width=3)
-
-        # -------------------------------------------------------
-        # 7) Draw icons + eidolon badges
-        # -------------------------------------------------------
-        for idx, c in enumerate(sorted_chars):
-            col = idx % PER_ROW
-            row = idx // PER_ROW
-
-            x = PADDING + col * (ICON + GAP)
-            y = grid_top + row * (ICON + GAP)
-
-            icon = shared_cache.icon_cache.get(c["id"])
-            if not icon:
-                continue
-
-            # dim unowned
-            icon = icon.copy()
-            if c["id"] not in owned:
-                icon = ImageEnhance.Brightness(icon).enhance(0.35)
-                icon = icon.convert("LA").convert("RGBA")
-
-            # -------------------------------------------------------
-            # PASTE FINAL ICON (already has background included)
-            # -------------------------------------------------------
-            canvas.paste(icon, (x, y), icon)
-
-            # -------------------------------------------------------
-            # EIDOLON BADGE
-            # -------------------------------------------------------
-            if c["id"] in owned:
-                e = owned[c["id"]]
-
-                badge_w, badge_h = 40, 26
-                bx = x + 4                        
-                by = y + ICON - badge_h - 4       
-
-
-                draw.rounded_rectangle(
-                    [bx, by, bx + badge_w, by + badge_h],
-                    radius=8,
-                    fill=(0, 0, 0, 190),  
-                )
-
-                text = f"E{e}"
-                tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
-                th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
-
-                tx = bx + (badge_w - tw) // 2
-                ty = by + (badge_h - th) // 2 - 3
-
-                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
-
-
-        # -------------------------------------------------------
-        # 8) Send image
-        # -------------------------------------------------------
-        buffer = io.BytesIO()
-        canvas.save(buffer, "PNG")
-        buffer.seek(0)
-
-        entry = roster_index.get(str(discord_id))
-        roster_name = entry.get("name") if entry else None
-
-        member = interaction.guild.get_member(int(discord_id))
-        discord_name = member.display_name if member else None
-
-        player_name = roster_name or discord_name or f"User {discord_id}"
-
-        await interaction.followup.send(
-            content=f"**Roster for {player_name}**",
-            file=discord.File(buffer, filename="roster.png"),
-        )
-
-
-
-async def setup(bot: commands.Bot):
-    cog = Roster(bot)
-    await cog.preload_all()  
-    await bot.add_cog(cog)
