@@ -602,9 +602,11 @@ class MatchmakingCommands(commands.Cog):
 
             def draw_badge(e_val, bx):
                 rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
-                draw.rounded_rectangle(rect, radius=8,
-                                    fill=(0, 0, 0, 210),
-                                    outline="white", width=2)
+                draw.rounded_rectangle(
+                    [bx, by, bx + badge_w, by + badge_h],
+                    radius=8,
+                    fill=(0, 0, 0, 190),  
+                )
 
                 text = f"E{e_val}"
                 tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]

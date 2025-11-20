@@ -304,9 +304,7 @@ class Roster(commands.Cog):
                 draw.rounded_rectangle(
                     [bx, by, bx + badge_w, by + badge_h],
                     radius=8,
-                    fill=(0, 0, 0, 210),
-                    outline="white",
-                    width=2,
+                    fill=(0, 0, 0, 190),  
                 )
 
                 text = f"E{e}"
