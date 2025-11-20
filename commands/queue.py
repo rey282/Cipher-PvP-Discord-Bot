@@ -363,10 +363,11 @@ class MatchmakingQueue(commands.Cog):
                 rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
 
                 draw.rounded_rectangle(
-                    [bx, by, bx + badge_w, by + badge_h],
+                    [bx, badge_y, bx + badge_w, badge_y + badge_h],
                     radius=8,
-                    fill=(0, 0, 0, 190),   
+                    fill=(0, 0, 0, 190),
                 )
+
 
                 text = f"E{e_value}"
                 text_bbox = draw.textbbox((0, 0), text, font=BADGE_FONT)

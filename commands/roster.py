@@ -324,10 +324,19 @@ class Roster(commands.Cog):
         canvas.save(buffer, "PNG")
         buffer.seek(0)
 
+        entry = roster_index.get(str(discord_id))
+        roster_name = entry.get("name") if entry else None
+
+        member = interaction.guild.get_member(int(discord_id))
+        discord_name = member.display_name if member else None
+
+        player_name = roster_name or discord_name or f"User {discord_id}"
+
         await interaction.followup.send(
-            content=f"**Roster for <@{discord_id}>**",
+            content=f"**Roster for {player_name}**",
             file=discord.File(buffer, filename="roster.png"),
         )
+
 
 
 async def setup(bot: commands.Bot):
