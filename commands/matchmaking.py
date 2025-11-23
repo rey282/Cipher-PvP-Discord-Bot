@@ -433,7 +433,6 @@ class MatchmakingCommands(commands.Cog):
             color=discord.Color.purple(),
         )
         embed.add_field(
-            name="Teams Alligned",  # keep the original spelling
             value=(
                 f" {format_team(team1)} (Avg: {points1:.1f} pts)\n"
                 f" {format_team(team2)} (Avg: {points2:.1f} pts)"
@@ -465,7 +464,7 @@ class MatchmakingCommands(commands.Cog):
         embed.set_footer(text="Handled with care by Kyasutorisu")
         return embed
 
-    # ─────────── roster helpers (same as queue.py, using shared_cache) ───────────
+    # ─────────── roster helpers ───────────
 
     async def _fetch_roster_users(self) -> Optional[list]:
         try:
@@ -511,7 +510,7 @@ class MatchmakingCommands(commands.Cog):
         if not char_map_cache:
             return None
 
-        # ******** EXACT roster.py sorting *******
+        # ******** sorting *******
         def sort_key(c: dict):
             return (
                 0 if c["id"] in combined_owned else 1,
@@ -521,7 +520,7 @@ class MatchmakingCommands(commands.Cog):
 
         sorted_chars = sorted(char_map_cache.values(), key=sort_key)
 
-        # ******** EXACT roster.py layout ********
+        # ******** layout ********
         ICON = 110
         GAP = 8
         PADDING = 20
@@ -546,7 +545,6 @@ class MatchmakingCommands(commands.Cog):
         grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
         height = grid_top + grid_height
 
-        # ******** SAME gradient as roster.py ********
         canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
         draw = ImageDraw.Draw(canvas)
 
@@ -570,7 +568,7 @@ class MatchmakingCommands(commands.Cog):
         draw.line([(margin, underline_y), (width - margin, underline_y)],
                 fill=(255, 255, 255, 180), width=3)
 
-        # ******** Icons + Eidolon Badges (EXACT) ********
+        # ******** Icons + Eidolon Badges ********
         for idx, c in enumerate(sorted_chars):
             col = idx % PER_ROW
             row = idx // PER_ROW
@@ -591,7 +589,7 @@ class MatchmakingCommands(commands.Cog):
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            # paste EXACT icon (already includes rarity background)
+            # icon (already includes rarity background)
             canvas.paste(icon, (x, y), icon)
 
             # *****************
@@ -600,19 +598,24 @@ class MatchmakingCommands(commands.Cog):
             badge_w, badge_h = 40, 26
             badge_y = y + ICON - badge_h - 4
 
-            def draw_badge(e_val, bx):
+            def draw_badge(e_value: int, bx: int):
                 rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
+
                 draw.rounded_rectangle(
-                    [bx, by, bx + badge_w, by + badge_h],
+                    [bx, badge_y, bx + badge_w, badge_y + badge_h],
                     radius=8,
-                    fill=(0, 0, 0, 190),  
+                    fill=(0, 0, 0, 190),
                 )
 
-                text = f"E{e_val}"
-                tw = draw.textbbox((0, 0), text, font=BADGE_FONT)[2]
-                th = draw.textbbox((0, 0), text, font=BADGE_FONT)[3]
+
+                text = f"E{e_value}"
+                text_bbox = draw.textbbox((0, 0), text, font=BADGE_FONT)
+                tw = text_bbox[2] - text_bbox[0]
+                th = text_bbox[3] - text_bbox[1]
+
                 tx = bx + (badge_w - tw) // 2
                 ty = badge_y + (badge_h - th) // 2 - 3
+
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
             e1 = owned1.get(c["id"])

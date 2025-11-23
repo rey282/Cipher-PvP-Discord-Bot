@@ -353,11 +353,11 @@ class MatchmakingQueue(commands.Cog):
             e2 = owned2.get(c["id"])
 
             # -------------------------------------------------------
-            # DUAL EIDOLON BADGES (MATCH roster.py EXACTLY)
+            # DUAL EIDOLON BADGES
             # -------------------------------------------------------
 
-            badge_w, badge_h = 40, 26          # same as roster.py
-            badge_y = y + ICON - badge_h - 4   # same bottom offset
+            badge_w, badge_h = 40, 26         
+            badge_y = y + ICON - badge_h - 4   
 
             def draw_badge(e_value: int, bx: int):
                 rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
