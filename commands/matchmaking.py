@@ -433,6 +433,7 @@ class MatchmakingCommands(commands.Cog):
             color=discord.Color.purple(),
         )
         embed.add_field(
+            name="Teams Alligned", 
             value=(
                 f" {format_team(team1)} (Avg: {points1:.1f} pts)\n"
                 f" {format_team(team2)} (Avg: {points2:.1f} pts)"
