@@ -53,85 +53,88 @@ class AdminSync(commands.Cog):
             ephemeral=True
         )
     
-            @app_commands.command(
-                name="sync_all_players",
-                description="Force-sync every member in the server into the player database."
-            )
-            @app_commands.guilds(GUILD_ID)
-            async def sync_all_players(self, interaction: Interaction):
+    @app_commands.command(
+        name="sync_all_players",
+        description="Force-sync every member in the server into the player database."
+    )
+    @app_commands.guilds(GUILD_ID)
+    async def sync_all_players(self, interaction: Interaction):
 
-                if interaction.user.id != OWNER_ID:
-                    await interaction.response.send_message(
-                        "<:Unamurice:1349309283669377064> O-oh… only Haya can weave the fates like this...",
-                        ephemeral=True)
-                    return
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message(
+                "<:Unamurice:1349309283669377064> O-oh… only Haya can weave the fates like this...",
+                ephemeral=True)
+            return
 
-                await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
 
-                guild = interaction.guild
-                inserted = 0
-                skipped = 0
-                skipped_bots = 0
+        guild = interaction.guild
+        inserted = 0
+        skipped = 0
+        skipped_bots = 0
 
-                # Load who already exists in the players table
-                existing = load_elo_data()
+        # Load who already exists in the players table
+        existing = load_elo_data()
 
-                from bot import pool   
+        from bot import pool   # adjust import path if needed
 
-                for member in guild.members:
-                    if member.bot:
-                        skipped_bots += 1
-                        continue
+        for member in guild.members:
+            # ──────────────────────────────────────────
+            # ⛔ Skip bots entirely
+            # ──────────────────────────────────────────
+            if member.bot:
+                skipped_bots += 1
+                continue
 
-                    discord_id = str(member.id)
-                    username = member.name
+            discord_id = str(member.id)
+            username = member.name
 
-                    # Already exists in DB → skip
-                    if discord_id in existing:
-                        skipped += 1
-                        continue
+            # Already exists in DB → skip
+            if discord_id in existing:
+                skipped += 1
+                continue
 
-                    # Insert player entry & username on first sync
-                    try:
-                        async with pool.acquire() as conn:
-                            # Insert into players table
-                            await conn.execute(
-                                """
-                                INSERT INTO players (
-                                    discord_id, nickname, elo, games_played, win_rate,
-                                    uid, mirror_id, points, description, color, banner_url
-                                )
-                                VALUES ($1, $2, 200, 0, 0.0, 
-                                        'Not Registered', 'Not Set', 0,
-                                        'A glimpse into this soul’s gentle journey…', 
-                                        11658748, NULL)
-                                ON CONFLICT (discord_id) DO NOTHING
-                                """,
-                                discord_id, username
-                            )
+            # Insert player entry & username on first sync
+            try:
+                async with pool.acquire() as conn:
+                    # Insert into players table
+                    await conn.execute(
+                        """
+                        INSERT INTO players (
+                            discord_id, nickname, elo, games_played, win_rate,
+                            uid, mirror_id, points, description, color, banner_url
+                        )
+                        VALUES ($1, $2, 200, 0, 0.0, 
+                                'Not Registered', 'Not Set', 0,
+                                'A glimpse into this soul’s gentle journey…', 
+                                11658748, NULL)
+                        ON CONFLICT (discord_id) DO NOTHING
+                        """,
+                        discord_id, username
+                    )
 
-                            # Insert into username table
-                            await conn.execute(
-                                """
-                                INSERT INTO discord_usernames (discord_id, username)
-                                VALUES ($1, $2)
-                                ON CONFLICT (discord_id) DO UPDATE SET username = EXCLUDED.username
-                                """,
-                                discord_id, username
-                            )
+                    # Insert into username table
+                    await conn.execute(
+                        """
+                        INSERT INTO discord_usernames (discord_id, username)
+                        VALUES ($1, $2)
+                        ON CONFLICT (discord_id) DO UPDATE SET username = EXCLUDED.username
+                        """,
+                        discord_id, username
+                    )
 
-                        inserted += 1
+                inserted += 1
 
-                    except Exception as e:
-                        print(f"Failed to insert {discord_id}: {e}")
+            except Exception as e:
+                print(f"Failed to insert {discord_id}: {e}")
 
-                await interaction.followup.send(
-                    f" **Sync Complete** ✨\n\n"
-                    f" Inserted new players: `{inserted}`\n"
-                    f" Already existed: `{skipped}`\n"
-                    f" Skipped bots: `{skipped_bots}`\n",
-                    ephemeral=True
-                )
+        await interaction.followup.send(
+            f" **Sync Complete** ✨\n\n"
+            f" Inserted new players: `{inserted}`\n"
+            f" Already existed: `{skipped}`\n"
+            f"⚫ Skipped bots: `{skipped_bots}`\n",
+            ephemeral=True
+        )
 
 
 
