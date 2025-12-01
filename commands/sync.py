@@ -63,23 +63,34 @@ class AdminSync(commands.Cog):
         if interaction.user.id != OWNER_ID:
             await interaction.response.send_message(
                 "<:Unamurice:1349309283669377064> O-oh… only Haya can weave the fates like this...",
-                ephemeral=True)
+                ephemeral=True
+            )
             return
 
         await interaction.response.defer(ephemeral=True)
 
         guild = interaction.guild
+
+        # 🟢 The correct pool access
+        pool = self.bot.pool
+
+        # 🛑 Safety check — pool not ready yet
+        if pool is None:
+            await interaction.followup.send(
+                "❌ Database is not initialized yet. Try again shortly!",
+                ephemeral=True
+            )
+            return
+
         inserted = 0
         skipped = 0
         skipped_bots = 0
 
-        # Load who already exists
+        # Load existing players from psycopg2 side
         existing = load_elo_data()
 
-        # Use the bot's pool here
-        pool = self.bot.pool
-
         for member in guild.members:
+
             if member.bot:
                 skipped_bots += 1
                 continue
@@ -91,47 +102,43 @@ class AdminSync(commands.Cog):
                 skipped += 1
                 continue
 
-            try:
-                async with pool.acquire() as conn:
-                    await conn.execute(
-                        """
-                        INSERT INTO players (
-                            discord_id, nickname, elo, games_played, win_rate,
-                            uid, mirror_id, points, description, color, banner_url
-                        )
-                        VALUES ($1, $2, 200, 0, 0.0, 
-                                'Not Registered', 'Not Set', 0,
-                                'A glimpse into this soul’s gentle journey…', 
-                                11658748, NULL)
-                        ON CONFLICT (discord_id) DO NOTHING
-                        """,
-                        discord_id, username
+            async with pool.acquire() as conn:
+                # Add player row
+                await conn.execute(
+                    """
+                    INSERT INTO players (
+                        discord_id, nickname, elo, games_played, win_rate,
+                        uid, mirror_id, points, description, color, banner_url
                     )
+                    VALUES ($1, $2, 200, 0, 0.0,
+                            'Not Registered', 'Not Set', 0,
+                            'A glimpse into this soul’s gentle journey…',
+                            11658748, NULL)
+                    ON CONFLICT (discord_id) DO NOTHING
+                    """,
+                    discord_id, username
+                )
 
-                    await conn.execute(
-                        """
-                        INSERT INTO discord_usernames (discord_id, username)
-                        VALUES ($1, $2)
-                        ON CONFLICT (discord_id) DO UPDATE SET username = EXCLUDED.username
-                        """,
-                        discord_id, username
-                    )
+                # Sync username table
+                await conn.execute(
+                    """
+                    INSERT INTO discord_usernames (discord_id, username)
+                    VALUES ($1, $2)
+                    ON CONFLICT (discord_id)
+                    DO UPDATE SET username = EXCLUDED.username
+                    """,
+                    discord_id, username
+                )
 
-                inserted += 1
-
-            except Exception as e:
-                print(f"Failed to insert {discord_id}: {e}")
+            inserted += 1
 
         await interaction.followup.send(
-            f"✨ **Sync Complete** ✨\n\n"
+            f"✨ **Sync Complete** ✨\n"
             f"🟢 Inserted new players: `{inserted}`\n"
             f"🔵 Already existed: `{skipped}`\n"
             f"⚫ Skipped bots: `{skipped_bots}`",
             ephemeral=True
         )
-
-
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AdminSync(bot))

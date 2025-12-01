@@ -175,6 +175,7 @@ async def on_ready():
     logging.info(f"Logged in as {client.user} (ID: {client.user.id})")
 
     await init_db_pool()   
+    client.pool = pool
     update_stats.start()   
 
     # Load command extensions
