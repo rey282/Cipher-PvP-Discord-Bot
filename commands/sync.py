@@ -70,75 +70,72 @@ class AdminSync(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         guild = interaction.guild
-
-        # 🟢 The correct pool access
         pool = self.bot.pool
 
-        # 🛑 Safety check — pool not ready yet
         if pool is None:
-            await interaction.followup.send(
-                "❌ Database is not initialized yet. Try again shortly!",
-                ephemeral=True
-            )
+            await interaction.followup.send("❌ Database not ready. Try again.", ephemeral=True)
             return
+
+        existing = load_elo_data()
 
         inserted = 0
         skipped = 0
         skipped_bots = 0
 
-        # Load existing players from psycopg2 side
-        existing = load_elo_data()
+        # 🟢 FIX: Only ONE connection + ONE transaction
+        async with pool.acquire() as conn:
+            async with conn.transaction():
 
-        for member in guild.members:
+                for member in guild.members:
 
-            if member.bot:
-                skipped_bots += 1
-                continue
+                    if member.bot:
+                        skipped_bots += 1
+                        continue
 
-            discord_id = str(member.id)
-            username = member.name
+                    discord_id = str(member.id)
+                    username = member.name
 
-            if discord_id in existing:
-                skipped += 1
-                continue
+                    if discord_id in existing:
+                        skipped += 1
+                        continue
 
-            async with pool.acquire() as conn:
-                # Add player row
-                await conn.execute(
-                    """
-                    INSERT INTO players (
-                        discord_id, nickname, elo, games_played, win_rate,
-                        uid, mirror_id, points, description, color, banner_url
+                    # Players table
+                    await conn.execute(
+                        """
+                        INSERT INTO players (
+                            discord_id, nickname, elo, games_played, win_rate,
+                            uid, mirror_id, points, description, color, banner_url
+                        )
+                        VALUES ($1, $2, 200, 0, 0.0,
+                                'Not Registered', 'Not Set', 0,
+                                'A glimpse into this soul’s gentle journey…',
+                                11658748, NULL)
+                        ON CONFLICT (discord_id) DO NOTHING
+                        """,
+                        discord_id, username
                     )
-                    VALUES ($1, $2, 200, 0, 0.0,
-                            'Not Registered', 'Not Set', 0,
-                            'A glimpse into this soul’s gentle journey…',
-                            11658748, NULL)
-                    ON CONFLICT (discord_id) DO NOTHING
-                    """,
-                    discord_id, username
-                )
 
-                # Sync username table
-                await conn.execute(
-                    """
-                    INSERT INTO discord_usernames (discord_id, username)
-                    VALUES ($1, $2)
-                    ON CONFLICT (discord_id)
-                    DO UPDATE SET username = EXCLUDED.username
-                    """,
-                    discord_id, username
-                )
+                    # Username sync
+                    await conn.execute(
+                        """
+                        INSERT INTO discord_usernames (discord_id, username)
+                        VALUES ($1, $2)
+                        ON CONFLICT (discord_id)
+                        DO UPDATE SET username = EXCLUDED.username
+                        """,
+                        discord_id, username
+                    )
 
-            inserted += 1
+                    inserted += 1
 
         await interaction.followup.send(
             f"✨ **Sync Complete** ✨\n"
-            f"🟢 Inserted new players: `{inserted}`\n"
+            f"🟢 Inserted new: `{inserted}`\n"
             f"🔵 Already existed: `{skipped}`\n"
             f"⚫ Skipped bots: `{skipped_bots}`",
             ephemeral=True
         )
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AdminSync(bot))
