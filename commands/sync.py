@@ -73,15 +73,13 @@ class AdminSync(commands.Cog):
         skipped = 0
         skipped_bots = 0
 
-        # Load who already exists in the players table
+        # Load who already exists
         existing = load_elo_data()
 
-        from bot import pool   # adjust import path if needed
+        # Use the bot's pool here
+        pool = self.bot.pool
 
         for member in guild.members:
-            # ──────────────────────────────────────────
-            # ⛔ Skip bots entirely
-            # ──────────────────────────────────────────
             if member.bot:
                 skipped_bots += 1
                 continue
@@ -89,15 +87,12 @@ class AdminSync(commands.Cog):
             discord_id = str(member.id)
             username = member.name
 
-            # Already exists in DB → skip
             if discord_id in existing:
                 skipped += 1
                 continue
 
-            # Insert player entry & username on first sync
             try:
                 async with pool.acquire() as conn:
-                    # Insert into players table
                     await conn.execute(
                         """
                         INSERT INTO players (
@@ -113,7 +108,6 @@ class AdminSync(commands.Cog):
                         discord_id, username
                     )
 
-                    # Insert into username table
                     await conn.execute(
                         """
                         INSERT INTO discord_usernames (discord_id, username)
@@ -129,12 +123,13 @@ class AdminSync(commands.Cog):
                 print(f"Failed to insert {discord_id}: {e}")
 
         await interaction.followup.send(
-            f" **Sync Complete** ✨\n\n"
-            f" Inserted new players: `{inserted}`\n"
-            f" Already existed: `{skipped}`\n"
-            f"⚫ Skipped bots: `{skipped_bots}`\n",
+            f"✨ **Sync Complete** ✨\n\n"
+            f"🟢 Inserted new players: `{inserted}`\n"
+            f"🔵 Already existed: `{skipped}`\n"
+            f"⚫ Skipped bots: `{skipped_bots}`",
             ephemeral=True
         )
+
 
 
 
