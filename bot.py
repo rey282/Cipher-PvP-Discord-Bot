@@ -255,36 +255,60 @@ async def on_member_join(member):
         logging.error(f"Error syncing username or initializing player data: {e}")
 
 @client.event
-async def on_member_update(before, after):
-    # Detect name OR nickname change
-    old_name = str(before)
-    new_name = str(after)
+async def on_member_update(before: discord.Member, after: discord.Member):
+    old_nick = before.nick
+    new_nick = after.nick
 
-    if old_name == new_name:
-        return  # No relevant changes
+    old_username = before.name
+    new_username = after.name
 
     discord_id = str(after.id)
 
-    logging.info(f"[USERNAME UPDATE] {old_name} → {new_name}")
+    # ───────────────────────────────────────────────
+    # 1. Nickname change (players.nickname)
+    # ───────────────────────────────────────────────
+    if old_nick != new_nick:
+        logging.info(f"[NICKNAME UPDATE] {old_nick} → {new_nick}")
 
-    try:
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO discord_usernames (discord_id, username)
-                VALUES ($1, $2)
-                ON CONFLICT (discord_id) DO UPDATE SET 
-                    username = EXCLUDED.username
-                """,
-                discord_id, new_name
-            )
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    UPDATE players
+                    SET nickname = $1
+                    WHERE discord_id = $2
+                    """,
+                    new_nick or new_username,  # fallback if nickname cleared
+                    discord_id
+                )
 
-        logging.info(f"[SYNCED] Updated username for {discord_id}")
+            logging.info(f"[SYNCED] Updated players.nickname for {discord_id}")
 
-    except Exception as e:
-        logging.error(f"[DB ERROR] Failed to update username: {e}")
+        except Exception as e:
+            logging.error(f"[DB ERROR] Failed to update nickname: {e}")
 
+    # ───────────────────────────────────────────────
+    # 2. Username change (discord_usernames.username)
+    # ───────────────────────────────────────────────
+    if old_username != new_username:
+        logging.info(f"[USERNAME UPDATE] {old_username} → {new_username}")
 
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO discord_usernames (discord_id, username)
+                    VALUES ($1, $2)
+                    ON CONFLICT (discord_id) DO UPDATE SET 
+                        username = EXCLUDED.username
+                    """,
+                    discord_id, new_username
+                )
+
+            logging.info(f"[SYNCED] Updated discord_usernames for {discord_id}")
+
+        except Exception as e:
+            logging.error(f"[DB ERROR] Failed to update username: {e}")
 
 
 # ───────────────────────────────────────────────────────────────
