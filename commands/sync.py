@@ -52,6 +52,46 @@ class AdminSync(commands.Cog):
             f"Skipped (not registered): `{skipped}`",
             ephemeral=True
         )
+    
+    @app_commands.command(
+        name="announce",
+        description="Send a gentle announcement to everyone…"
+    )
+    @app_commands.guilds(GUILD_ID)
+    @app_commands.describe(
+        title="The headline that begins your message",
+        message="The main body of your announcement"
+    )
+    async def announce(self, interaction: Interaction, title: str, message: str):
+        OWNER_ID = int(os.getenv("OWNER_ID"))
+
+        # ───────────── OWNER CHECK ─────────────
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message(
+                "O-Oh… only Haya may weave announcements into fate…",
+                ephemeral=True
+            )
+            return
+
+        # ───────────── BUILD EMBED ─────────────
+        embed = discord.Embed(
+            title=title,
+            description=message,
+            color=0x5865F2 
+        )
+
+        # Matching your bot’s style
+        embed.set_footer(text="Gently carried by Kyasutorisu")
+        embed.timestamp = discord.utils.utcnow()
+
+        # ───────────── SEND ─────────────
+        await interaction.response.send_message(
+            "Your announcement has been gently woven into the channel…",
+            ephemeral=True
+        )
+
+        await interaction.channel.send(embed=embed)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AdminSync(bot))
