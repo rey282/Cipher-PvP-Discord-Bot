@@ -14,14 +14,14 @@ GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 class AnnouncementModal(discord.ui.Modal, title="Compose Announcement"):
     title_input = discord.ui.TextInput(
         label="Announcement Title",
-        placeholder="Website Update, Patch Notes, etc.",
+        placeholder="Announcement Title",
         max_length=100,
         style=discord.TextStyle.short
     )
 
     message_input = discord.ui.TextInput(
         label="Announcement Message",
-        placeholder="Type your full announcement here...\nFeel free to press Enter.",
+        placeholder="Type your announcement here...",
         style=discord.TextStyle.paragraph,
         max_length=3000,
         required=True
