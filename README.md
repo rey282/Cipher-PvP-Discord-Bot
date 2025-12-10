@@ -311,14 +311,7 @@ Ensures your ecosystem stays consistent.
 Defines how ranks are calculated and assigned.
 
 ### `get_rank()`
-Converts ELO → rank tier:
-- Trailblazer  
-- Titan  
-- Chrysos Heir  
-- Flame Reaver  
-- Khaslana  
-- First Genius  
-- **Cipher Champion** (top 3 players)
+Converts ELO to rank tier
 
 ### `update_rank_role()`
 - Removes outdated Discord roles  
