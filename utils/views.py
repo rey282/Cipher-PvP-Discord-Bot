@@ -433,7 +433,7 @@ class TiebreakerView(ui.View):
 class ConfirmRollbackView(discord.ui.View):
     def __init__(self, match_id: int):
         super().__init__(timeout=None)
-        self.match_id = match_id  # ✅ Store match ID for targeted rollback
+        self.match_id = match_id  #  Store match ID for targeted rollback
         self.confirmation_active = False
         self.message = None
 
@@ -457,7 +457,7 @@ class ConfirmRollbackView(discord.ui.View):
             return
 
         self.confirmation_active = True
-        # ✅ Pass match_id to ConfirmUndoView
+        #  Pass match_id to ConfirmUndoView
         confirm_view = ConfirmUndoView(parent_view=self, match_id=self.match_id)
 
         try:
@@ -496,7 +496,7 @@ class ConfirmUndoView(discord.ui.View):
                 return
 
         try:
-            # ✅ Perform rollback of the specific match
+            #  Perform rollback of the specific match
             success, message = rollback_match(self.match_id)
 
             # Disable all buttons in this view

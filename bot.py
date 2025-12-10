@@ -21,7 +21,7 @@ logging.basicConfig(
 load_dotenv()
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
-DATABASE_URL = os.getenv("DATABASE_URL")  # Supabase DB URL
+DATABASE_URL = os.getenv("DATABASE_URL") 
 
 # ───────────────────────────────────────────────────────────────
 # DISCORD BOT SETUP
