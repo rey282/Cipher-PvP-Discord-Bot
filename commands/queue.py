@@ -682,7 +682,7 @@ class MatchmakingQueue(commands.Cog):
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
             return
         
-         member = interaction.guild.get_member(interaction.user.id)
+        member = interaction.guild.get_member(interaction.user.id)
 
         if member and self._is_pvp_banned(member):
             await self._deny_pvp_banned(interaction)
