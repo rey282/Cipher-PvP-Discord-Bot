@@ -22,6 +22,7 @@ load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
 ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
+PVP_BANNED_ROLE = "pvp banned"
 
 # Font paths (same pattern as roster.py)
 FONT_PATH = os.path.join(
@@ -115,6 +116,9 @@ class MatchmakingQueue(commands.Cog):
             if len(self.queue) == 1:
                 self._ensure_single_player_monitor(guild_id, channel)
 
+    def _is_pvp_banned(self, member: discord.Member) -> bool:
+        return any(role.name.lower() == PVP_BANNED_ROLE.lower() for role in member.roles)
+
     # ───────────────────────── background tasks ─────────────────────────
 
     async def check_queue_inactivity(self, channel: discord.abc.Messageable):
@@ -190,6 +194,14 @@ class MatchmakingQueue(commands.Cog):
                         self._sync_global_monitors(guild_id, channel)
         except asyncio.CancelledError:
             pass
+
+    async def _deny_pvp_banned(self, interaction: Interaction):
+        await interaction.response.send_message(
+            f"**{interaction.user.display_name} is banned from PvP matchmaking.**\n"
+            "The threads of fate reject your call. You may not enter or interact with the queue.",
+            ephemeral=False  # public message
+        )
+
 
 
     async def _fetch_roster_users(self) -> Optional[list]:
@@ -538,6 +550,11 @@ class MatchmakingQueue(commands.Cog):
             return
 
         member = interaction.guild.get_member(interaction.user.id)
+
+        if member and self._is_pvp_banned(member):
+            await self._deny_pvp_banned(interaction)
+            return
+
         if member is None or member.voice is None:
             await interaction.response.send_message(
                 "Oops! You must be in a voice channel to join the queue. Please join a voice channel and try again.",
@@ -663,6 +680,12 @@ class MatchmakingQueue(commands.Cog):
     async def show_queue(self, interaction: Interaction):
         if interaction.guild is None:
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
+         member = interaction.guild.get_member(interaction.user.id)
+
+        if member and self._is_pvp_banned(member):
+            await self._deny_pvp_banned(interaction)
             return
 
         async with self.queue_lock:
