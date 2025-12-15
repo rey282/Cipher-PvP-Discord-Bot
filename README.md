@@ -10,7 +10,7 @@ A modular Discord bot powering the full Cipher PvP ecosystem: interactive match 
 
 ---
 
-## 🚀 Overview
+##  Overview
 
 The **Cipher PvP Bot** serves as the automation backbone for the Cipher PvP community and integrates tightly with the Cipher.uno platform.
 
