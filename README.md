@@ -10,7 +10,7 @@ A modular Discord bot powering the full Cipher PvP ecosystem: interactive match 
 
 ---
 
-## 🚀 Overview
+##  Overview
 
 The **Cipher PvP Bot** serves as the automation backbone for the Cipher PvP community and integrates tightly with the Cipher.uno platform.
 
@@ -311,14 +311,7 @@ Ensures your ecosystem stays consistent.
 Defines how ranks are calculated and assigned.
 
 ### `get_rank()`
-Converts ELO → rank tier:
-- Trailblazer  
-- Titan  
-- Chrysos Heir  
-- Flame Reaver  
-- Khaslana  
-- First Genius  
-- **Cipher Champion** (top 3 players)
+Converts ELO to rank tier
 
 ### `update_rank_role()`
 - Removes outdated Discord roles  
