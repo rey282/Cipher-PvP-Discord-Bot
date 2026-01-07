@@ -1,3 +1,6 @@
-discord
+discord.py
+asyncpg
 psycopg2-binary
+aiohttp
+Pillow
 python-dotenv
