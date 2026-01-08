@@ -1,6 +1,9 @@
 import os
 import json
 import psycopg2
+import sys
+import logging
+from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import RealDictCursor
 from psycopg2 import sql
 from dotenv import load_dotenv
@@ -11,23 +14,38 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+logger = logging.getLogger(__name__)
+
+if not DATABASE_URL:
+    logger.critical("DATABASE_URL is not set")
+    sys.exit(1)
+
+try:
+    DB_POOL = SimpleConnectionPool(
+        minconn=1,
+        maxconn=int(os.getenv("DB_POOL_MAX", "10")),
+        dsn=DATABASE_URL,
+    )
+    logger.info("✅ Database connection pool initialized")
+except Exception as e:
+    logger.critical("❌ Database pool initialization failed", exc_info=e)
+    sys.exit(1)
+
 @contextmanager
 def get_connection():
-    """Context manager for database connections to ensure proper closing."""
     conn = None
     try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        conn = DB_POOL.getconn()
         yield conn
     finally:
         if conn is not None:
-            conn.close()
+            DB_POOL.putconn(conn)
 
 
 @contextmanager
 def get_cursor(commit=False):
-    """Context manager for database cursors with optional commit."""
     with get_connection() as conn:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         try:
             yield cursor
             if commit:
@@ -35,7 +53,8 @@ def get_cursor(commit=False):
         except Exception:
             conn.rollback()
             raise
-
+        finally:
+            cursor.close()
 
 def initialize_db():
     with get_cursor(commit=True) as cursor:
