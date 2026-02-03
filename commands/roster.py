@@ -157,7 +157,7 @@ class Roster(commands.Cog):
         member: Optional[discord.Member] = None,
         member2: Optional[discord.Member] = None,
     ):
-        await interaction.response.defer()
+        await interaction.response.defer(thinking=True)
 
         guild = interaction.guild
         if guild is None:
@@ -184,9 +184,11 @@ class Roster(commands.Cog):
         # -------------------------------------------------------
         # 1) Fetch roster data from API
         # -------------------------------------------------------
+
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(ROSTER_API, timeout=10) as resp:
+            timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(ROSTER_API) as resp:
                     if resp.status != 200:
                         return await interaction.followup.send("⚠️ Roster server unavailable.")
                     try:
@@ -195,8 +197,11 @@ class Roster(commands.Cog):
                         return await interaction.followup.send("⚠️ Invalid roster data returned.")
         except asyncio.TimeoutError:
             return await interaction.followup.send("⚠️ Roster request timed out.")
+        except aiohttp.ClientConnectorError:
+            return await interaction.followup.send("⚠️ Could not reach roster server (connection error).")
         except Exception as e:
             return await interaction.followup.send(f"⚠️ Error: `{e}`")
+
 
         roster_index = {u.get("discordId"): u for u in roster_users}
 
