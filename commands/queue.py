@@ -15,13 +15,13 @@ import aiohttp
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 # DB helpers
-from utils.db_utils import load_elo_data, get_cursor
+from utils.db_utils import load_elo_data
 from . import shared_cache
 
 load_dotenv()
 
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
-ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
+ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/user"
 PVP_BANNED_ROLE = "pvp banned"
 
 # Font paths (same pattern as roster.py)
@@ -204,21 +204,26 @@ class MatchmakingQueue(commands.Cog):
 
 
 
-    async def _fetch_roster_users(self) -> Optional[list]:
+    async def _fetch_profile_characters(
+        self,
+        session: aiohttp.ClientSession,
+        discord_id: str
+    ) -> Optional[dict]:
+        if not discord_id:
+            return None
+
+        url = f"{ROSTER_API}/{discord_id}/profile-characters"
         try:
-            timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(ROSTER_API) as resp:
-                    if resp.status != 200:
-                        return None
-                    try:
-                        return await resp.json()
-                    except Exception:
-                        return None
-        except asyncio.TimeoutError:
-            return None
-        except aiohttp.ClientError:
-            return None
+            async with session.get(url) as resp:
+                if resp.status == 404:
+                    return None
+                if resp.status != 200:
+                    return None
+
+                data = await resp.json()
+                if isinstance(data, dict) and isinstance(data.get("profileCharacters"), list):
+                    return data
+                return None
         except Exception:
             return None
 
@@ -226,24 +231,15 @@ class MatchmakingQueue(commands.Cog):
     def _build_team_roster_image(
         self,
         team: List[Member],
-        roster_index: Dict[str, dict],
+        entry1: Optional[dict],
+        entry2: Optional[dict],
         team_label: str,
     ) -> Optional[io.BytesIO]:
-        """
-        Build a roster image for a 2-player team:
-        - Same style as /roster
-        - Combined ownership
-        - Dual Eidolon badges (left for player1, right for player2)
-        - Title like "Team 1 — P1 & P2"
-        """
+
         if len(team) < 2:
             return None
 
         p1, p2 = team[0], team[1]
-        id1, id2 = str(p1.id), str(p2.id)
-
-        entry1 = roster_index.get(id1)
-        entry2 = roster_index.get(id2)
 
         # If both have no roster, skip
         if entry1 is None and entry2 is None:
@@ -395,12 +391,12 @@ class MatchmakingQueue(commands.Cog):
 
             # Player 1 badge (left)
             if e1 is not None:
-                bx1 = x + 4                   # SAME as roster
+                bx1 = x + 4              
                 draw_badge(e1, bx1)
 
             # Player 2 badge (right)
             if e2 is not None:
-                bx2 = x + ICON - badge_w - 4  # SAME as roster
+                bx2 = x + ICON - badge_w - 4  
                 draw_badge(e2, bx2)
 
 
@@ -416,29 +412,28 @@ class MatchmakingQueue(commands.Cog):
         team1: List[Member],
         team2: List[Member],
     ):
-        """
-        After match + prebans, send:
-        - Team 1 roster image (combined of both players)
-        - Team 2 roster image
-        """
         if not shared_cache.char_map_cache or not shared_cache.icon_cache:
             return
 
+        timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
 
-        roster_users = await self._fetch_roster_users()
-        if not roster_users:
-            return
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            team_pairs = [(team1, "Team 1"), (team2, "Team 2")]
 
-        roster_index = {u.get("discordId"): u for u in roster_users}
+            for idx, (team, label) in enumerate(team_pairs, start=1):
+                if len(team) < 2:
+                    continue
 
-        team_pairs = [(team1, "Team 1"), (team2, "Team 2")]
+                id1 = str(team[0].id)
+                id2 = str(team[1].id)
 
-        for idx, (team, label) in enumerate(team_pairs, start=1):
-            buf = self._build_team_roster_image(team, roster_index, label)
-            if buf:
-                await channel.send(
-                    file=discord.File(buf, filename=f"team{idx}_roster.png")
-                )
+                entry1 = await self._fetch_profile_characters(session, id1)
+                entry2 = await self._fetch_profile_characters(session, id2)
+
+                buf = self._build_team_roster_image(team, entry1, entry2, label)
+                if buf:
+                    await channel.send(file=discord.File(buf, filename=f"team{idx}_roster.png"))
+
 
     # ────────────────────── prebans builder (exact same as /prebans) ──────────────────────
 

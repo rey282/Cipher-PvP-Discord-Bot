@@ -17,7 +17,7 @@ from typing import Dict, List, Optional
 
 load_dotenv()
 
-ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
+ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/user"
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
 
 FONT_PATH = os.path.join(
@@ -138,6 +138,22 @@ class Roster(commands.Cog):
 
                 except Exception:
                     continue
+    
+    async def _fetch_profile_characters(self, session: aiohttp.ClientSession, discord_id: str) -> Optional[dict]:
+        url = f"{ROSTER_API}/{discord_id}/profile-characters"
+        try:
+            async with session.get(url) as resp:
+                if resp.status == 404:
+                    return None
+                if resp.status != 200:
+                    return None
+
+                data = await resp.json()
+                if isinstance(data, dict) and isinstance(data.get("profileCharacters"), list):
+                    return data
+                return None
+        except Exception:
+            return None
 
     # ──────────────────────────────────────────────────────────────
     # /roster command
@@ -185,28 +201,10 @@ class Roster(commands.Cog):
         # 1) Fetch roster data from API
         # -------------------------------------------------------
 
-        try:
-            timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(ROSTER_API) as resp:
-                    if resp.status != 200:
-                        return await interaction.followup.send("⚠️ Roster server unavailable.")
-                    try:
-                        roster_users = await resp.json()
-                    except Exception:
-                        return await interaction.followup.send("⚠️ Invalid roster data returned.")
-        except asyncio.TimeoutError:
-            return await interaction.followup.send("⚠️ Roster request timed out.")
-        except aiohttp.ClientConnectorError:
-            return await interaction.followup.send("⚠️ Could not reach roster server (connection error).")
-        except Exception as e:
-            return await interaction.followup.send(f"⚠️ Error: `{e}`")
-
-
-        roster_index = {u.get("discordId"): u for u in roster_users}
-
-        entry1 = roster_index.get(id1)
-        entry2 = roster_index.get(id2) if is_dual and id2 is not None else None
+        timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            entry1 = await self._fetch_profile_characters(session, id1)
+            entry2 = await self._fetch_profile_characters(session, id2) if is_dual and id2 else None
 
         # Handle "no roster" cases
         if not is_dual:
@@ -219,9 +217,14 @@ class Roster(commands.Cog):
 
         def resolve_name(did: str, entry: Optional[dict]) -> str:
             roster_name = (entry or {}).get("globalName") or (entry or {}).get("username")
-            member_obj = guild.get_member(int(did))
-            discord_name = member_obj.display_name if member_obj else None
+            discord_name = None
+            try:
+                member_obj = guild.get_member(int(did))
+                discord_name = member_obj.display_name if member_obj else None
+            except Exception:
+                pass
             return roster_name or discord_name or f"User {did}"
+
 
         name1 = resolve_name(id1, entry1)
         name2 = resolve_name(id2, entry2) if is_dual and id2 is not None else None

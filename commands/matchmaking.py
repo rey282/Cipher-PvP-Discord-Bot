@@ -22,7 +22,7 @@ from . import shared_cache
 
 load_dotenv()
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
-ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/getUsers"
+ROSTER_API = os.getenv("ROSTER_API") or "https://draft-api.cipher.uno/user"
 
 ALLOWED_COLORS = {
     "red": 0xFF4C4C,
@@ -466,38 +466,43 @@ class MatchmakingCommands(commands.Cog):
         return embed
 
     # ─────────── roster helpers ───────────
-    async def _fetch_roster_users(self) -> Optional[list]:
-        try:
-            timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(ROSTER_API) as resp:
-                    if resp.status != 200:
-                        return None
-                    return await resp.json()
-        except asyncio.TimeoutError:
-            return None
-        except aiohttp.ClientError:
-            return None
-        except Exception:
+    async def _fetch_profile_characters(
+        self,
+        session: aiohttp.ClientSession,
+        discord_id: str
+    ) -> Optional[dict]:
+        if not discord_id:
             return None
 
+        url = f"{ROSTER_API}/{discord_id}/profile-characters"
+        try:
+            async with session.get(url) as resp:
+                if resp.status == 404:
+                    return None
+                if resp.status != 200:
+                    return None
+
+                data = await resp.json()
+                if isinstance(data, dict) and isinstance(data.get("profileCharacters"), list):
+                    return data
+                return None
+        except Exception:
+            return None
 
     def _build_team_roster_image(
         self,
         team: List[Member],
-        roster_index: Dict[str, dict],
+        entry1: Optional[dict],
+        entry2: Optional[dict],
         team_label: str,
     ) -> Optional[io.BytesIO]:
+
 
         # must be 2 players
         if len(team) < 2:
             return None
 
         p1, p2 = team[0], team[1]
-        id1, id2 = str(p1.id), str(p2.id)
-
-        entry1 = roster_index.get(id1)
-        entry2 = roster_index.get(id2)
 
         if not entry1 and not entry2:
             return None
@@ -537,7 +542,9 @@ class MatchmakingCommands(commands.Cog):
         title_font = load_title_font(40)
         dummy = Image.new("RGB", (1, 1))
         draw_dummy = ImageDraw.Draw(dummy)
-        title_h = draw_dummy.textbbox((0, 0), title_text, font=title_font)[3]
+        tb = draw_dummy.textbbox((0, 0), title_text, font=title_font)
+        title_h = tb[3] - tb[1]
+
 
         TITLE_TOP = 30
         UNDERLINE_GAP = 8
@@ -602,7 +609,6 @@ class MatchmakingCommands(commands.Cog):
             badge_y = y + ICON - badge_h - 4
 
             def draw_badge(e_value: int, bx: int):
-                rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
 
                 draw.rounded_rectangle(
                     [bx, badge_y, bx + badge_w, badge_y + badge_h],
@@ -645,24 +651,29 @@ class MatchmakingCommands(commands.Cog):
     ):
         char_map_cache = shared_cache.char_map_cache
         icon_cache = shared_cache.icon_cache
-
         if not char_map_cache or not icon_cache:
             return
 
-        roster_users = await self._fetch_roster_users()
-        if not roster_users:
-            return
+        timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
 
-        roster_index = {u.get("discordId"): u for u in roster_users}
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            team_pairs = [(team1, "Team 1"), (team2, "Team 2")]
 
-        team_pairs = [(team1, "Team 1"), (team2, "Team 2")]
+            for idx, (team, label) in enumerate(team_pairs, start=1):
+                if len(team) < 2:
+                    continue
 
-        for idx, (team, label) in enumerate(team_pairs, start=1):
-            buf = self._build_team_roster_image(team, roster_index, label)
-            if buf:
-                await channel.send(
-                    file=discord.File(buf, filename=f"team{idx}_roster.png")
-                )
+                id1 = str(team[0].id)
+                id2 = str(team[1].id)
+
+                entry1 = await self._fetch_profile_characters(session, id1)
+                entry2 = await self._fetch_profile_characters(session, id2)
+
+                buf = self._build_team_roster_image(team, entry1, entry2, label)
+                if buf:
+                    await channel.send(
+                        file=discord.File(buf, filename=f"team{idx}_roster.png")
+                    )
 
     # ─────────── Slash commands ───────────
 
