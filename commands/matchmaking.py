@@ -466,19 +466,21 @@ class MatchmakingCommands(commands.Cog):
         return embed
 
     # ─────────── roster helpers ───────────
-
     async def _fetch_roster_users(self) -> Optional[list]:
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(ROSTER_API, timeout=10) as resp:
+            timeout = aiohttp.ClientTimeout(total=20, connect=5, sock_read=15)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(ROSTER_API) as resp:
                     if resp.status != 200:
                         return None
-                    try:
-                        return await resp.json()
-                    except Exception:
-                        return None
+                    return await resp.json()
+        except asyncio.TimeoutError:
+            return None
+        except aiohttp.ClientError:
+            return None
         except Exception:
             return None
+
 
     def _build_team_roster_image(
         self,
