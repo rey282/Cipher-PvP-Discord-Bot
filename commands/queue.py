@@ -492,42 +492,48 @@ class MatchmakingQueue(commands.Cog):
             embed.set_footer(text="Handled with care by Kyasutorisu")
             return embed
 
-        # Thresholds identical to your command
-        if point_diff >= 600:
-            regular_bans = 3
-            joker_bans = 2 + (point_diff - 600) // 200
-        elif point_diff >= 300:
-            regular_bans = 3
-            joker_bans = min(5, (point_diff - 300) // 150)
-        else:
-            regular_bans = min(3, point_diff // 100)
-            joker_bans = 0
+        PREBAN_COSTS = [100, 120, 140]
+        JOKER_COSTS = [170, 180, 210, 230]
+
+        remaining_diff = point_diff
+
+        regular_bans = 0
+        joker_bans = 0
+
+        # Apply prebans (max 3)
+        for cost in PREBAN_COSTS:
+            if remaining_diff >= cost and regular_bans < 3:
+                remaining_diff -= cost
+                regular_bans += 1
+            else:
+                break
+
+        # Apply joker bans (max 4)
+        for cost in JOKER_COSTS:
+            if remaining_diff >= cost and joker_bans < 4:
+                remaining_diff -= cost
+                joker_bans += 1
+            else:
+                break
 
         embed = discord.Embed(
             title=f"Pre-Bans Calculation for {match_type}",
             color=discord.Color.purple()
         )
         embed.add_field(
-            name="Teams Alligned",  # keep your original spelling
+            name="Teams Aligned", 
             value=(f" {format_team(team1)} (Avg: {points1:.1f} pts)\n"
                    f" {format_team(team2)} (Avg: {points2:.1f} pts)"),
             inline=False
         )
 
         ban_info = []
+
         if regular_bans > 0:
-            ban_info.append(f"▸ {int(regular_bans)} regular ban(s) (100pts each)")
+            ban_info.append(f"▸ {regular_bans} preban(s)")
+
         if joker_bans > 0:
-            if point_diff >= 600:
-                extra_jokers = int(joker_bans - 2)
-                if extra_jokers > 0:
-                    ban_info.append(
-                        f"▸ 2 joker bans (150pts each) + {int(extra_jokers)} extra joker ban(s) (200pts each)"
-                    )
-                else:
-                    ban_info.append("▸ 2 joker bans (150pts each)")
-            else:
-                ban_info.append(f"▸ {int(joker_bans)} joker ban(s) (150pts each)")
+            ban_info.append(f"▸ {joker_bans} joker ban(s)")
 
         embed.add_field(
             name=f"{format_team(lower_points_team)} receives pre-bans",
