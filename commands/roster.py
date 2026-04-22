@@ -53,6 +53,9 @@ class Roster(commands.Cog):
         shared_cache.char_map_cache = {}
         shared_cache.icon_cache = {}
 
+        # GP icon (id 9999)
+        self.gp_icon = None
+
     async def preload_all(self):
         """
         Load character metadata + icons ONCE when bot starts.
@@ -138,6 +141,20 @@ class Roster(commands.Cog):
 
                 except Exception:
                     continue
+            # ---- Load GP icon ONCE ----
+            gp_url = "https://storage.googleapis.com/cipher-zzz/hsr/Sw999gp.webp"
+
+            try:
+                async with session.get(gp_url) as resp:
+                    if resp.status == 200:
+                        raw = await resp.read()
+
+                        img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                        img = img.resize((32, 32), Image.LANCZOS)
+
+                        self.gp_icon = img
+            except Exception:
+                self.gp_icon = None
     
     async def _fetch_profile_characters(self, session: aiohttp.ClientSession, discord_id: str) -> Optional[dict]:
         url = f"{ROSTER_API}/{discord_id}/profile-characters"
@@ -237,6 +254,9 @@ class Roster(commands.Cog):
             {c["id"]: c["eidolon"] for c in entry2["profileCharacters"]} if entry2 else {}
         )
 
+        has_gp1 = "9999" in owned1
+        has_gp2 = "9999" in owned2
+
         if is_dual:
             title_text = f"{name1} • {name2} — Roster"
         else:
@@ -315,6 +335,23 @@ class Roster(commands.Cog):
 
         draw.text((title_x, title_y), title_text, font=title_font, fill="white")
 
+        # ---- Draw GP icon(s) ----
+        if self.gp_icon:
+            icon_y = title_y + 5
+
+            def draw_gp_icon(x_pos, has_gp):
+                icon = self.gp_icon.copy()
+                if not has_gp:
+                    icon = ImageEnhance.Brightness(icon).enhance(0.3)
+                    icon = icon.convert("LA").convert("RGBA")
+                canvas.paste(icon, (x_pos, icon_y), icon)
+
+            if is_dual:
+                draw_gp_icon(title_x - 40, has_gp1)
+                draw_gp_icon(title_x + title_w + 8, has_gp2)
+            else:
+                draw_gp_icon(title_x + title_w + 8, has_gp1)
+
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
         margin = int(width * 0.28)
         draw.line(
@@ -371,15 +408,38 @@ class Roster(commands.Cog):
 
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
-            # Left badge = player 1
+            def draw_text_badge(text: str, bx: int):
+                draw.rounded_rectangle(
+                    [bx, badge_y, bx + badge_w, badge_y + badge_h],
+                    radius=8,
+                    fill=(0, 0, 0, 190),
+                )
+
+                tb = draw.textbbox((0, 0), text, font=BADGE_FONT)
+                tw = tb[2] - tb[0]
+                th = tb[3] - tb[1]
+
+                tx = bx + (badge_w - tw) // 2
+                ty = badge_y + (badge_h - th) // 2 - 3
+
+                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
+
+
+            # Player 1
             if e1 is not None:
                 bx1 = x + 4
-                draw_badge(e1, bx1)
+                if is_dual and has_gp1:
+                    draw_text_badge("GP", bx1)
+                else:
+                    draw_badge(e1, bx1)
 
-            # Right badge = player 2 (if dual)
+            # Player 2
             if e2 is not None:
                 bx2 = x + ICON - badge_w - 4
-                draw_badge(e2, bx2)
+                if is_dual and has_gp2:
+                    draw_text_badge("GP", bx2)
+                else:
+                    draw_badge(e2, bx2)
 
         # -------------------------------------------------------
         # 8) Send image (NO PING)
