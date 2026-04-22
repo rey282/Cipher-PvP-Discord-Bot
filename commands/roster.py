@@ -408,38 +408,15 @@ class Roster(commands.Cog):
 
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
-            def draw_text_badge(text: str, bx: int):
-                draw.rounded_rectangle(
-                    [bx, badge_y, bx + badge_w, badge_y + badge_h],
-                    radius=8,
-                    fill=(0, 0, 0, 190),
-                )
-
-                tb = draw.textbbox((0, 0), text, font=BADGE_FONT)
-                tw = tb[2] - tb[0]
-                th = tb[3] - tb[1]
-
-                tx = bx + (badge_w - tw) // 2
-                ty = badge_y + (badge_h - th) // 2 - 3
-
-                draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
-
-
             # Player 1
             if e1 is not None:
                 bx1 = x + 4
-                if is_dual and has_gp1:
-                    draw_text_badge("GP", bx1)
-                else:
-                    draw_badge(e1, bx1)
+                draw_badge(e1, bx1)
 
             # Player 2
             if e2 is not None:
                 bx2 = x + ICON - badge_w - 4
-                if is_dual and has_gp2:
-                    draw_text_badge("GP", bx2)
-                else:
-                    draw_badge(e2, bx2)
+                draw_badge(e2, bx2)
 
         # -------------------------------------------------------
         # 8) Send image (NO PING)
