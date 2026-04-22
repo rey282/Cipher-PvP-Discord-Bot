@@ -283,8 +283,8 @@ class MatchmakingQueue(commands.Cog):
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
 
-        # Title text: "Team 1 — P1 & P2"
-        title_text = f"{team_label} — {p1.display_name} & {p2.display_name}"
+        # Title text
+        title_text = f"{p1.display_name} • {p2.display_name}"
 
         title_font = load_title_font(40)
         dummy_img = Image.new("RGB", (1, 1))

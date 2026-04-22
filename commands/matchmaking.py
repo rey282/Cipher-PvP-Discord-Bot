@@ -546,7 +546,7 @@ class MatchmakingCommands(commands.Cog):
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
 
-        title_text = f"{team_label} — {p1.display_name} & {p2.display_name}"
+        title_text = f"{p1.display_name} • {p2.display_name}"
 
         title_font = load_title_font(40)
         dummy = Image.new("RGB", (1, 1))
@@ -579,6 +579,13 @@ class MatchmakingCommands(commands.Cog):
         title_w = title_bbox[2] - title_bbox[0]
         title_x = (width - title_w) // 2
         title_y = TITLE_TOP
+
+        draw.text(
+            (title_x, title_y),
+            title_text,
+            font=title_font,
+            fill="white",
+        )
 
         gp_icon = shared_cache.gp_icon
 
