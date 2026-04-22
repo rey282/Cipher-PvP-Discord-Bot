@@ -340,12 +340,12 @@ class MatchmakingQueue(commands.Cog):
 
                 canvas.paste(icon, (x_pos, icon_y), icon)
 
-            # left / right of title (same logic as roster.py)
-            if has_gp1:
-                draw_gp_icon(title_x - 40, True)
-
-            if has_gp2:
-                draw_gp_icon(title_x + title_w + 8, True)
+            # dual or single mode handling
+            if is_dual:
+                draw_gp_icon(title_x - 40, has_gp1)
+                draw_gp_icon(title_x + title_w + 8, has_gp2)
+            else:
+                draw_gp_icon(title_x + title_w + 8, has_gp1)
 
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
         underline_margin = int(width * 0.28)
