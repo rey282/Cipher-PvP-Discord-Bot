@@ -236,45 +236,41 @@ class MatchmakingQueue(commands.Cog):
         team_label: str,
     ) -> Optional[io.BytesIO]:
 
+
+        # must be 2 players
         if len(team) < 2:
             return None
 
         p1, p2 = team[0], team[1]
 
-        # If both have no roster, skip
-        if entry1 is None and entry2 is None:
+        if not entry1 and not entry2:
             return None
 
-        owned1 = (
-            {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])}
-            if entry1
-            else {}
-        )
-        owned2 = (
-            {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])}
-            if entry2
-            else {}
-        )
-
-        combined_owned = set(owned1.keys()) | set(owned2.keys())
+        owned1 = {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])} if entry1 else {}
+        owned2 = {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])} if entry2 else {}
 
         has_gp1 = "9999" in owned1
         has_gp2 = "9999" in owned2
 
-        if not shared_cache.char_map_cache:
+        # union of both players' owned roster
+        combined_owned = set(owned1.keys()) | set(owned2.keys())
+
+        char_map_cache = shared_cache.char_map_cache
+        icon_cache = shared_cache.icon_cache
+        if not char_map_cache:
             return None
 
-        # 1) Sorting logic 
+        # ******** sorting *******
         def sort_key(c: dict):
             return (
-                0 if c["id"] in combined_owned else 1,  
-                -c["rarity"],                          
-                c["name"],                             
+                0 if c["id"] in combined_owned else 1,
+                -c["rarity"],
+                c["name"],
             )
 
-        sorted_chars = sorted(shared_cache.char_map_cache.values(), key=sort_key)
+        sorted_chars = sorted(char_map_cache.values(), key=sort_key)
 
-        # 2) Layout 
+        # ******** layout ********
         ICON = 110
         GAP = 8
         PADDING = 20
@@ -283,14 +279,14 @@ class MatchmakingQueue(commands.Cog):
         rows_count = max(1, math.ceil(len(sorted_chars) / PER_ROW))
         width = PADDING * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
 
-        # Title text
         title_text = f"{p1.display_name} • {p2.display_name}"
 
         title_font = load_title_font(40)
-        dummy_img = Image.new("RGB", (1, 1))
-        dummy_draw = ImageDraw.Draw(dummy_img)
-        title_bbox = dummy_draw.textbbox((0, 0), title_text, font=title_font)
-        title_h = title_bbox[3] - title_bbox[1]
+        dummy = Image.new("RGB", (1, 1))
+        draw_dummy = ImageDraw.Draw(dummy)
+        tb = draw_dummy.textbbox((0, 0), title_text, font=title_font)
+        title_h = tb[3] - tb[1]
+
 
         TITLE_TOP = 30
         UNDERLINE_GAP = 8
@@ -298,25 +294,22 @@ class MatchmakingQueue(commands.Cog):
 
         title_block_bottom = TITLE_TOP + title_h + UNDERLINE_GAP + 3 + UNDERLINE_EXTRA
         grid_top = title_block_bottom + PADDING
-
         grid_height = rows_count * ICON + (rows_count - 1) * GAP + PADDING
         height = grid_top + grid_height
 
-        # 3) Canvas + gradient
         canvas = Image.new("RGBA", (width, height), (10, 10, 10, 255))
         draw = ImageDraw.Draw(canvas)
 
         for y in range(height):
-            t = y / max(1, height - 1)
+            t = y / (height - 1)
             r = int(14 + (28 - 14) * t)
             g = int(10 + (18 - 10) * t)
             b = int(30 + (52 - 30) * t)
             draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
 
-        # 4) Title + underline (same style)
+        # ******** Title + underline ********
         title_bbox = draw.textbbox((0, 0), title_text, font=title_font)
         title_w = title_bbox[2] - title_bbox[0]
-
         title_x = (width - title_w) // 2
         title_y = TITLE_TOP
 
@@ -324,15 +317,16 @@ class MatchmakingQueue(commands.Cog):
             (title_x, title_y),
             title_text,
             font=title_font,
-            fill=(255, 255, 255, 255),
+            fill="white",
         )
 
-        # ---- GP ICON ----
-        if shared_cache.gp_icon:
+        gp_icon = shared_cache.gp_icon
+
+        if gp_icon:
             icon_y = title_y + 5
 
             def draw_gp_icon(x_pos, has_gp):
-                icon = shared_cache.gp_icon.copy()
+                icon = gp_icon.copy()
 
                 if not has_gp:
                     icon = ImageEnhance.Brightness(icon).enhance(0.3)
@@ -340,22 +334,15 @@ class MatchmakingQueue(commands.Cog):
 
                 canvas.paste(icon, (x_pos, icon_y), icon)
 
-            # dual or single mode handling
-            if is_dual:
-                draw_gp_icon(title_x - 40, has_gp1)
-                draw_gp_icon(title_x + title_w + 8, has_gp2)
-            else:
-                draw_gp_icon(title_x + title_w + 8, has_gp1)
+            draw_gp_icon(title_x - 40, has_gp1)
+            draw_gp_icon(title_x + title_w + 8, has_gp2)
 
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
-        underline_margin = int(width * 0.28)
-        draw.line(
-            [(underline_margin, underline_y), (width - underline_margin, underline_y)],
-            fill=(255, 255, 255, 180),
-            width=3,
-        )
+        margin = int(width * 0.28)
+        draw.line([(margin, underline_y), (width - margin, underline_y)],
+                fill=(255, 255, 255, 180), width=3)
 
-        # 5) Character icons + dual EIDs
+        # ******** Icons + Eidolon Badges ********
         for idx, c in enumerate(sorted_chars):
             col = idx % PER_ROW
             row = idx // PER_ROW
@@ -363,37 +350,29 @@ class MatchmakingQueue(commands.Cog):
             x = PADDING + col * (ICON + GAP)
             y = grid_top + row * (ICON + GAP)
 
-            base_icon = shared_cache.icon_cache.get(c["id"])
-            if not base_icon:
+            icon = icon_cache.get(c["id"])
+            if not icon:
                 continue
             
-            if base_icon.size != (ICON, ICON):
-                base_icon = base_icon.resize((ICON, ICON), Image.LANCZOS)
+            if icon.size != (ICON, ICON):
+                icon = icon.resize((ICON, ICON), Image.LANCZOS)
 
-            # use exact preprocessed icon (already: cropped, resized, rounded, rarity-bg)
-            icon = base_icon.copy()
-
-            # dim if not owned (same as roster.py)
+            # dim unowned
+            icon = icon.copy()
             if c["id"] not in combined_owned:
                 icon = ImageEnhance.Brightness(icon).enhance(0.35)
                 icon = icon.convert("LA").convert("RGBA")
 
-            # paste directly — background & rounded edges are already included
+            # icon (already includes rarity background)
             canvas.paste(icon, (x, y), icon)
 
-            # Dual Eidolon badges
-            e1 = owned1.get(c["id"])
-            e2 = owned2.get(c["id"])
-
-            # -------------------------------------------------------
-            # DUAL EIDOLON BADGES
-            # -------------------------------------------------------
-
-            badge_w, badge_h = 40, 26         
-            badge_y = y + ICON - badge_h - 4   
+            # *****************
+            # EID BADGES (same)
+            # *****************
+            badge_w, badge_h = 40, 26
+            badge_y = y + ICON - badge_h - 4
 
             def draw_badge(e_value: int, bx: int):
-                rect = [bx, badge_y, bx + badge_w, badge_y + badge_h]
 
                 draw.rounded_rectangle(
                     [bx, badge_y, bx + badge_w, badge_y + badge_h],
@@ -412,23 +391,20 @@ class MatchmakingQueue(commands.Cog):
 
                 draw.text((tx, ty), text, font=BADGE_FONT, fill="white")
 
-            # Player 1 badge (left)
+            e1 = owned1.get(c["id"])
+            e2 = owned2.get(c["id"])
+
             if e1 is not None:
-                bx1 = x + 4              
-                draw_badge(e1, bx1)
-
-            # Player 2 badge (right)
+                draw_badge(e1, x + 4)
             if e2 is not None:
-                bx2 = x + ICON - badge_w - 4  
-                draw_badge(e2, bx2)
+                draw_badge(e2, x + ICON - badge_w - 4)
 
-
-        # 6) Buffer
+        # return buffer
         buffer = io.BytesIO()
         canvas.save(buffer, "PNG")
         buffer.seek(0)
         return buffer
-
+        
     async def _send_match_rosters(
         self,
         channel: discord.abc.Messageable,
