@@ -258,6 +258,9 @@ class MatchmakingQueue(commands.Cog):
 
         combined_owned = set(owned1.keys()) | set(owned2.keys())
 
+        has_gp1 = "9999" in owned1
+        has_gp2 = "9999" in owned2
+
         if not shared_cache.char_map_cache:
             return None
 
@@ -323,6 +326,26 @@ class MatchmakingQueue(commands.Cog):
             font=title_font,
             fill=(255, 255, 255, 255),
         )
+
+        # ---- GP ICON ----
+        if shared_cache.gp_icon:
+            icon_y = title_y + 5
+
+            def draw_gp_icon(x_pos, has_gp):
+                icon = shared_cache.gp_icon.copy()
+
+                if not has_gp:
+                    icon = ImageEnhance.Brightness(icon).enhance(0.3)
+                    icon = icon.convert("LA").convert("RGBA")
+
+                canvas.paste(icon, (x_pos, icon_y), icon)
+
+            # left / right of title (same logic as roster.py)
+            if has_gp1:
+                draw_gp_icon(title_x - 40, True)
+
+            if has_gp2:
+                draw_gp_icon(title_x + title_w + 8, True)
 
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
         underline_margin = int(width * 0.28)

@@ -53,9 +53,6 @@ class Roster(commands.Cog):
         shared_cache.char_map_cache = {}
         shared_cache.icon_cache = {}
 
-        # GP icon (id 9999)
-        self.gp_icon = None
-
     async def preload_all(self):
         """
         Load character metadata + icons ONCE when bot starts.
@@ -141,20 +138,20 @@ class Roster(commands.Cog):
 
                 except Exception:
                     continue
-            # ---- Load GP icon ONCE ----
             gp_url = "https://storage.googleapis.com/cipher-zzz/hsr/Sw999gp.webp"
 
             try:
                 async with session.get(gp_url) as resp:
-                    if resp.status == 200:
-                        raw = await resp.read()
+                    resp.raise_for_status()
+                    raw = await resp.read()
 
-                        img = Image.open(io.BytesIO(raw)).convert("RGBA")
-                        img = img.resize((32, 32), Image.LANCZOS)
+                img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                img = img.resize((32, 32), Image.LANCZOS)
 
-                        self.gp_icon = img
+                shared_cache.gp_icon = img
+
             except Exception:
-                self.gp_icon = None
+                shared_cache.gp_icon = None
     
     async def _fetch_profile_characters(self, session: aiohttp.ClientSession, discord_id: str) -> Optional[dict]:
         url = f"{ROSTER_API}/{discord_id}/profile-characters"
@@ -258,7 +255,7 @@ class Roster(commands.Cog):
         has_gp2 = "9999" in owned2
 
         if is_dual:
-            title_text = f"{name1} • {name2} — Roster"
+            title_text = f"{name1} • {name2}"
         else:
             title_text = f"{name1}'s Roster"
 
@@ -336,11 +333,11 @@ class Roster(commands.Cog):
         draw.text((title_x, title_y), title_text, font=title_font, fill="white")
 
         # ---- Draw GP icon(s) ----
-        if self.gp_icon:
+        if shared_cache.gp_icon:
             icon_y = title_y + 5
 
             def draw_gp_icon(x_pos, has_gp):
-                icon = self.gp_icon.copy()
+                icon = shared_cache.gp_icon.copy()
                 if not has_gp:
                     icon = ImageEnhance.Brightness(icon).enhance(0.3)
                     icon = icon.convert("LA").convert("RGBA")

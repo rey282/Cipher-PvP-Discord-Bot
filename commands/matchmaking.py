@@ -516,6 +516,9 @@ class MatchmakingCommands(commands.Cog):
         owned1 = {c["id"]: c["eidolon"] for c in entry1.get("profileCharacters", [])} if entry1 else {}
         owned2 = {c["id"]: c["eidolon"] for c in entry2.get("profileCharacters", [])} if entry2 else {}
 
+        has_gp1 = "9999" in owned1
+        has_gp2 = "9999" in owned2
+
         # union of both players' owned roster
         combined_owned = set(owned1.keys()) | set(owned2.keys())
 
@@ -577,7 +580,22 @@ class MatchmakingCommands(commands.Cog):
         title_x = (width - title_w) // 2
         title_y = TITLE_TOP
 
-        draw.text((title_x, title_y), title_text, font=title_font, fill="white")
+        gp_icon = shared_cache.gp_icon
+
+        if gp_icon:
+            icon_y = title_y + 5
+
+            def draw_gp_icon(x_pos, has_gp):
+                icon = gp_icon.copy()
+
+                if not has_gp:
+                    icon = ImageEnhance.Brightness(icon).enhance(0.3)
+                    icon = icon.convert("LA").convert("RGBA")
+
+                canvas.paste(icon, (x_pos, icon_y), icon)
+
+            draw_gp_icon(title_x - 40, has_gp1)
+            draw_gp_icon(title_x + title_w + 8, has_gp2)
 
         underline_y = title_y + title_h + UNDERLINE_GAP + 10
         margin = int(width * 0.28)
