@@ -272,11 +272,19 @@ class UnitInfo(commands.Cog):
     async def unit_info(self, interaction: Interaction, unit: str):
         await interaction.response.defer()
         pool = await self.get_pool()
-        # Allow partial name matches via ILIKE %...%
-        row = await pool.fetchrow(
-            "SELECT * FROM characters WHERE name ILIKE $1 OR subname ILIKE $1 LIMIT 1",
-            f"%{unit}%"
-        )
+        row = await pool.fetchrow("""
+            SELECT * FROM characters
+            WHERE LOWER(name) = LOWER($1)
+            LIMIT 1
+        """, unit)
+
+        if not row:
+            row = await pool.fetchrow("""
+                SELECT * FROM characters
+                WHERE name ILIKE $1 OR subname ILIKE $1
+                ORDER BY LENGTH(name) ASC
+                LIMIT 1
+            """, f"%{unit}%")
 
         if not row:
             await interaction.followup.send(
