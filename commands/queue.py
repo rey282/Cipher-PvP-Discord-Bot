@@ -491,29 +491,23 @@ class MatchmakingQueue(commands.Cog):
             embed.set_footer(text="Handled with care by Kyasutorisu")
             return embed
 
-        PREBAN_COSTS = [100, 120, 140]
-        JOKER_COSTS = [170, 180, 210, 230]
-
         remaining_diff = point_diff
 
         regular_bans = 0
         joker_bans = 0
 
-        # Apply prebans (max 3)
-        for cost in PREBAN_COSTS:
-            if remaining_diff >= cost and regular_bans < 3:
-                remaining_diff -= cost
-                regular_bans += 1
-            else:
-                break
+        # ───── Prebans (always 100 each, max 3) ─────
+        while regular_bans < 3 and remaining_diff >= 100:
+            remaining_diff -= 100
+            regular_bans += 1
 
-        # Apply joker bans (max 4)
-        for cost in JOKER_COSTS:
-            if remaining_diff >= cost and joker_bans < 4:
-                remaining_diff -= cost
-                joker_bans += 1
-            else:
-                break
+        # ───── Joker bans (start 200, +20 each time, no limit) ─────
+        joker_cost = 200
+
+        while remaining_diff >= joker_cost:
+            remaining_diff -= joker_cost
+            joker_bans += 1
+            joker_cost += 20
 
         embed = discord.Embed(
             title=f"Pre-Bans Calculation for {match_type}",
